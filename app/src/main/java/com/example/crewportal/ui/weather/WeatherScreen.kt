@@ -44,7 +44,7 @@ fun WeatherScreen(weatherRepository: WeatherRepository) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("METAR / TAF", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Enter airport ICAO code", color = TextMuted)
+        Text("Enter airport ICAO code", color = MaterialTheme.colorScheme.onSurfaceVariant)
         OutlinedTextField(
             value = icao,
             onValueChange = { icao = it.uppercase().take(4) },
@@ -72,7 +72,7 @@ fun WeatherScreen(weatherRepository: WeatherRepository) {
             },
             enabled = !loading && icao.length == 4,
             modifier = Modifier.fillMaxWidth()
-        ) { Text(if (loading) "Loading..." else "Search") }
+        ) { Text(if (loading) "Loading..." else if (metar.isBlank() && taf.isBlank()) "Search" else "Refresh") }
 
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (metar.isNotBlank()) WeatherCard("METAR", metar)
@@ -82,11 +82,14 @@ fun WeatherScreen(weatherRepository: WeatherRepository) {
 
 @Composable
 private fun WeatherCard(title: String, text: String) {
-    Card(colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Column(Modifier.padding(16.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(8.dp))
-            Text(text)
+            Text(text, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

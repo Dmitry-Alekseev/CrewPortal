@@ -56,9 +56,9 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
                 )
                 Column(Modifier.padding(start = 16.dp)) {
                     Text("Dmitrii Alekseev", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text("Captain", color = TextMuted)
-                    Text("Thai Airways", color = TextMuted)
-                    Text("Home Base: BKK", color = TextMuted)
+                    Text("Captain", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Thai Airways", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Home Base: BKK", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -71,9 +71,15 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
         }
 
         InfoCard("Pilot Licenses") {
-            QualificationRow("PPL", "Issued: 18 March 2023", "Valid / record on file", "VALID")
-            QualificationRow("CPL", "Issued: 27 October 2023", "Valid / record on file", "VALID")
-            QualificationRow("ATPL", "Issued: 14 September 2024", "Valid / record on file", "VALID")
+            QualificationRow("PPL(A)", "Issued: 18 March 2023", "Private Pilot Licence record", "VALID")
+            QualificationRow("CPL(A)", "Issued: 27 October 2023", "Commercial Pilot Licence record", "VALID")
+            QualificationRow("ATPL(A)", "Issued: 14 September 2024", "Airline Transport Pilot Licence record", "VALID")
+            QualificationRow("IR(A)", "Issued: 22 November 2023", "Instrument Rating", "VALID")
+            QualificationRow("MEP(L)", "Issued: 10 December 2023", "Multi-engine piston land rating", "VALID")
+            QualificationRow("MCC", "Completed: 18 January 2024", "Multi-Crew Cooperation course", "VALID")
+            QualificationRow("UPRT", "Completed: 09 February 2024", "Upset Prevention and Recovery Training", "VALID")
+            QualificationRow("ICAO English", "Level 6: 2024", "Language proficiency record", "VALID")
+            QualificationRow("Radio Telephony", "Issued: 04 April 2023", "Aeronautical radio operator privilege", "VALID")
         }
 
         InfoCard("Type Ratings") {
@@ -94,7 +100,7 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
             ProfileRow("Simulator recurrent", "Due Jul 2026")
             ProfileRow("Emergency procedures", "Due Oct 2026")
             Spacer(Modifier.height(4.dp))
-            Text("All qualifications are valid. Reminder threshold: 60 days before expiry.", color = TextMuted)
+            Text("All qualifications are valid. Reminder threshold: 60 days before expiry.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -112,7 +118,7 @@ private fun InfoCard(title: String, content: @Composable ColumnScope.() -> Unit)
 @Composable
 private fun ProfileRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth()) {
-        Text(label, color = TextMuted, modifier = Modifier.weight(1f))
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
         Text(value, fontWeight = FontWeight.SemiBold)
     }
 }
@@ -124,7 +130,7 @@ private fun QualificationRow(title: String, last: String, next: String, status: 
             Text(title, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             Text(status, color = SuccessGreen, fontWeight = FontWeight.Bold)
         }
-        Text(last, color = TextMuted)
-        Text(next, color = ThaiPurple)
+        Text(last, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(next, color = MaterialTheme.colorScheme.primary)
     }
 }

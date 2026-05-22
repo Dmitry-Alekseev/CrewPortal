@@ -91,7 +91,7 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text(item.flightNumber, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                Text("${item.departureCity} → ${item.arrivalCity}", color = TextMuted)
+                Text("${item.departureCity} → ${item.arrivalCity}", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 if (item.dutyType != "FLIGHT") {
                     InfoCard(if (item.dutyType == "OFF") "Day Off" else "${item.dutyType} Details") {
@@ -182,7 +182,7 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                 } else if (canRegister(item.departureDateTime, item.isCompleted)) {
                     OutlinedButton(onClick = { scope.launch { flightRepository.registerFlight(item.id) } }, modifier = Modifier.fillMaxWidth()) { Text("Register") }
                 } else if (!item.isCompleted) {
-                    Text("Registration and aircraft tail assignment open 24 hours before departure", color = TextMuted)
+                    Text("Registration and aircraft tail assignment open 24 hours before departure", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -235,14 +235,14 @@ private fun RouteMapCard(flight: FlightEntity) {
                 val departureMarker = Marker(mapView).apply {
                     position = departureGeo
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                    title = flight.departureIata
+                    title = "A • ${flight.departureIata}"
                     snippet = flight.departureCity
                 }
 
                 val arrivalMarker = Marker(mapView).apply {
                     position = arrivalGeo
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                    title = flight.arrivalIata
+                    title = "B • ${flight.arrivalIata}"
                     snippet = flight.arrivalCity
                 }
 
@@ -260,24 +260,26 @@ private fun RouteMapCard(flight: FlightEntity) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = flight.departureIata,
-                fontWeight = FontWeight.Bold
+                text = "A  ${flight.departureIata}",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 text = "${briefingDistanceNm(flight.durationMinutes)} NM",
-                color = TextMuted
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Text(
-                text = flight.arrivalIata,
-                fontWeight = FontWeight.Bold
+                text = "B  ${flight.arrivalIata}",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
 
         Text(
-            text = "OpenStreetMap route display",
-            color = TextMuted,
+            text = "OpenStreetMap route display • A departure / B arrival",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall
         )
     }
@@ -337,8 +339,8 @@ private fun StatusTimelineCard(flight: FlightEntity) {
     InfoCard("Flight Status Timeline") {
         stages.forEach { (label, active) ->
             Row(Modifier.fillMaxWidth()) {
-                Text(if (active) "●" else "○", color = if (active) SuccessGreen else TextMuted, modifier = Modifier.padding(end = 10.dp))
-                Text(label, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal, color = if (active) SuccessGreen else TextMuted)
+                Text(if (active) "●" else "○", color = if (active) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 10.dp))
+                Text(label, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal, color = if (active) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -374,9 +376,9 @@ private fun InfoCard(title: String, content: @Composable ColumnScope.() -> Unit)
 private fun DetailRow(label: String, main: String, sub: String) {
     Row(Modifier.fillMaxWidth()) {
         Column(Modifier.weight(1f)) {
-            Text(label.uppercase(), color = TextMuted, style = MaterialTheme.typography.labelMedium)
+            Text(label.uppercase(), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             Text(main, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            if (sub.isNotBlank()) Text(sub, color = TextMuted)
+            if (sub.isNotBlank()) Text(sub, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

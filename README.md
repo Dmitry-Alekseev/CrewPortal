@@ -1,4 +1,4 @@
-# Crew Portal 1.6.6
+# Crew Portal 1.6.7
 
 Android/Kotlin Jetpack Compose crew portal demo.
 
@@ -75,14 +75,12 @@ app/build/outputs/apk/debug/*.apk
 - Kept 1.6.4 UTC layout improvements: local time stays primary, UTC is shown inline next to it.
 - Added automatic built-in roster refresh on app version update, so APK updates can be installed over the previous version.
 
-## Version 1.6.6 additions
-- Removed osmdroid +/− zoom buttons; pinch zoom remains enabled.
-- Monthly flight-time summary now follows the current month instead of hard-coded June.
-- Today's Duty shows only duties on the current roster date; tomorrow's flights do not appear before 00:00.
-- Added OFF duty blocks to Roster and Calendar.
-- Reserve duties open a details page with reserve time and airport crew hotel location.
-- Added THAI badge styling to flight cards.
-- Fleet cards now include approximate aircraft age.
-- Added Pilot Licenses, Class 1 Medical Certificate, and corrected qualification naming.
-- Added quick Dark Theme switch above UTC toggle in Roster.
-- Updated all app metadata and built-in roster version to 1.6.6.
+## Version 1.6.7 additions
+- Added THAI logo badge to flight cards.
+- OFF duty blocks are display-only and no longer open a detail screen.
+- Route map labels A departure / B arrival and keeps +/− zoom buttons hidden.
+- Improved dark theme contrast across roster, calendar, fleet, profile and weather screens.
+- METAR / TAF cards use theme-aware colors.
+- Added Refresh controls for roster sync and weather refresh.
+- Expanded pilot license records with IR(A), MEP(L), MCC, UPRT, ICAO English and Radio Telephony.
+- Updated all app metadata and built-in roster version to 1.6.7.

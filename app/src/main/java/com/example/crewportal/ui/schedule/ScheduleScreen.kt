@@ -3,6 +3,8 @@ package com.example.crewportal.ui.schedule
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +24,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,9 +38,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.crewportal.R
 import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.repository.FlightRepository
@@ -79,14 +84,14 @@ fun ScheduleScreen(
     ) {
         item {
             Text("Roster", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Company roster synchronized", color = TextMuted)
+            Text("Company roster synchronized", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                Text("Dark theme", color = TextMuted, modifier = Modifier.weight(1f))
+                Text("Dark theme", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                 Switch(
                     checked = darkTheme,
                     onCheckedChange = { value -> scope.launch { preferencesRepository.setDarkTheme(value) } }
@@ -99,11 +104,17 @@ fun ScheduleScreen(
             ) {
                 Text(
                     if (showUtc) "Local time with UTC reference" else "Local time",
-                    color = TextMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
-                Text("UTC", color = TextMuted, modifier = Modifier.padding(end = 10.dp))
+                Text("UTC", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 10.dp))
                 Switch(checked = showUtc, onCheckedChange = { showUtc = it })
+            }
+            ElevatedButton(
+                onClick = { scope.launch { flightRepository.refreshCompletedFlights() } },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Refresh roster")
             }
             Spacer(Modifier.height(8.dp))
             MonthlyProgressCard(flights = flights)
@@ -120,7 +131,10 @@ fun ScheduleScreen(
                     showUtc = showUtc
                 )
             } else {
-                DutyCard(flight = duty, onClick = { onDutyClick(duty.id) })
+                DutyCard(
+                    flight = duty,
+                    onClick = if (duty.dutyType == "OFF") null else ({ onDutyClick(duty.id) })
+                )
             }
         }
     }
@@ -139,9 +153,9 @@ private fun MonthlyProgressCard(flights: List<FlightEntity>) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Monthly Flight Time", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("$monthLabel • Planned ${formatMinutes(planned)} • Completed ${formatMinutes(completed)}", color = TextMuted)
+            Text("$monthLabel • Planned ${formatMinutes(planned)} • Completed ${formatMinutes(completed)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
             LinearProgressIndicator(progress = (planned.toFloat() / target.toFloat()).coerceIn(0f, 1f), modifier = Modifier.fillMaxWidth())
-            Text("Target ${formatMinutes(target)} • Limit ${formatMinutes(limit)}", color = TextMuted)
+            Text("Target ${formatMinutes(target)} • Limit ${formatMinutes(limit)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -216,7 +230,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                 Column(Modifier.weight(0.9f)) {
                     Text(flight.departureIata, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
                     Text(flight.departureCity, style = MaterialTheme.typography.titleMedium)
-                    Text(flight.departureAirport, color = TextMuted)
+                    Text(flight.departureAirport, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1.35f)) {
                     Text(
@@ -227,30 +241,30 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                         softWrap = false,
                         fontSize = if (showUtc) 18.sp else MaterialTheme.typography.headlineMedium.fontSize
                     )
-                    Text("${displayDate(flight.departureDateTime)} • ${displayDay(flight.departureDateTime)}", color = TextMuted, maxLines = 1, softWrap = false)
+                    Text("${displayDate(flight.departureDateTime)} • ${displayDay(flight.departureDateTime)}", color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false)
                     Text("✈", color = ThaiPurple, style = MaterialTheme.typography.headlineMedium)
-                    Text(formatMinutes(flight.durationMinutes), color = TextMuted)
+                    Text(formatMinutes(flight.durationMinutes), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Column(Modifier.weight(0.9f), horizontalAlignment = Alignment.End) {
                     Text(flight.arrivalIata, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
                     Text(flight.arrivalCity, style = MaterialTheme.typography.titleMedium)
-                    Text(flight.arrivalAirport, color = TextMuted)
+                    Text(flight.arrivalAirport, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("AIRCRAFT", color = TextMuted, style = MaterialTheme.typography.labelLarge)
+                    Text("AIRCRAFT", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
                     Text(flight.aircraftFullName, style = MaterialTheme.typography.titleMedium)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("REGISTRATION", color = TextMuted, style = MaterialTheme.typography.labelLarge)
+                    Text("REGISTRATION", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
                     Text(if (flight.registration == "TBA") "Assigned 24h prior" else flight.registration, style = MaterialTheme.typography.titleMedium)
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Text(airportAssignmentLine(flight), color = TextMuted)
-            Text("Duty time: ${formatMinutes(dutyMinutes(flight.departureDateTime, flight.arrivalDateTime, flight.durationMinutes))}", color = TextMuted)
+            Text(airportAssignmentLine(flight), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Duty time: ${formatMinutes(dutyMinutes(flight.departureDateTime, flight.arrivalDateTime, flight.durationMinutes))}", color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (flight.isRegistered) {
                 Spacer(Modifier.height(12.dp))
                 Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text("Registered") }
@@ -267,41 +281,44 @@ private fun AirlineBadge(airline: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .background(ThaiPurple.copy(alpha = 0.12f), RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp))
+            .border(1.dp, ThaiPurple.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
             .padding(horizontal = 8.dp, vertical = 5.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(20.dp)
-                .background(Color(0xFFFFC400), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("✤", color = ThaiPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        }
-        Text(" $airline", color = ThaiPurple, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Image(
+            painter = painterResource(R.drawable.thai_logo),
+            contentDescription = "Thai Airways logo",
+            modifier = Modifier.size(width = 34.dp, height = 24.dp)
+        )
+        Text(
+            text = " $airline",
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
 @Composable
-fun DutyCard(flight: FlightEntity, onClick: () -> Unit) {
+fun DutyCard(flight: FlightEntity, onClick: (() -> Unit)?) {
     val isOff = flight.dutyType == "OFF"
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
         shape = RoundedCornerShape(18.dp),
         elevation = CardDefaults.cardElevation(2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text(if (isOff) "OFF" else flight.dutyType, color = ThaiPurple, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(if (isOff) "OFF" else flight.dutyType, color = if (isOff) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
-                Text(flight.status, color = TextMuted, fontWeight = FontWeight.Bold)
+                Text(flight.status, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             }
             Text("${displayDate(flight.departureDateTime)} • ${displayTime(flight.departureDateTime)}-${displayTime(flight.arrivalDateTime)}")
-            Text(flight.dutyNote.ifBlank { if (isOff) "Day off" else "Hotel standby duty" }, color = TextMuted)
-            if (!isOff) Text("Location: ${flight.departureAirport}", color = TextMuted)
+            Text(flight.dutyNote.ifBlank { if (isOff) "Day off" else "Hotel standby duty" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!isOff) Text("Location: ${flight.departureAirport}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

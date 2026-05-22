@@ -46,7 +46,7 @@ fun CalendarScreen(flightRepository: FlightRepository) {
     ) {
         item {
             Text("Roster Calendar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Current roster month: ${displayMonth(firstMonth)}", color = TextMuted)
+            Text("Current roster month: ${displayMonth(firstMonth)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         items(grouped.entries.toList()) { entry ->
             CalendarDayCard(entry.key, entry.value)
@@ -61,24 +61,24 @@ private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>) {
             Row(Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
                     Text(displayShortDate(duties.first().departureDateTime), fontWeight = FontWeight.Bold)
-                    Text(displayDay(duties.first().departureDateTime), color = TextMuted)
+                    Text(displayDay(duties.first().departureDateTime), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 val block = duties.filter { it.dutyType == "FLIGHT" }.sumOf { it.durationMinutes }
-                if (block > 0) Text("Block ${formatMinutes(block)}", color = ThaiPurple, fontWeight = FontWeight.Bold)
+                if (block > 0) Text("Block ${formatMinutes(block)}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
             duties.forEach { duty ->
                 val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") "OFF" else duty.dutyType
                 val chipColor = when (duty.dutyType) {
-                    "FLIGHT" -> ThaiPurple.copy(alpha = 0.12f)
-                    "RESERVE" -> Color(0xFFE3F2FD)
-                    "TRAINING" -> Color(0xFFFFF3E0)
-                    "OFF" -> Color(0xFFECEFF1)
-                    else -> Color(0xFFECEFF1)
+                    "FLIGHT" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                    "RESERVE" -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
+                    "TRAINING" -> Color(0xFFFFB74D).copy(alpha = 0.26f)
+                    "OFF" -> MaterialTheme.colorScheme.surfaceVariant
+                    else -> MaterialTheme.colorScheme.surfaceVariant
                 }
                 Box(Modifier.fillMaxWidth().background(chipColor, RoundedCornerShape(10.dp)).padding(10.dp)) {
                     Column {
-                        Text(label, fontWeight = FontWeight.SemiBold)
-                        Text("${displayTime(duty.departureDateTime)}-${displayTime(duty.arrivalDateTime)} • ${duty.dutyNote.ifBlank { duty.aircraftLabel }}", color = TextMuted)
+                        Text(label, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("${displayTime(duty.departureDateTime)}-${displayTime(duty.arrivalDateTime)} • ${duty.dutyNote.ifBlank { duty.aircraftLabel }}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

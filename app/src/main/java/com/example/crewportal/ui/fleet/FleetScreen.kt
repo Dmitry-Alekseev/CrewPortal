@@ -29,22 +29,22 @@ fun FleetScreen() {
     ) {
         item {
             Text("Airbus Fleet", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Local operational aircraft database", color = TextMuted)
+            Text("Local operational aircraft database", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         fleet.forEach { (type, aircraft) ->
-            item { Text(type, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = ThaiPurple) }
+            item { Text(type, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }
             items(aircraft) { item ->
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(Modifier.fillMaxWidth()) {
                             Text(item.registration, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                            Text(item.status, color = ThaiPurple, fontWeight = FontWeight.Bold)
+                            Text(item.status, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                         }
                         Text(item.fullName)
-                        Text("Configuration: ${item.configuration}", color = TextMuted)
-                        Text("Engine type: ${item.engineType}", color = TextMuted)
-                        Text("Age: ${item.age}", color = TextMuted)
-                        Text("Operation class: ${item.routeClass}", color = TextMuted)
+                        Text("Configuration: ${item.configuration}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Engine type: ${item.engineType}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Age: ${item.age}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Operation class: ${item.routeClass}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

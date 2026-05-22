@@ -36,7 +36,7 @@ fun NotificationsScreen(flightRepository: FlightRepository) {
     ) {
         item {
             Text("Notifications", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Crew portal messages and operational alerts", color = TextMuted)
+            Text("Crew portal messages and operational alerts", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (openFlights.isEmpty() && completed.isEmpty()) {
             item { NotificationCard("Roster synchronized", "Company Crew Portal synchronization successful. No urgent actions.") }
@@ -58,8 +58,8 @@ fun NotificationsScreen(flightRepository: FlightRepository) {
         CompanyMessages.messages.forEach { message ->
             item { NotificationCard("Company message", message) }
         }
-        item { NotificationCard("Medical status", "VLEK valid. Next commission due in August 2026.") }
-        item { NotificationCard("Training status", "ASP Land, ASP Water and simulator session valid until August 2026.") }
+        item { NotificationCard("Medical status", "Class 1 Medical Certificate valid. Next medical due in August 2026.") }
+        item { NotificationCard("Training status", "Safety & Emergency Procedures and simulator recurrent session are valid.") }
     }
 }
 
@@ -67,8 +67,8 @@ fun NotificationsScreen(flightRepository: FlightRepository) {
 private fun NotificationCard(title: String, body: String) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(title, color = ThaiPurple, fontWeight = FontWeight.Bold)
-            Text(body, color = TextMuted)
+            Text(title, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Text(body, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
