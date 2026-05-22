@@ -23,7 +23,15 @@ data class FlightEntity(
     val departureDateTime: String,
     val arrivalDateTime: String,
     val durationMinutes: Int,
+    val dutyType: String = "FLIGHT",
+    val dutyNote: String = "",
     val isRegistered: Boolean = false,
     val isCompleted: Boolean = false,
-    val isFlightTimeAdded: Boolean = false
+    val isFlightTimeAdded: Boolean = false,
+    val registrationNotified: Boolean = false,
+    val changeNotified: Boolean = false,
+    val gate: String = "Pending",
+    val stand: String = "Pending",
+    val terminal: String = "Pending",
+    val airportAssignmentNotified: Boolean = false
 )

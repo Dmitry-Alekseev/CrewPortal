@@ -42,7 +42,8 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     activity: FragmentActivity,
     authRepository: AuthRepository,
-    preferencesRepository: PreferencesRepository
+    preferencesRepository: PreferencesRepository,
+    onAuthenticated: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -107,7 +108,7 @@ fun LoginScreen(
             Button(
                 onClick = {
                     if (authRepository.validate(login, password)) {
-                        scope.launch { authRepository.signIn(login, rememberMe) }
+                        scope.launch { authRepository.signIn(login, rememberMe); onAuthenticated() }
                     } else {
                         error = "Invalid corporate ID or password"
                     }
@@ -126,7 +127,7 @@ fun LoginScreen(
                         object : BiometricPrompt.AuthenticationCallback() {
                             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                                 super.onAuthenticationSucceeded(result)
-                                scope.launch { authRepository.signIn(login.ifBlank { "CPD9842" }, rememberMe = true) }
+                                scope.launch { authRepository.signIn(login.ifBlank { "CPD9842" }, rememberMe = true); onAuthenticated() }
                             }
 
                             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {

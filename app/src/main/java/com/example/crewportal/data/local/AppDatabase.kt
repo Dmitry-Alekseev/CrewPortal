@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [FlightEntity::class], version = 1, exportSchema = false)
+@Database(entities = [FlightEntity::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun flightDao(): FlightDao
 
@@ -17,7 +17,7 @@ abstract class AppDatabase : RoomDatabase() {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "crew_portal.db"
-            ).build().also { INSTANCE = it }
+            ).fallbackToDestructiveMigration().build().also { INSTANCE = it }
         }
     }
 }
