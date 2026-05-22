@@ -1,0 +1,12 @@
+{
+  "latestVersion": "1.6.9",
+  "versionCode": 69,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v1.6.9/CrewPortal-1.6.9.apk",
+  "changelog": [
+    "Added MEL database by aircraft registration",
+    "Added type-specific flight time counters",
+    "Added GitHub roster synchronization",
+    "Added GitHub app update checker",
+    "Improved Russian localization and Refresh feedback"
+  ]
+}

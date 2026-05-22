@@ -32,11 +32,13 @@ jobs:
       - name: Build debug APK
         run: gradle assembleDebug --warning-mode all
 
-      - name: Find APK
-        run: find . -name "*.apk"
+      - name: Prepare named APK
+        run: |
+          mkdir -p release
+          cp app/build/outputs/apk/debug/*.apk release/CrewPortal-1.6.9.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CrewPortal-debug-apk
-          path: "**/*.apk"
+          name: CrewPortal-1.6.9-apk
+          path: release/CrewPortal-1.6.9.apk

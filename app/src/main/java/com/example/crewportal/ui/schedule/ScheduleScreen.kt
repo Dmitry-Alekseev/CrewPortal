@@ -23,11 +23,14 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,7 +62,9 @@ import com.example.crewportal.util.dutyMinutes
 import com.example.crewportal.util.formatMinutes
 import com.example.crewportal.util.parseLocalDateTime
 import com.example.crewportal.util.reportDateTime
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -68,7 +73,8 @@ import java.time.format.DateTimeFormatter
 fun ScheduleScreen(
     flightRepository: FlightRepository,
     preferencesRepository: PreferencesRepository,
-    onDutyClick: (String) -> Unit
+    onDutyClick: (String) -> Unit,
+    onMelClick: (String) -> Unit
 ) {
     val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
     val darkTheme by preferencesRepository.darkTheme.collectAsState(initial = false)
@@ -76,6 +82,8 @@ fun ScheduleScreen(
     val ru = language == "ru"
     var showUtc by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var showNextMonth by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights() }
 
@@ -86,6 +94,7 @@ fun ScheduleScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
+            SnackbarHost(hostState = snackbarHostState)
             Text(if (ru) "Ростер" else "Roster", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(if (ru) "Синхронизировано с порталом компании" else "Company roster synchronized", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(10.dp))
@@ -114,22 +123,41 @@ fun ScheduleScreen(
                 Switch(checked = showUtc, onCheckedChange = { showUtc = it })
             }
             ElevatedButton(
-                onClick = { scope.launch { flightRepository.refreshCompletedFlights() } },
+                onClick = {
+                    scope.launch {
+                        val synced = withContext(Dispatchers.IO) { flightRepository.syncRosterFromGitHub() }
+                        if (!synced) flightRepository.refreshCompletedFlights()
+                        snackbarHostState.showSnackbar(if (ru) "Ростер обновлён" else "Roster updated successfully")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (ru) "Обновить ростер" else "Refresh roster")
             }
             Spacer(Modifier.height(8.dp))
-            MonthlyProgressCard(flights = flights, ru = ru)
+            MonthlyProgressCard(flights = flights, ru = ru, showNextMonth = showNextMonth)
             Spacer(Modifier.height(8.dp))
             TodayDutyCard(flights = flights, onDutyClick = onDutyClick, ru = ru)
         }
 
-        items(flights, key = { it.id }) { duty ->
+        item {
+            MonthSwitchControls(showNextMonth = showNextMonth, ru = ru, onToggle = { showNextMonth = !showNextMonth })
+        }
+
+        val now = LocalDateTime.now()
+        val targetMonth = if (showNextMonth) LocalDate.now().plusMonths(1) else LocalDate.now()
+        val visibleDuties = flights.filter { duty ->
+            val departure = parseLocalDateTime(duty.departureDateTime)
+            val arrival = parseLocalDateTime(duty.arrivalDateTime)
+            departure.year == targetMonth.year && departure.month == targetMonth.month && arrival.isAfter(now)
+        }
+
+        items(visibleDuties, key = { it.id }) { duty ->
             if (duty.dutyType == "FLIGHT") {
                 FlightCard(
                     flight = duty,
                     onClick = { onDutyClick(duty.id) },
+                    onMelClick = onMelClick,
                     flightRepository = flightRepository,
                     showUtc = showUtc,
                     ru = ru
@@ -145,9 +173,27 @@ fun ScheduleScreen(
 }
 
 @Composable
-private fun MonthlyProgressCard(flights: List<FlightEntity>, ru: Boolean) {
-    val monthPrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"))
-    val monthLabel = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+private fun MonthSwitchControls(showNextMonth: Boolean, ru: Boolean, onToggle: () -> Unit) {
+    val today = LocalDate.now()
+    val canPreview = today.dayOfMonth >= today.lengthOfMonth() - 6
+    if (canPreview || showNextMonth) {
+        OutlinedButton(onClick = onToggle, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                if (showNextMonth) {
+                    if (ru) "Вернуться к текущему месяцу" else "Back to current month"
+                } else {
+                    if (ru) "Показать ростер следующего месяца" else "Show next month roster"
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun MonthlyProgressCard(flights: List<FlightEntity>, ru: Boolean, showNextMonth: Boolean) {
+    val monthDate = if (showNextMonth) LocalDate.now().plusMonths(1) else LocalDate.now()
+    val monthPrefix = monthDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+    val monthLabel = monthDate.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val monthFlights = flights.filter { it.dutyType == "FLIGHT" && it.departureDateTime.startsWith(monthPrefix) }
     val planned = monthFlights.sumOf { it.durationMinutes }
     val completed = monthFlights.filter { it.isCompleted }.sumOf { it.durationMinutes }
@@ -198,7 +244,7 @@ private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> 
 }
 
 @Composable
-fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: FlightRepository, showUtc: Boolean, ru: Boolean) {
+fun FlightCard(flight: FlightEntity, onClick: () -> Unit, onMelClick: (String) -> Unit, flightRepository: FlightRepository, showUtc: Boolean, ru: Boolean) {
     val scope = rememberCoroutineScope()
     Card(
         modifier = Modifier
@@ -264,6 +310,9 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                 Column(Modifier.weight(1f)) {
                     Text("REGISTRATION", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
                     Text(if (flight.registration == "TBA") "Assigned 24h prior" else flight.registration, style = MaterialTheme.typography.titleMedium)
+                    if (flight.registration != "TBA") {
+                        TextButton(onClick = { onMelClick(flight.registration) }) { Text("MEL") }
+                    }
                 }
             }
             Spacer(Modifier.height(8.dp))

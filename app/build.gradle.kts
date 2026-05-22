@@ -12,12 +12,22 @@ android {
         applicationId = "com.example.crewportal"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.6.8"
+        versionCode = 69
+        versionName = "1.6.9"
+    }
+
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("crewportal-debug.keystore")
+            storePassword = "crewportal"
+            keyAlias = "crewportaldebug"
+            keyPassword = "crewportal"
+        }
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

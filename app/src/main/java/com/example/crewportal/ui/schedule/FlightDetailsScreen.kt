@@ -77,7 +77,7 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, onBack: () -> Unit) {
+fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, onBack: () -> Unit, onMelClick: (String) -> Unit) {
     val flight by flightRepository.observeFlight(flightId).collectAsState(initial = null)
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights() }
@@ -121,6 +121,13 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                     DetailRow("Registration", if (item.registration == "TBA") "Assigned 24h prior" else item.registration, "Released with crew registration window")
                     DetailRow("Block Time", formatMinutes(item.durationMinutes), "Local/UTC toggle data available")
                     DetailRow("Status", if (item.isCompleted) "Completed" else if (item.isRegistered) "Registered" else "Scheduled", "Company portal synchronized")
+                }
+
+                if (item.registration != "TBA") {
+                    Button(
+                        onClick = { onMelClick(item.registration) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Open MEL for ${item.registration}") }
                 }
 
                 InfoCard("Airport Assignment") {

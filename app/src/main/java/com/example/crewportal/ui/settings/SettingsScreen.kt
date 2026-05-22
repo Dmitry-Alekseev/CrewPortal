@@ -8,22 +8,34 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.data.repository.PreferencesRepository
+import com.example.crewportal.data.update.AppUpdateInfo
+import com.example.crewportal.data.update.UpdateRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun SettingsScreen(
@@ -32,8 +44,34 @@ fun SettingsScreen(
     onLogout: suspend () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val updateRepository = remember { UpdateRepository(context.applicationContext) }
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
     val ru = language == "ru"
+    val snackbarHostState = remember { SnackbarHostState() }
+    var updateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
+    var updateChecked by remember { mutableStateOf(false) }
+
+    if (updateInfo != null) {
+        val info = updateInfo!!
+        AlertDialog(
+            onDismissRequest = { updateInfo = null },
+            title = { Text(if (ru) "Доступно обновление" else "Update available") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Crew Portal ${info.latestVersion}", fontWeight = FontWeight.Bold)
+                    info.changelog.forEach { Text("• $it") }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    updateRepository.openDownload(info.apkUrl)
+                    updateInfo = null
+                }) { Text(if (ru) "Скачать APK" else "Download APK") }
+            },
+            dismissButton = { TextButton(onClick = { updateInfo = null }) { Text(if (ru) "Позже" else "Later") } }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -42,6 +80,7 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        SnackbarHost(snackbarHostState)
         Text(if (ru) "Настройки" else "Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
@@ -52,8 +91,11 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(onClick = { scope.launch { preferencesRepository.setAppLanguage("en") } }) { Text("English") }
-                    OutlinedButton(onClick = { scope.launch { preferencesRepository.setAppLanguage("ru") } }) { Text("Русский") }
+                    if (language == "en") Button(onClick = { scope.launch { preferencesRepository.setAppLanguage("en") } }) { Text("English") }
+                    else OutlinedButton(onClick = { scope.launch { preferencesRepository.setAppLanguage("en") } }) { Text("English") }
+
+                    if (language == "ru") Button(onClick = { scope.launch { preferencesRepository.setAppLanguage("ru") } }) { Text("Русский") }
+                    else OutlinedButton(onClick = { scope.launch { preferencesRepository.setAppLanguage("ru") } }) { Text("Русский") }
                 }
             }
         }
@@ -61,40 +103,53 @@ fun SettingsScreen(
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ru) "Приложение" else "Application", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("Crew Portal 1.6.8", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Ростер: синхронизация с порталом компании выполнена" else "Roster sync: Company Crew Portal synchronization successful", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Назначение борта: за 24 часа до вылета" else "Aircraft assignment: released 24 hours before departure", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Гейт / стоянка: за 3 часа до вылета" else "Gate / stand assignment: released 3 hours before departure", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Экипаж: формируется модулем планирования" else "Crew pairing: generated by company roster module", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Погода: aviationweather.gov" else "Weather source: aviationweather.gov", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Crew Portal 1.6.9", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Пакет обновления: CrewPortal-1.6.9.apk" else "Update package: CrewPortal-1.6.9.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Ростер: GitHub + локальная база" else "Roster sync: GitHub + local database", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "MEL: локальная база отложенных дефектов по бортам" else "MEL: local deferred defects database by aircraft", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Карта: OpenStreetMap / osmdroid" else "Map source: OpenStreetMap / osmdroid", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(if (ru) "Типы уведомлений" else "Notification Types", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(if (ru) "Открыта регистрация" else "Registration window opened", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Назначен борт" else "Aircraft assignment released", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Изменения ростера и сообщения компании" else "Roster changes and operational messages", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Напоминания по документам" else "Qualification expiry reminders", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Рейс завершён и налёт обновлён" else "Flight completed and flight time updated", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("GitHub Sync", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Dmitry-Alekseev/CrewPortal", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Button(onClick = {
+                    scope.launch {
+                        val ok = withContext(Dispatchers.IO) { flightRepository.syncRosterFromGitHub() }
+                        snackbarHostState.showSnackbar(if (ok) { if (ru) "Ростер обновлён" else "Roster updated successfully" } else { if (ru) "GitHub недоступен, выполнено локальное обновление" else "GitHub unavailable, local refresh completed" })
+                    }
+                }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Обновить ростер" else "Refresh roster") }
+
+                Button(onClick = {
+                    scope.launch {
+                        updateChecked = true
+                        val info = withContext(Dispatchers.IO) { updateRepository.checkForUpdate() }
+                        if (info == null) snackbarHostState.showSnackbar(if (ru) "Обновления не найдены" else "No update information found") else updateInfo = info
+                    }
+                }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Проверить обновления приложения" else "Check app updates") }
             }
         }
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 1.6.8", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Added real-style THAI logo badge.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Route map markers now use A/B labels directly on the map.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Registered flight button now stays green after registration.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Added company contact directory.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Added Russian interface option in Settings.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Updated ICAO English record to Level 5, March 2026.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 1.6.9", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• MEL database by aircraft registration.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Type-specific flight time counters.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• GitHub roster sync and app update checker.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Roster hides elapsed duties; Calendar keeps full archive.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Improved Refresh feedback and language selector state.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
-        Button(onClick = { scope.launch { flightRepository.reloadScheduleFromAssets() } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Синхронизировать с порталом компании" else "Synchronize with Company Portal") }
+        Button(onClick = {
+            scope.launch {
+                flightRepository.reloadScheduleFromAssets()
+                flightRepository.refreshCompletedFlights()
+                snackbarHostState.showSnackbar(if (ru) "Локальный ростер обновлён" else "Local roster refreshed successfully")
+            }
+        }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Локальное обновление" else "Local Refresh") }
         Button(onClick = { scope.launch { flightRepository.simulateRosterChange() } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Имитировать изменение ростера" else "Simulate Roster Change") }
         Button(onClick = { scope.launch { onLogout() } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Выйти" else "Sign Out") }
     }

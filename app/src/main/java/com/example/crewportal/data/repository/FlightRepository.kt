@@ -12,6 +12,8 @@ import com.example.crewportal.util.parseLocalDateTime
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONObject
 
 class FlightRepository(
@@ -19,6 +21,9 @@ class FlightRepository(
     private val flightDao: FlightDao,
     private val preferencesRepository: PreferencesRepository
 ) {
+    private val httpClient = OkHttpClient()
+    private val githubRosterUrl = "https://raw.githubusercontent.com/Dmitry-Alekseev/CrewPortal/main/roster/current_roster.json"
+
     fun observeFlights(): Flow<List<FlightEntity>> = flightDao.observeAll()
     fun observeCompleted(): Flow<List<FlightEntity>> = flightDao.observeCompleted()
     fun observeFlight(id: String): Flow<FlightEntity?> = flightDao.observeById(id)
@@ -41,8 +46,26 @@ class FlightRepository(
     }
 
     private suspend fun loadScheduleFromAssets(clearExisting: Boolean) {
-        if (clearExisting) flightDao.clearAll()
         val json = context.assets.open("schedule.json").bufferedReader().use { it.readText() }
+        loadScheduleFromJson(json, clearExisting)
+    }
+
+    suspend fun syncRosterFromGitHub(): Boolean {
+        return try {
+            val request = Request.Builder().url(githubRosterUrl).build()
+            val response = httpClient.newCall(request).execute()
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful || body.isBlank()) return false
+            loadScheduleFromJson(body, clearExisting = true)
+            refreshCompletedFlights()
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private suspend fun loadScheduleFromJson(json: String, clearExisting: Boolean) {
+        if (clearExisting) flightDao.clearAll()
         val root = JSONObject(json)
         val array = root.getJSONArray("flights")
         val flights = buildList {
@@ -69,7 +92,16 @@ class FlightRepository(
                         arrivalDateTime = item.getString("arrivalDateTime"),
                         durationMinutes = item.getInt("durationMinutes"),
                         dutyType = item.optString("dutyType", "FLIGHT"),
-                        dutyNote = item.optString("dutyNote", "")
+                        dutyNote = item.optString("dutyNote", ""),
+                        isRegistered = item.optBoolean("isRegistered", false),
+                        isCompleted = item.optBoolean("isCompleted", false),
+                        isFlightTimeAdded = item.optBoolean("isFlightTimeAdded", false),
+                        registrationNotified = item.optBoolean("registrationNotified", false),
+                        changeNotified = item.optBoolean("changeNotified", false),
+                        gate = item.optString("gate", "Pending"),
+                        stand = item.optString("stand", "Pending"),
+                        terminal = item.optString("terminal", "Pending"),
+                        airportAssignmentNotified = item.optBoolean("airportAssignmentNotified", false)
                     )
                 )
             }
@@ -118,7 +150,7 @@ class FlightRepository(
             }
             if (flight.dutyType == "FLIGHT" && !flight.isFlightTimeAdded && hasArrived(flight.arrivalDateTime)) {
                 flightDao.markCompletedAndAdded(flight.id)
-                preferencesRepository.addFlightTime(flight.durationMinutes)
+                preferencesRepository.addFlightTime(flight.durationMinutes, flight.aircraftLabel)
                 NotificationHelper.show(
                     context,
                     "Flight completed",

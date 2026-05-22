@@ -39,6 +39,9 @@ import com.example.crewportal.util.formatTotalMinutes
 fun ProfileScreen(preferencesRepository: PreferencesRepository) {
     val totalMinutes by preferencesRepository.totalMinutes.collectAsState(initial = 240000)
     val picMinutes by preferencesRepository.picMinutes.collectAsState(initial = 90000)
+    val a320Minutes by preferencesRepository.a320Minutes.collectAsState(initial = 180000)
+    val a330Minutes by preferencesRepository.a330Minutes.collectAsState(initial = 36000)
+    val a350Minutes by preferencesRepository.a350Minutes.collectAsState(initial = 24000)
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -83,9 +86,9 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
         }
 
         InfoCard("Type Ratings") {
-            QualificationRow("Airbus A320 Family", "Issued: 16 May 2022", "Recurrent training active", "VALID")
-            QualificationRow("Airbus A330", "Issued: 11 February 2025", "Recurrent training active", "VALID")
-            QualificationRow("Airbus A350", "Issued: 28 September 2025", "Recurrent training active", "VALID")
+            QualificationRow("Airbus A320 Family", "Issued: 16 May 2022", "Time on type: ${formatTotalMinutes(a320Minutes)}", "VALID")
+            QualificationRow("Airbus A330", "Issued: 11 February 2025", "Time on type: ${formatTotalMinutes(a330Minutes)}", "VALID")
+            QualificationRow("Airbus A350", "Issued: 28 September 2025", "Time on type: ${formatTotalMinutes(a350Minutes)}", "VALID")
         }
 
         InfoCard("Documents & Qualifications") {

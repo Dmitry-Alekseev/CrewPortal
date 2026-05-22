@@ -50,6 +50,7 @@ import com.example.crewportal.ui.profile.ProfileScreen
 import com.example.crewportal.ui.schedule.FlightDetailsScreen
 import com.example.crewportal.ui.schedule.ScheduleScreen
 import com.example.crewportal.ui.settings.SettingsScreen
+import com.example.crewportal.ui.mel.MelScreen
 import com.example.crewportal.ui.weather.WeatherScreen
 import com.example.crewportal.ui.contacts.CompanyContactsScreen
 
@@ -63,6 +64,7 @@ sealed class Screen(val route: String, val label: String) {
     data object Profile : Screen("profile", "Profile")
     data object Settings : Screen("settings", "Settings")
     data object Contacts : Screen("contacts", "Contacts")
+    data object Mel : Screen("mel", "MEL")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -89,7 +91,8 @@ fun MainNavigation(
     val showBackButton = currentRoute in listOf(
         Screen.Alerts.route,
         Screen.Profile.route,
-        Screen.Contacts.route
+        Screen.Contacts.route,
+        "mel/{registration}"
     )
 
     Scaffold(
@@ -125,7 +128,8 @@ fun MainNavigation(
                 ScheduleScreen(
                     flightRepository = flightRepository,
                     preferencesRepository = preferencesRepository,
-                    onDutyClick = { navController.navigate("details/$it") }
+                    onDutyClick = { navController.navigate("details/$it") },
+                    onMelClick = { navController.navigate("mel/$it") }
                 )
             }
 
@@ -133,8 +137,13 @@ fun MainNavigation(
                 FlightDetailsScreen(
                     flightId = entry.arguments?.getString("flightId").orEmpty(),
                     flightRepository = flightRepository,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onMelClick = { navController.navigate("mel/$it") }
                 )
+            }
+
+            composable("mel/{registration}") { entry ->
+                MelScreen(registration = entry.arguments?.getString("registration").orEmpty())
             }
 
             composable(Screen.Calendar.route) { CalendarScreen(flightRepository) }
@@ -167,6 +176,7 @@ private fun titleForRoute(route: String?, ru: Boolean): String {
         Screen.Profile.route -> if (ru) "Профиль" else "Profile"
         Screen.Settings.route -> if (ru) "Настройки" else "Settings"
         Screen.Contacts.route -> if (ru) "Контакты компании" else "Company Contacts"
+        "mel/{registration}" -> "MEL"
         else -> "Crew Portal"
     }
 }
@@ -193,6 +203,7 @@ private fun BottomBar(
                 Screen.Profile -> Icons.Default.Person
                 Screen.Settings -> Icons.Default.Settings
                 Screen.Contacts -> Icons.Default.Notifications
+                Screen.Mel -> Icons.Default.AirplanemodeActive
             }
 
             val selected = if (screen == Screen.More) {
@@ -248,6 +259,7 @@ private fun bottomLabel(screen: Screen, ru: Boolean): String {
         Screen.Profile -> if (ru) "Профиль" else "Profile"
         Screen.Settings -> if (ru) "Настр." else "Settings"
         Screen.Contacts -> if (ru) "Контакты" else "Contacts"
+        Screen.Mel -> "MEL"
     }
 }
 
