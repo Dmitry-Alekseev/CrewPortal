@@ -43,6 +43,7 @@ fun FleetScreen() {
                         Text(item.fullName)
                         Text("Configuration: ${item.configuration}", color = TextMuted)
                         Text("Engine type: ${item.engineType}", color = TextMuted)
+                        Text("Age: ${item.age}", color = TextMuted)
                         Text("Operation class: ${item.routeClass}", color = TextMuted)
                     }
                 }

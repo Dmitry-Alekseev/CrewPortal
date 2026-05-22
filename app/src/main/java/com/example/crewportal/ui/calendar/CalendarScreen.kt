@@ -46,7 +46,7 @@ fun CalendarScreen(flightRepository: FlightRepository) {
     ) {
         item {
             Text("Roster Calendar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text(displayMonth(firstMonth), color = TextMuted)
+            Text("Current roster month: ${displayMonth(firstMonth)}", color = TextMuted)
         }
         items(grouped.entries.toList()) { entry ->
             CalendarDayCard(entry.key, entry.value)
@@ -56,7 +56,7 @@ fun CalendarScreen(flightRepository: FlightRepository) {
 
 @Composable
 private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>) {
-    Card(colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
@@ -67,11 +67,12 @@ private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>) {
                 if (block > 0) Text("Block ${formatMinutes(block)}", color = ThaiPurple, fontWeight = FontWeight.Bold)
             }
             duties.forEach { duty ->
-                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else duty.dutyType
+                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") "OFF" else duty.dutyType
                 val chipColor = when (duty.dutyType) {
                     "FLIGHT" -> ThaiPurple.copy(alpha = 0.12f)
                     "RESERVE" -> Color(0xFFE3F2FD)
                     "TRAINING" -> Color(0xFFFFF3E0)
+                    "OFF" -> Color(0xFFECEFF1)
                     else -> Color(0xFFECEFF1)
                 }
                 Box(Modifier.fillMaxWidth().background(chipColor, RoundedCornerShape(10.dp)).padding(10.dp)) {

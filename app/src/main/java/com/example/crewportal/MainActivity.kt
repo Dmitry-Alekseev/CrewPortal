@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,12 +42,13 @@ class MainActivity : FragmentActivity() {
         }
 
         setContent {
-            CrewPortalTheme {
+            val darkTheme by preferencesRepository.darkTheme.collectAsState(initial = false)
+            CrewPortalTheme(darkTheme = darkTheme) {
                 var sessionAuthenticated by remember { mutableStateOf(false) }
 
                 LaunchedEffect(Unit) {
                     authRepository.signOut()
-                    flightRepository.refreshBuiltInRosterOnAppUpdate("1.6.5")
+                    flightRepository.refreshBuiltInRosterOnAppUpdate("1.6.6")
                     flightRepository.refreshCompletedFlights()
                 }
 

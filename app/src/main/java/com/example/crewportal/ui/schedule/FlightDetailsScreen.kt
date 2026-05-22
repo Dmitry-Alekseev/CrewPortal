@@ -62,6 +62,7 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import java.time.format.DateTimeFormatter
@@ -91,6 +92,16 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
             ) {
                 Text(item.flightNumber, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                 Text("${item.departureCity} → ${item.arrivalCity}", color = TextMuted)
+
+                if (item.dutyType != "FLIGHT") {
+                    InfoCard(if (item.dutyType == "OFF") "Day Off" else "${item.dutyType} Details") {
+                        DetailRow("Date", displayDate(item.departureDateTime), displayDaySafe(item.departureDateTime))
+                        DetailRow("Time", "${displayTime(item.departureDateTime)}-${displayTime(item.arrivalDateTime)}", "Local time")
+                        DetailRow("Location", if (item.dutyType == "RESERVE") item.departureAirport else "Not applicable", item.departureCity)
+                        DetailRow("Note", item.dutyNote.ifBlank { if (item.dutyType == "OFF") "No assigned duty" else "Hotel reserve at airport crew hotel" }, "Company roster item")
+                    }
+                    return@Column
+                }
 
                 RouteMapCard(item)
                 StatusTimelineCard(item)
@@ -204,6 +215,7 @@ private fun RouteMapCard(flight: FlightEntity) {
                 MapView(androidContext).apply {
                     setTileSource(TileSourceFactory.MAPNIK)
                     setMultiTouchControls(true)
+                    zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
                     minZoomLevel = 2.0
                     maxZoomLevel = 12.0
                     controller.setZoom(routeMapZoom(flight.durationMinutes))
@@ -272,6 +284,8 @@ private fun RouteMapCard(flight: FlightEntity) {
 }
 
 
+private fun displayDaySafe(dateTime: String): String = com.example.crewportal.util.displayDay(dateTime)
+
 private data class MapPoint(
     val latitude: Float,
     val longitude: Float
@@ -302,6 +316,8 @@ private fun routeMapPoint(iata: String): MapPoint? {
         "NRT" -> MapPoint(35.77f, 140.39f)
         "KUL" -> MapPoint(2.75f, 101.71f)
         "DEL" -> MapPoint(28.56f, 77.10f)
+        "CNX" -> MapPoint(18.77f, 98.96f)
+        "SYD" -> MapPoint(-33.94f, 151.18f)
         else -> null
     }
 }

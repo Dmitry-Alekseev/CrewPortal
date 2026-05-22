@@ -22,8 +22,8 @@ private val DarkColors = darkColorScheme(
 )
 
 @Composable
-fun CrewPortalTheme(content: @Composable () -> Unit) {
-    val colors = if (isSystemInDarkTheme()) DarkColors else LightColors
+fun CrewPortalTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
+    val colors = if (darkTheme ?: isSystemInDarkTheme()) DarkColors else LightColors
     MaterialTheme(
         colorScheme = colors,
         content = content

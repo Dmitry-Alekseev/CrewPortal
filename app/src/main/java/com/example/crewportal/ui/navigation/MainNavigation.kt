@@ -118,7 +118,8 @@ fun MainNavigation(
             composable(Screen.Schedule.route) {
                 ScheduleScreen(
                     flightRepository = flightRepository,
-                    onFlightClick = { navController.navigate("details/$it") }
+                    preferencesRepository = preferencesRepository,
+                    onDutyClick = { navController.navigate("details/$it") }
                 )
             }
 

@@ -27,7 +27,9 @@ object AirportDatabase {
         AirportInfo("CDG", "LFPG", "Charles de Gaulle", "Paris", "France", 2),
         AirportInfo("NRT", "RJAA", "Narita Intl", "Tokyo", "Japan", 9),
         AirportInfo("KUL", "WMKK", "Kuala Lumpur Intl", "Kuala Lumpur", "Malaysia", 8),
-        AirportInfo("DEL", "VIDP", "Indira Gandhi Intl", "Delhi", "India", 5)
+        AirportInfo("DEL", "VIDP", "Indira Gandhi Intl", "Delhi", "India", 5),
+        AirportInfo("CNX", "VTCC", "Chiang Mai Intl", "Chiang Mai", "Thailand", 7),
+        AirportInfo("SYD", "YSSY", "Sydney Kingsford Smith", "Sydney", "Australia", 10)
     ).associateBy { it.iata }
 
     fun byIata(iata: String): AirportInfo? = airports[iata.uppercase(Locale.ENGLISH)]

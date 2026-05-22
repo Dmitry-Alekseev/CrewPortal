@@ -24,7 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +46,7 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
     ) {
         Text("Profile", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
 
-        Card(colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Image(
                     painter = painterResource(R.drawable.profile_photo),
@@ -66,27 +65,34 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
 
         InfoCard("Personal Card") {
             ProfileRow("Date of Birth", "14 July 1998")
+            ProfileRow("Medical Certificate", "Class 1")
             ProfileRow("Total Flight Time", formatTotalMinutes(totalMinutes))
             ProfileRow("PIC Time", formatTotalMinutes(picMinutes))
         }
 
+        InfoCard("Pilot Licenses") {
+            QualificationRow("PPL", "Issued: 18 March 2023", "Valid / record on file", "VALID")
+            QualificationRow("CPL", "Issued: 27 October 2023", "Valid / record on file", "VALID")
+            QualificationRow("ATPL", "Issued: 14 September 2024", "Valid / record on file", "VALID")
+        }
+
         InfoCard("Type Ratings") {
-            Text("• Airbus A320 Family")
-            Text("• Airbus A330")
-            Text("• Airbus A350")
+            QualificationRow("Airbus A320 Family", "Issued: 16 May 2022", "Recurrent training active", "VALID")
+            QualificationRow("Airbus A330", "Issued: 11 February 2025", "Recurrent training active", "VALID")
+            QualificationRow("Airbus A350", "Issued: 28 September 2025", "Recurrent training active", "VALID")
         }
 
         InfoCard("Documents & Qualifications") {
-            QualificationRow("Medical / VLEK", "Last: February 2026", "Next: August 2026", "VALID")
-            QualificationRow("ASP Land", "Completed: 12 February 2026", "Next: 12 August 2026", "VALID")
-            QualificationRow("ASP Water", "Completed: 14 February 2026", "Next: 14 August 2026", "VALID")
-            QualificationRow("Simulator Session", "Completed: 18 February 2026", "Next: 18 August 2026", "VALID")
+            QualificationRow("Class 1 Medical Certificate", "Completed: 10 February 2026", "Next: 10 August 2026", "VALID")
+            QualificationRow("Safety & Emergency Procedures — Land", "Completed: 06 April 2026", "Next: 06 October 2026", "VALID")
+            QualificationRow("Safety & Emergency Procedures — Water", "Completed: 08 April 2026", "Next: 08 October 2026", "VALID")
+            QualificationRow("Simulator Recurrent Session", "Completed: 18 January 2026", "Next: 18 July 2026", "VALID")
         }
 
         InfoCard("Expiry Dashboard") {
             ProfileRow("Medical certificate", "Due Aug 2026")
-            ProfileRow("Simulator check", "Due Aug 2026")
-            ProfileRow("Safety procedures", "Due Aug 2026")
+            ProfileRow("Simulator recurrent", "Due Jul 2026")
+            ProfileRow("Emergency procedures", "Due Oct 2026")
             Spacer(Modifier.height(4.dp))
             Text("All qualifications are valid. Reminder threshold: 60 days before expiry.", color = TextMuted)
         }
@@ -95,7 +101,7 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
 
 @Composable
 private fun InfoCard(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Card(colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             content()

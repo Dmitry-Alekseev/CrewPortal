@@ -19,6 +19,7 @@ class PreferencesRepository(private val context: Context) {
         val TOTAL_MINUTES = intPreferencesKey("total_minutes")
         val PIC_MINUTES = intPreferencesKey("pic_minutes")
         val INSTALLED_APP_VERSION = stringPreferencesKey("installed_app_version")
+        val DARK_THEME = booleanPreferencesKey("dark_theme")
     }
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { it[Keys.IS_LOGGED_IN] ?: false }
@@ -27,6 +28,7 @@ class PreferencesRepository(private val context: Context) {
     val totalMinutes: Flow<Int> = context.dataStore.data.map { it[Keys.TOTAL_MINUTES] ?: 240000 }
     val picMinutes: Flow<Int> = context.dataStore.data.map { it[Keys.PIC_MINUTES] ?: 90000 }
     val installedAppVersion: Flow<String> = context.dataStore.data.map { it[Keys.INSTALLED_APP_VERSION] ?: "" }
+    val darkTheme: Flow<Boolean> = context.dataStore.data.map { it[Keys.DARK_THEME] ?: false }
 
     suspend fun setLoginState(loggedIn: Boolean, remember: Boolean, login: String) {
         context.dataStore.edit { preferences ->
@@ -43,6 +45,12 @@ class PreferencesRepository(private val context: Context) {
     suspend fun setInstalledAppVersion(versionName: String) {
         context.dataStore.edit { preferences ->
             preferences[Keys.INSTALLED_APP_VERSION] = versionName
+        }
+    }
+
+    suspend fun setDarkTheme(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.DARK_THEME] = enabled
         }
     }
 
