@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -71,6 +72,8 @@ fun ScheduleScreen(
 ) {
     val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
     val darkTheme by preferencesRepository.darkTheme.collectAsState(initial = false)
+    val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
+    val ru = language == "ru"
     var showUtc by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -83,15 +86,15 @@ fun ScheduleScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("Roster", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Company roster synchronized", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Ростер" else "Roster", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(if (ru) "Синхронизировано с порталом компании" else "Company roster synchronized", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                Text("Dark theme", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                Text(if (ru) "Тёмная тема" else "Dark theme", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                 Switch(
                     checked = darkTheme,
                     onCheckedChange = { value -> scope.launch { preferencesRepository.setDarkTheme(value) } }
@@ -103,7 +106,7 @@ fun ScheduleScreen(
                 horizontalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 Text(
-                    if (showUtc) "Local time with UTC reference" else "Local time",
+                    if (ru) { if (showUtc) "Местное время + UTC" else "Местное время" } else { if (showUtc) "Local time with UTC reference" else "Local time" },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
@@ -114,12 +117,12 @@ fun ScheduleScreen(
                 onClick = { scope.launch { flightRepository.refreshCompletedFlights() } },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Refresh roster")
+                Text(if (ru) "Обновить ростер" else "Refresh roster")
             }
             Spacer(Modifier.height(8.dp))
-            MonthlyProgressCard(flights = flights)
+            MonthlyProgressCard(flights = flights, ru = ru)
             Spacer(Modifier.height(8.dp))
-            TodayDutyCard(flights = flights, onDutyClick = onDutyClick)
+            TodayDutyCard(flights = flights, onDutyClick = onDutyClick, ru = ru)
         }
 
         items(flights, key = { it.id }) { duty ->
@@ -128,7 +131,8 @@ fun ScheduleScreen(
                     flight = duty,
                     onClick = { onDutyClick(duty.id) },
                     flightRepository = flightRepository,
-                    showUtc = showUtc
+                    showUtc = showUtc,
+                    ru = ru
                 )
             } else {
                 DutyCard(
@@ -141,7 +145,7 @@ fun ScheduleScreen(
 }
 
 @Composable
-private fun MonthlyProgressCard(flights: List<FlightEntity>) {
+private fun MonthlyProgressCard(flights: List<FlightEntity>, ru: Boolean) {
     val monthPrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"))
     val monthLabel = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val monthFlights = flights.filter { it.dutyType == "FLIGHT" && it.departureDateTime.startsWith(monthPrefix) }
@@ -152,16 +156,16 @@ private fun MonthlyProgressCard(flights: List<FlightEntity>) {
 
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Monthly Flight Time", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("$monthLabel • Planned ${formatMinutes(planned)} • Completed ${formatMinutes(completed)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Месячный налёт" else "Monthly Flight Time", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(if (ru) "$monthLabel • План ${formatMinutes(planned)} • Выполнено ${formatMinutes(completed)}" else "$monthLabel • Planned ${formatMinutes(planned)} • Completed ${formatMinutes(completed)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
             LinearProgressIndicator(progress = (planned.toFloat() / target.toFloat()).coerceIn(0f, 1f), modifier = Modifier.fillMaxWidth())
-            Text("Target ${formatMinutes(target)} • Limit ${formatMinutes(limit)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Норма ${formatMinutes(target)} • Лимит ${formatMinutes(limit)}" else "Target ${formatMinutes(target)} • Limit ${formatMinutes(limit)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable
-private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> Unit) {
+private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> Unit, ru: Boolean) {
     val now = LocalDateTime.now()
     val today = now.toLocalDate()
     val current = flights.firstOrNull { duty ->
@@ -171,10 +175,10 @@ private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> 
 
     Card(colors = CardDefaults.cardColors(containerColor = ThaiPurple), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Today’s Duty", color = Color.White, fontWeight = FontWeight.Bold)
+            Text(if (ru) "Сегодняшняя duty" else "Today’s Duty", color = Color.White, fontWeight = FontWeight.Bold)
             if (current == null) {
-                Text("No duty today", color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text("Next duty will appear after 00:00 on its roster date.", color = Color.White.copy(alpha = 0.82f))
+                Text(if (ru) "Сегодня duty нет" else "No duty today", color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(if (ru) "Следующая duty появится после 00:00 в дату ростера." else "Next duty will appear after 00:00 on its roster date.", color = Color.White.copy(alpha = 0.82f))
             } else if (current.dutyType == "FLIGHT") {
                 Column(Modifier.clickable { onDutyClick(current.id) }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("${current.flightNumber} / ${current.departureIata}-${current.arrivalIata}", color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -194,7 +198,7 @@ private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> 
 }
 
 @Composable
-fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: FlightRepository, showUtc: Boolean) {
+fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: FlightRepository, showUtc: Boolean, ru: Boolean) {
     val scope = rememberCoroutineScope()
     Card(
         modifier = Modifier
@@ -264,13 +268,13 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
             }
             Spacer(Modifier.height(8.dp))
             Text(airportAssignmentLine(flight), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Duty time: ${formatMinutes(dutyMinutes(flight.departureDateTime, flight.arrivalDateTime, flight.durationMinutes))}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text((if (ru) "Время duty: " else "Duty time: ") + formatMinutes(dutyMinutes(flight.departureDateTime, flight.arrivalDateTime, flight.durationMinutes)), color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (flight.isRegistered) {
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text("Registered") }
+                Button(onClick = {}, enabled = true, colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen), modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Зарегистрирован" else "Registered") }
             } else if (canRegister(flight.departureDateTime, flight.isCompleted)) {
                 Spacer(Modifier.height(12.dp))
-                OutlinedButton(onClick = { scope.launch { flightRepository.registerFlight(flight.id) } }, modifier = Modifier.fillMaxWidth()) { Text("Register") }
+                OutlinedButton(onClick = { scope.launch { flightRepository.registerFlight(flight.id) } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Регистрация" else "Register") }
             }
         }
     }
@@ -288,14 +292,9 @@ private fun AirlineBadge(airline: String) {
         Image(
             painter = painterResource(R.drawable.thai_logo),
             contentDescription = "Thai Airways logo",
-            modifier = Modifier.size(width = 34.dp, height = 24.dp)
+            modifier = Modifier.size(width = 82.dp, height = 28.dp)
         )
-        Text(
-            text = " $airline",
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
+
     }
 }
 

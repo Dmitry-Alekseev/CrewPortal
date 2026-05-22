@@ -1,5 +1,11 @@
 package com.example.crewportal.ui.schedule
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -13,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -42,6 +49,7 @@ import com.example.crewportal.data.crew.CrewPool
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.ui.theme.SuccessGreen
+import com.example.crewportal.ui.theme.ThaiPurple
 import com.example.crewportal.ui.theme.TextMuted
 import com.example.crewportal.util.alternateFor
 import com.example.crewportal.util.briefingDistanceNm
@@ -177,7 +185,7 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                 }
 
                 if (item.isRegistered) {
-                    Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text("Registered") }
+                    Button(onClick = {}, enabled = true, colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen), modifier = Modifier.fillMaxWidth()) { Text("Registered") }
                     Text("Registration completed successfully", color = SuccessGreen)
                 } else if (canRegister(item.departureDateTime, item.isCompleted)) {
                     OutlinedButton(onClick = { scope.launch { flightRepository.registerFlight(item.id) } }, modifier = Modifier.fillMaxWidth()) { Text("Register") }
@@ -234,14 +242,16 @@ private fun RouteMapCard(flight: FlightEntity) {
 
                 val departureMarker = Marker(mapView).apply {
                     position = departureGeo
-                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                    icon = letterMarkerDrawable(mapView.context, "A")
                     title = "A • ${flight.departureIata}"
                     snippet = flight.departureCity
                 }
 
                 val arrivalMarker = Marker(mapView).apply {
                     position = arrivalGeo
-                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                    icon = letterMarkerDrawable(mapView.context, "B")
                     title = "B • ${flight.arrivalIata}"
                     snippet = flight.arrivalCity
                 }
@@ -278,13 +288,41 @@ private fun RouteMapCard(flight: FlightEntity) {
         }
 
         Text(
-            text = "OpenStreetMap route display • A departure / B arrival",
+            text = "A = departure • B = arrival",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall
         )
     }
 }
 
+
+
+private fun letterMarkerDrawable(context: Context, letter: String): BitmapDrawable {
+    val size = 84
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.rgb(91, 0, 130)
+        style = Paint.Style.FILL
+    }
+    val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 5f
+    }
+    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        textSize = 42f
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        textAlign = Paint.Align.CENTER
+    }
+    val radius = size / 2f - 6f
+    canvas.drawCircle(size / 2f, size / 2f, radius, fill)
+    canvas.drawCircle(size / 2f, size / 2f, radius, stroke)
+    val y = size / 2f - (textPaint.descent() + textPaint.ascent()) / 2f
+    canvas.drawText(letter, size / 2f, y, textPaint)
+    return BitmapDrawable(context.resources, bitmap)
+}
 
 private fun displayDaySafe(dateTime: String): String = com.example.crewportal.util.displayDay(dateTime)
 

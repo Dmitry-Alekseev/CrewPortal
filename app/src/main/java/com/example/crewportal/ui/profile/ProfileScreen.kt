@@ -78,7 +78,7 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
             QualificationRow("MEP(L)", "Issued: 10 December 2023", "Multi-engine piston land rating", "VALID")
             QualificationRow("MCC", "Completed: 18 January 2024", "Multi-Crew Cooperation course", "VALID")
             QualificationRow("UPRT", "Completed: 09 February 2024", "Upset Prevention and Recovery Training", "VALID")
-            QualificationRow("ICAO English", "Level 6: 2024", "Language proficiency record", "VALID")
+            QualificationRow("ICAO English", "Level 5: March 2026", "Language proficiency record", "VALID")
             QualificationRow("Radio Telephony", "Issued: 04 April 2023", "Aeronautical radio operator privilege", "VALID")
         }
 
