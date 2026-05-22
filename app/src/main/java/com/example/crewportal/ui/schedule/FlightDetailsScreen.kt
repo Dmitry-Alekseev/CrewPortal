@@ -1,5 +1,8 @@
 package com.example.crewportal.ui.schedule
 
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -37,6 +40,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.airport.AirportInfo
 import com.example.crewportal.data.crew.CrewPool
@@ -64,224 +68,67 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FlightDetailsScreen(
-    flightId: String,
-    flightRepository: FlightRepository,
-    onBack: () -> Unit
-) {
+fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, onBack: () -> Unit) {
     val flight by flightRepository.observeFlight(flightId).collectAsState(initial = null)
     val scope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        flightRepository.refreshCompletedFlights()
-    }
+    LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights() }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Flight Details") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                }
-            )
+            TopAppBar(title = { Text("Flight Details") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } })
         }
     ) { padding ->
         val item = flight
-
         if (item == null) {
-            Text(
-                text = "Flight not found",
-                modifier = Modifier
-                    .padding(padding)
-                    .padding(24.dp)
-            )
+            Text("Flight not found", modifier = Modifier.padding(padding).padding(24.dp))
         } else {
             val longHaul = item.durationMinutes >= 360
             val crew = CrewPool.forFlight(item.id, longHaul)
             val fuel = estimatedFuel(item.durationMinutes, item.aircraftLabel)
-
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text(
-                    text = item.flightNumber,
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = "${item.departureCity} → ${item.arrivalCity}",
-                    color = TextMuted
-                )
+                Text(item.flightNumber, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                Text("${item.departureCity} → ${item.arrivalCity}", color = TextMuted)
 
                 RouteMapCard(item)
                 StatusTimelineCard(item)
 
                 InfoCard("Flight Information") {
-                    DetailRow(
-                        label = "Departure",
-                        main = "${item.departureIata} / ${item.departureAirport}",
-                        sub = "${displayDate(item.departureDateTime)}, ${displayTime(item.departureDateTime)} • ${AirportDatabase.utcText(item.departureDateTime, item.departureIata)}"
-                    )
-
-                    DetailRow(
-                        label = "Arrival",
-                        main = "${item.arrivalIata} / ${item.arrivalAirport}",
-                        sub = "${displayDate(item.arrivalDateTime)}, ${displayTime(item.arrivalDateTime)} • ${AirportDatabase.utcText(item.arrivalDateTime, item.arrivalIata)}"
-                    )
-
-                    DetailRow(
-                        label = "Aircraft",
-                        main = item.aircraftFullName,
-                        sub = item.aircraftLabel
-                    )
-
-                    DetailRow(
-                        label = "Registration",
-                        main = if (item.registration == "TBA") "Assigned 24h prior" else item.registration,
-                        sub = "Released with crew registration window"
-                    )
-
-                    DetailRow(
-                        label = "Block Time",
-                        main = formatMinutes(item.durationMinutes),
-                        sub = "Local/UTC toggle data available"
-                    )
-
-                    DetailRow(
-                        label = "Status",
-                        main = if (item.isCompleted) {
-                            "Completed"
-                        } else if (item.isRegistered) {
-                            "Registered"
-                        } else {
-                            "Scheduled"
-                        },
-                        sub = "Company portal synchronized"
-                    )
+                    DetailRow("Departure", "${item.departureIata} / ${item.departureAirport}", "${displayDate(item.departureDateTime)}, ${displayTime(item.departureDateTime)} • ${AirportDatabase.utcText(item.departureDateTime, item.departureIata)}")
+                    DetailRow("Arrival", "${item.arrivalIata} / ${item.arrivalAirport}", "${displayDate(item.arrivalDateTime)}, ${displayTime(item.arrivalDateTime)} • ${AirportDatabase.utcText(item.arrivalDateTime, item.arrivalIata)}")
+                    DetailRow("Aircraft", item.aircraftFullName, item.aircraftLabel)
+                    DetailRow("Registration", if (item.registration == "TBA") "Assigned 24h prior" else item.registration, "Released with crew registration window")
+                    DetailRow("Block Time", formatMinutes(item.durationMinutes), "Local/UTC toggle data available")
+                    DetailRow("Status", if (item.isCompleted) "Completed" else if (item.isRegistered) "Registered" else "Scheduled", "Company portal synchronized")
                 }
 
                 InfoCard("Airport Assignment") {
-                    DetailRow(
-                        label = "Gate",
-                        main = if (item.gate == "Pending") "Pending" else item.gate,
-                        sub = "Assigned about 3 hours before departure"
-                    )
-
-                    DetailRow(
-                        label = "Stand",
-                        main = if (item.stand == "Pending") "Pending" else item.stand,
-                        sub = "Used when no gate is assigned"
-                    )
-
-                    DetailRow(
-                        label = "Terminal",
-                        main = if (item.terminal == "Pending") "Pending" else item.terminal,
-                        sub = "Airport operations synchronized"
-                    )
-
-                    DetailRow(
-                        label = "Updated",
-                        main = if (item.gate != "Pending" || item.stand != "Pending") "Available" else "Pending",
-                        sub = "Company portal / airport data sync"
-                    )
+                    DetailRow("Gate", if (item.gate == "Pending") "Pending" else item.gate, "Assigned about 3 hours before departure")
+                    DetailRow("Stand", if (item.stand == "Pending") "Pending" else item.stand, "Used when no gate is assigned")
+                    DetailRow("Terminal", if (item.terminal == "Pending") "Pending" else item.terminal, "Airport operations synchronized")
+                    DetailRow("Updated", if (item.gate != "Pending" || item.stand != "Pending") "Available" else "Pending", "Company portal / airport data sync")
                 }
 
                 InfoCard("Airport Database") {
-                    AirportDatabase.byIata(item.departureIata)?.let { airport: AirportInfo ->
-                        DetailRow(
-                            label = "Departure Airport",
-                            main = "${airport.iata} / ${airport.icao}",
-                            sub = "${airport.city}, ${airport.country} • ${AirportDatabase.localOffsetText(airport.iata)}"
-                        )
-                    }
-
-                    AirportDatabase.byIata(item.arrivalIata)?.let { airport: AirportInfo ->
-                        DetailRow(
-                            label = "Arrival Airport",
-                            main = "${airport.iata} / ${airport.icao}",
-                            sub = "${airport.city}, ${airport.country} • ${AirportDatabase.localOffsetText(airport.iata)}"
-                        )
-                    }
+                    AirportDatabase.byIata(item.departureIata)?.let { airport: AirportInfo -> DetailRow("Departure Airport", "${airport.iata} / ${airport.icao}", "${airport.city}, ${airport.country} • ${AirportDatabase.localOffsetText(airport.iata)}") }
+                    AirportDatabase.byIata(item.arrivalIata)?.let { airport: AirportInfo -> DetailRow("Arrival Airport", "${airport.iata} / ${airport.icao}", "${airport.city}, ${airport.country} • ${AirportDatabase.localOffsetText(airport.iata)}") }
                 }
 
                 InfoCard("Duty Day") {
-                    DetailRow(
-                        label = "Report Time",
-                        main = reportDateTime(
-                            item.departureDateTime,
-                            item.durationMinutes
-                        ).format(DateTimeFormatter.ofPattern("HH:mm")),
-                        sub = "${if (longHaul) "International" else "Domestic"} report policy"
-                    )
-
-                    DetailRow(
-                        label = "Duty End",
-                        main = dutyEndDateTime(
-                            item.arrivalDateTime
-                        ).format(DateTimeFormatter.ofPattern("HH:mm")),
-                        sub = "30 minutes after arrival"
-                    )
-
-                    DetailRow(
-                        label = "Flight Duty Period",
-                        main = formatMinutes(
-                            dutyMinutes(
-                                item.departureDateTime,
-                                item.arrivalDateTime,
-                                item.durationMinutes
-                            )
-                        ),
-                        sub = "Calculated from report to duty end"
-                    )
-
-                    DetailRow(
-                        label = "Rest Status",
-                        main = "OK",
-                        sub = "Minimum rest requirement satisfied"
-                    )
+                    DetailRow("Report Time", reportDateTime(item.departureDateTime, item.durationMinutes).format(DateTimeFormatter.ofPattern("HH:mm")), "${if (longHaul) "International" else "Domestic"} report policy")
+                    DetailRow("Duty End", dutyEndDateTime(item.arrivalDateTime).format(DateTimeFormatter.ofPattern("HH:mm")), "30 minutes after arrival")
+                    DetailRow("Flight Duty Period", formatMinutes(dutyMinutes(item.departureDateTime, item.arrivalDateTime, item.durationMinutes)), "Calculated from report to duty end")
+                    DetailRow("Rest Status", "OK", "Minimum rest requirement satisfied")
                 }
 
                 InfoCard("Flight Briefing") {
-                    DetailRow(
-                        label = "Route",
-                        main = "${item.departureIata} - ${item.arrivalIata}",
-                        sub = "Distance approx. ${briefingDistanceNm(item.durationMinutes)} NM"
-                    )
-
-                    DetailRow(
-                        label = "Alternate",
-                        main = alternateFor(item.arrivalIata),
-                        sub = "Dispatch alternate placeholder"
-                    )
-
-                    DetailRow(
-                        label = "Cruise Level",
-                        main = cruiseLevel(item.durationMinutes),
-                        sub = "Estimated planning level"
-                    )
-
-                    DetailRow(
-                        label = "ETOPS",
-                        main = etopsText(item.durationMinutes),
-                        sub = if (longHaul) "Extended-range briefing required" else "Standard operation"
-                    )
-
-                    DetailRow(
-                        label = "Remarks",
-                        main = if (longHaul) "Augmented crew operation" else "Standard crew operation",
-                        sub = "Operational briefing data"
-                    )
+                    DetailRow("Route", "${item.departureIata} - ${item.arrivalIata}", "Distance approx. ${briefingDistanceNm(item.durationMinutes)} NM")
+                    DetailRow("Alternate", alternateFor(item.arrivalIata), "Dispatch alternate placeholder")
+                    DetailRow("Cruise Level", cruiseLevel(item.durationMinutes), "Estimated planning level")
+                    DetailRow("ETOPS", etopsText(item.durationMinutes), if (longHaul) "Extended-range briefing required" else "Standard operation")
+                    DetailRow("Remarks", if (longHaul) "Augmented crew operation" else "Standard crew operation", "Operational briefing data")
                 }
 
                 InfoCard("Estimated Fuel Briefing") {
@@ -295,11 +142,7 @@ fun FlightDetailsScreen(
                 }
 
                 InfoCard("NOTAM Summary") {
-                    DetailRow(
-                        label = "Company Summary",
-                        main = notamSummary(item.arrivalIata),
-                        sub = "Official NOTAM briefing required before departure"
-                    )
+                    DetailRow("Company Summary", notamSummary(item.arrivalIata), "Official NOTAM briefing required before departure")
                 }
 
                 ChecklistCard(longHaul = longHaul)
@@ -307,15 +150,8 @@ fun FlightDetailsScreen(
                 InfoCard("Crew List") {
                     DetailRow("Captain", crew.captain, "Operating commander")
                     DetailRow("First Officer", crew.firstOfficer, "Operating pilot")
-
-                    if (crew.reliefCaptain != null) {
-                        DetailRow("Relief Captain", crew.reliefCaptain, "Augmented crew")
-                    }
-
-                    if (crew.reliefFirstOfficer != null) {
-                        DetailRow("Relief First Officer", crew.reliefFirstOfficer, "Augmented crew")
-                    }
-
+                    if (crew.reliefCaptain != null) DetailRow("Relief Captain", crew.reliefCaptain, "Augmented crew")
+                    if (crew.reliefFirstOfficer != null) DetailRow("Relief First Officer", crew.reliefFirstOfficer, "Augmented crew")
                     DetailRow("Cabin Manager", crew.cabinManager, "Thai cabin crew database")
                     DetailRow("Cabin Crew", "${crew.cabinCrewCount} crew members", "Assigned by cabin crew roster module")
                 }
@@ -330,34 +166,12 @@ fun FlightDetailsScreen(
                 }
 
                 if (item.isRegistered) {
-                    Button(
-                        onClick = {},
-                        enabled = false,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Registered")
-                    }
-
-                    Text(
-                        text = "Registration completed successfully",
-                        color = SuccessGreen
-                    )
+                    Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text("Registered") }
+                    Text("Registration completed successfully", color = SuccessGreen)
                 } else if (canRegister(item.departureDateTime, item.isCompleted)) {
-                    OutlinedButton(
-                        onClick = {
-                            scope.launch {
-                                flightRepository.registerFlight(item.id)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Register")
-                    }
+                    OutlinedButton(onClick = { scope.launch { flightRepository.registerFlight(item.id) } }, modifier = Modifier.fillMaxWidth()) { Text("Register") }
                 } else if (!item.isCompleted) {
-                    Text(
-                        text = "Registration and aircraft tail assignment open 24 hours before departure",
-                        color = TextMuted
-                    )
+                    Text("Registration and aircraft tail assignment open 24 hours before departure", color = TextMuted)
                 }
             }
         }
@@ -366,55 +180,58 @@ fun FlightDetailsScreen(
 
 @Composable
 private fun RouteMapCard(flight: FlightEntity) {
+    val departurePoint = routeMapPoint(flight.departureIata) ?: MapPoint(13.69f, 100.75f)
+    val arrivalPoint = routeMapPoint(flight.arrivalIata) ?: MapPoint(11.99f, 109.22f)
+    val html = remember(flight.departureIata, flight.arrivalIata) {
+        routeMapHtml(
+            departureIata = flight.departureIata,
+            arrivalIata = flight.arrivalIata,
+            departurePoint = departurePoint,
+            arrivalPoint = arrivalPoint
+        )
+    }
+
     InfoCard("Route Map") {
-        Canvas(
+        AndroidView(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(90.dp)
-        ) {
-            val y = size.height / 2
-            val start = Offset(40f, y)
-            val end = Offset(size.width - 40f, y)
-
-            drawLine(
-                color = ThaiPurple,
-                start = start,
-                end = end,
-                strokeWidth = 6f
-            )
-
-            drawCircle(
-                color = ThaiPurple,
-                radius = 12f,
-                center = start
-            )
-
-            drawCircle(
-                color = ThaiPurple,
-                radius = 12f,
-                center = end
-            )
-
-            drawCircle(
-                color = Color.White,
-                radius = 6f,
-                center = start
-            )
-
-            drawCircle(
-                color = Color.White,
-                radius = 6f,
-                center = end
-            )
-        }
+                .height(250.dp),
+            factory = { context ->
+                WebView(context).apply {
+                    webViewClient = WebViewClient()
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    settings.cacheMode = WebSettings.LOAD_DEFAULT
+                    settings.loadWithOverviewMode = true
+                    settings.useWideViewPort = true
+                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    loadDataWithBaseURL(
+                        "https://www.openstreetmap.org/",
+                        html,
+                        "text/html",
+                        "UTF-8",
+                        null
+                    )
+                }
+            },
+            update = { webView ->
+                webView.loadDataWithBaseURL(
+                    "https://www.openstreetmap.org/",
+                    html,
+                    "text/html",
+                    "UTF-8",
+                    null
+                )
+            }
+        )
 
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = flight.departureIata,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
+                fontWeight = FontWeight.Bold
             )
 
             Text(
@@ -424,12 +241,123 @@ private fun RouteMapCard(flight: FlightEntity) {
 
             Text(
                 text = flight.arrivalIata,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
+                fontWeight = FontWeight.Bold
             )
         }
     }
 }
+
+private fun routeMapHtml(
+    departureIata: String,
+    arrivalIata: String,
+    departurePoint: MapPoint,
+    arrivalPoint: MapPoint
+): String {
+    val centerLat = (departurePoint.latitude + arrivalPoint.latitude) / 2f
+    val centerLon = (departurePoint.longitude + arrivalPoint.longitude) / 2f
+
+    return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <style>
+                html, body, #map {
+                    height: 100%;
+                    width: 100%;
+                    margin: 0;
+                    padding: 0;
+                    background: #f7f3fb;
+                    font-family: Arial, sans-serif;
+                }
+                .airport-label {
+                    background: #4b0082;
+                    color: white;
+                    border-radius: 14px;
+                    padding: 4px 8px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+                }
+            </style>
+        </head>
+        <body>
+            <div id="map"></div>
+            <script>
+                const dep = [${departurePoint.latitude}, ${departurePoint.longitude}];
+                const arr = [${arrivalPoint.latitude}, ${arrivalPoint.longitude}];
+
+                const map = L.map('map', {
+                    zoomControl: false,
+                    attributionControl: true,
+                    dragging: true,
+                    scrollWheelZoom: false,
+                    doubleClickZoom: false,
+                    boxZoom: false,
+                    keyboard: false
+                }).setView([${centerLat}, ${centerLon}], 5);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 12,
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(map);
+
+                const route = L.polyline([dep, arr], {
+                    color: '#4b0082',
+                    weight: 4,
+                    opacity: 0.95
+                }).addTo(map);
+
+                const depIcon = L.divIcon({
+                    className: 'airport-label',
+                    html: '${departureIata}',
+                    iconSize: [52, 26],
+                    iconAnchor: [26, 13]
+                });
+
+                const arrIcon = L.divIcon({
+                    className: 'airport-label',
+                    html: '${arrivalIata}',
+                    iconSize: [52, 26],
+                    iconAnchor: [26, 13]
+                });
+
+                L.marker(dep, { icon: depIcon }).addTo(map);
+                L.marker(arr, { icon: arrIcon }).addTo(map);
+                map.fitBounds(route.getBounds(), { padding: [35, 35] });
+            </script>
+        </body>
+        </html>
+    """.trimIndent()
+}
+
+
+private data class MapPoint(
+    val latitude: Float,
+    val longitude: Float
+)
+
+private fun routeMapPoint(iata: String): MapPoint? {
+    return when (iata.uppercase()) {
+        "BKK" -> MapPoint(13.69f, 100.75f)
+        "HKT" -> MapPoint(8.11f, 98.31f)
+        "CXR" -> MapPoint(11.99f, 109.22f)
+        "SIN" -> MapPoint(1.36f, 103.99f)
+        "HKG" -> MapPoint(22.31f, 113.92f)
+        "IST" -> MapPoint(41.28f, 28.75f)
+        "FRA" -> MapPoint(50.04f, 8.56f)
+        "MEL" -> MapPoint(-37.67f, 144.84f)
+        "CDG" -> MapPoint(49.01f, 2.55f)
+        "NRT" -> MapPoint(35.77f, 140.39f)
+        "KUL" -> MapPoint(2.75f, 101.71f)
+        "DEL" -> MapPoint(28.56f, 77.10f)
+        else -> null
+    }
+}
+
 
 @Composable
 private fun StatusTimelineCard(flight: FlightEntity) {
@@ -443,26 +371,11 @@ private fun StatusTimelineCard(flight: FlightEntity) {
         "Arrived" to hasArrived(flight.arrivalDateTime),
         "Logbook Updated" to flight.isFlightTimeAdded
     )
-
     InfoCard("Flight Status Timeline") {
-        stages.forEach { stage ->
-            val label = stage.first
-            val active = stage.second
-
-            Row(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = if (active) "●" else "○",
-                    color = if (active) SuccessGreen else TextMuted,
-                    modifier = Modifier.padding(end = 10.dp)
-                )
-
-                Text(
-                    text = label,
-                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
-                    color = if (active) SuccessGreen else TextMuted
-                )
+        stages.forEach { (label, active) ->
+            Row(Modifier.fillMaxWidth()) {
+                Text(if (active) "●" else "○", color = if (active) SuccessGreen else TextMuted, modifier = Modifier.padding(end = 10.dp))
+                Text(label, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal, color = if (active) SuccessGreen else TextMuted)
             }
         }
     }
@@ -470,113 +383,37 @@ private fun StatusTimelineCard(flight: FlightEntity) {
 
 @Composable
 private fun ChecklistCard(longHaul: Boolean) {
-    val base = listOf(
-        "Check roster",
-        "Review aircraft assignment",
-        "Check METAR / TAF",
-        "Check NOTAM",
-        "Review briefing package",
-        "Confirm crew report time",
-        "Complete registration"
-    )
-
-    val extra = if (longHaul) {
-        listOf(
-            "Review ETOPS briefing",
-            "Check alternates",
-            "Review augmented crew rest plan"
-        )
-    } else {
-        emptyList()
-    }
-
+    val base = listOf("Check roster", "Review aircraft assignment", "Check METAR / TAF", "Check NOTAM", "Review briefing package", "Confirm crew report time", "Complete registration")
+    val extra = if (longHaul) listOf("Review ETOPS briefing", "Check alternates", "Review augmented crew rest plan") else emptyList()
     val items = base + extra
-
-    val checked = remember {
-        mutableStateListOf<Boolean>().apply {
-            repeat(items.size) {
-                add(false)
-            }
-        }
-    }
-
+    val checked = remember { mutableStateListOf<Boolean>().apply { repeat(items.size) { add(false) } } }
     InfoCard("Pre-flight Checklist") {
         items.forEachIndexed { index, label ->
-            Row(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Checkbox(
-                    checked = checked[index],
-                    onCheckedChange = { value ->
-                        checked[index] = value
-                    }
-                )
-
-                Text(
-                    text = label,
-                    modifier = Modifier.padding(top = 12.dp)
-                )
+            Row(Modifier.fillMaxWidth()) {
+                Checkbox(checked = checked[index], onCheckedChange = { checked[index] = it })
+                Text(label, modifier = Modifier.padding(top = 12.dp))
             }
         }
     }
 }
 
 @Composable
-private fun InfoCard(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
+private fun InfoCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             content()
         }
     }
 }
 
 @Composable
-private fun DetailRow(
-    label: String,
-    main: String,
-    sub: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = label.uppercase(),
-                color = TextMuted,
-                style = MaterialTheme.typography.labelMedium
-            )
-
-            Text(
-                text = main,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            if (sub.isNotBlank()) {
-                Text(
-                    text = sub,
-                    color = TextMuted
-                )
-            }
+private fun DetailRow(label: String, main: String, sub: String) {
+    Row(Modifier.fillMaxWidth()) {
+        Column(Modifier.weight(1f)) {
+            Text(label.uppercase(), color = TextMuted, style = MaterialTheme.typography.labelMedium)
+            Text(main, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            if (sub.isNotBlank()) Text(sub, color = TextMuted)
         }
     }
 }
