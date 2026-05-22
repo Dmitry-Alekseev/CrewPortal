@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.crewportal"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.6.3"
+        versionCode = 11
+        versionName = "1.6.5"
     }
 
     buildTypes {
@@ -70,4 +70,6 @@ dependencies {
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.fragment:fragment-ktx:1.8.2")
     implementation("androidx.core:core:1.13.1")
+
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
 }

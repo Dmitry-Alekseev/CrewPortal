@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.repository.FlightRepository
@@ -68,13 +69,17 @@ fun ScheduleScreen(
     ) {
         item {
             Text("Schedule", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
                 Text(
-                    if (showUtc) "UTC times • Company roster synchronized" else "Local times • Company roster synchronized",
+                    if (showUtc) "Local time with UTC reference • Company roster synchronized" else "Local times • Company roster synchronized",
                     color = TextMuted,
-                    modifier = Modifier.weight(1f).padding(end = 18.dp)
+                    modifier = Modifier.weight(1f)
                 )
-                Text("UTC", color = TextMuted, modifier = Modifier.padding(end = 14.dp))
+                Text("UTC", color = TextMuted)
                 Switch(checked = showUtc, onCheckedChange = { showUtc = it })
             }
             Spacer(Modifier.height(8.dp))
@@ -160,25 +165,30 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
             }
             Spacer(Modifier.height(18.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
+                Column(Modifier.weight(0.9f)) {
                     Text(flight.departureIata, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
                     Text(flight.departureCity, style = MaterialTheme.typography.titleMedium)
                     Text(flight.departureAirport, color = TextMuted)
                 }
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1.35f)) {
                     Text(
-                        text = if (showUtc) AirportDatabase.utcText(flight.departureDateTime, flight.departureIata) else displayTime(flight.departureDateTime),
-                        style = if (showUtc) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
+                        text = scheduleTimeLine(flight, showUtc),
+                        style = if (showUtc) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                        fontSize = if (showUtc) 19.sp else MaterialTheme.typography.headlineMedium.fontSize
                     )
                     Text(
-                        text = if (showUtc) "Local ${displayDate(flight.departureDateTime)} • ${displayDay(flight.departureDateTime)}" else displayDate(flight.departureDateTime),
-                        color = TextMuted
+                        text = "${displayDate(flight.departureDateTime)} • ${displayDay(flight.departureDateTime)}",
+                        color = TextMuted,
+                        maxLines = 1,
+                        softWrap = false
                     )
                     Text("✈", color = ThaiPurple, style = MaterialTheme.typography.headlineMedium)
                     Text(formatMinutes(flight.durationMinutes), color = TextMuted)
                 }
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+                Column(Modifier.weight(0.9f), horizontalAlignment = Alignment.End) {
                     Text(flight.arrivalIata, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
                     Text(flight.arrivalCity, style = MaterialTheme.typography.titleMedium)
                     Text(flight.arrivalAirport, color = TextMuted)
@@ -230,6 +240,15 @@ fun DutyCard(flight: FlightEntity) {
     }
 }
 
+
+private fun scheduleTimeLine(flight: FlightEntity, showUtc: Boolean): String {
+    val local = displayTime(flight.departureDateTime)
+    return if (showUtc) {
+        "$local • ${AirportDatabase.utcClockText(flight.departureDateTime, flight.departureIata)} UTC"
+    } else {
+        local
+    }
+}
 
 private fun airportAssignmentLine(flight: FlightEntity): String {
     return when {

@@ -39,6 +39,13 @@ object AirportDatabase {
         return utc.format(DateTimeFormatter.ofPattern("dd MMM HH:mm 'UTC'", Locale.ENGLISH)).uppercase(Locale.ENGLISH)
     }
 
+    fun utcClockText(localDateTime: String, iata: String): String {
+        val airport = byIata(iata) ?: return "UTC"
+        val local = LocalDateTime.parse(localDateTime)
+        val utc = local.atOffset(ZoneOffset.ofHours(airport.utcOffsetHours)).withOffsetSameInstant(ZoneOffset.UTC)
+        return utc.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH))
+    }
+
     fun localOffsetText(iata: String): String {
         val offset = byIata(iata)?.utcOffsetHours ?: return "UTC offset unavailable"
         return if (offset >= 0) "UTC+$offset" else "UTC$offset"
