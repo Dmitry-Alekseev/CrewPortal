@@ -35,10 +35,10 @@ jobs:
       - name: Prepare named APK
         run: |
           mkdir -p release
-          cp app/build/outputs/apk/debug/*.apk release/CrewPortal-1.6.9.apk
+          cp app/build/outputs/apk/debug/*.apk release/CrewPortal-1.7.0.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CrewPortal-1.6.9-apk
-          path: release/CrewPortal-1.6.9.apk
+          name: CrewPortal-1.7.0-apk
+          path: release/CrewPortal-1.7.0.apk

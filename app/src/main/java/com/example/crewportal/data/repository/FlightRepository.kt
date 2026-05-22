@@ -56,7 +56,7 @@ class FlightRepository(
             val response = httpClient.newCall(request).execute()
             val body = response.body?.string().orEmpty()
             if (!response.isSuccessful || body.isBlank()) return false
-            loadScheduleFromJson(body, clearExisting = true)
+            loadScheduleFromJson(body, clearExisting = true, preserveExistingState = true)
             refreshCompletedFlights()
             true
         } catch (_: Exception) {
@@ -65,20 +65,35 @@ class FlightRepository(
     }
 
     private suspend fun loadScheduleFromJson(json: String, clearExisting: Boolean) {
+        loadScheduleFromJson(json, clearExisting, preserveExistingState = false)
+    }
+
+    private suspend fun loadScheduleFromJson(json: String, clearExisting: Boolean, preserveExistingState: Boolean) {
+        val existingById = if (preserveExistingState) flightDao.getAllOnce().associateBy { it.id } else emptyMap()
         if (clearExisting) flightDao.clearAll()
         val root = JSONObject(json)
         val array = root.getJSONArray("flights")
         val flights = buildList {
             for (i in 0 until array.length()) {
                 val item = array.getJSONObject(i)
+                val id = item.getString("id")
+                val previous = existingById[id]
+                val incomingRegistration = item.optString("registration", "TBA")
+                val incomingGate = item.optString("gate", "Pending")
+                val incomingStand = item.optString("stand", "Pending")
+                val incomingTerminal = item.optString("terminal", "Pending")
                 add(
                     FlightEntity(
-                        id = item.getString("id"),
+                        id = id,
                         airline = item.getString("airline"),
                         flightNumber = item.getString("flightNumber"),
                         aircraftLabel = item.getString("aircraftLabel"),
                         aircraftFullName = item.getString("aircraftFullName"),
-                        registration = item.optString("registration", "TBA"),
+                        registration = when {
+                            previous != null && previous.registration != "TBA" -> previous.registration
+                            incomingRegistration.isNotBlank() -> incomingRegistration
+                            else -> "TBA"
+                        },
                         status = item.getString("status"),
                         departureIata = item.getString("departureIata"),
                         departureIcao = item.getString("departureIcao"),
@@ -93,15 +108,27 @@ class FlightRepository(
                         durationMinutes = item.getInt("durationMinutes"),
                         dutyType = item.optString("dutyType", "FLIGHT"),
                         dutyNote = item.optString("dutyNote", ""),
-                        isRegistered = item.optBoolean("isRegistered", false),
-                        isCompleted = item.optBoolean("isCompleted", false),
-                        isFlightTimeAdded = item.optBoolean("isFlightTimeAdded", false),
-                        registrationNotified = item.optBoolean("registrationNotified", false),
-                        changeNotified = item.optBoolean("changeNotified", false),
-                        gate = item.optString("gate", "Pending"),
-                        stand = item.optString("stand", "Pending"),
-                        terminal = item.optString("terminal", "Pending"),
-                        airportAssignmentNotified = item.optBoolean("airportAssignmentNotified", false)
+                        isRegistered = previous?.isRegistered ?: item.optBoolean("isRegistered", false),
+                        isCompleted = previous?.isCompleted ?: item.optBoolean("isCompleted", false),
+                        isFlightTimeAdded = previous?.isFlightTimeAdded ?: item.optBoolean("isFlightTimeAdded", false),
+                        registrationNotified = previous?.registrationNotified ?: item.optBoolean("registrationNotified", false),
+                        changeNotified = item.optBoolean("changeNotified", previous?.changeNotified ?: false),
+                        gate = when {
+                            previous != null && previous.gate != "Pending" -> previous.gate
+                            incomingGate.isNotBlank() -> incomingGate
+                            else -> "Pending"
+                        },
+                        stand = when {
+                            previous != null && previous.stand != "Pending" -> previous.stand
+                            incomingStand.isNotBlank() -> incomingStand
+                            else -> "Pending"
+                        },
+                        terminal = when {
+                            previous != null && previous.terminal != "Pending" -> previous.terminal
+                            incomingTerminal.isNotBlank() -> incomingTerminal
+                            else -> "Pending"
+                        },
+                        airportAssignmentNotified = previous?.airportAssignmentNotified ?: item.optBoolean("airportAssignmentNotified", false)
                     )
                 )
             }

@@ -34,6 +34,8 @@ object AirportDatabase {
 
     fun byIata(iata: String): AirportInfo? = airports[iata.uppercase(Locale.ENGLISH)]
 
+    fun all(): List<AirportInfo> = airports.values.sortedBy { it.iata }
+
     fun utcText(localDateTime: String, iata: String): String {
         val airport = byIata(iata) ?: return "UTC time unavailable"
         val local = LocalDateTime.parse(localDateTime)

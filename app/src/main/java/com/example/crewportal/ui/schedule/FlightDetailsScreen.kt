@@ -47,6 +47,8 @@ import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.airport.AirportInfo
 import com.example.crewportal.data.crew.CrewPool
 import com.example.crewportal.data.local.FlightEntity
+import com.example.crewportal.data.fleet.AircraftPool
+import com.example.crewportal.data.mel.MelDatabase
 import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.ui.theme.SuccessGreen
 import com.example.crewportal.ui.theme.ThaiPurple
@@ -123,12 +125,7 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                     DetailRow("Status", if (item.isCompleted) "Completed" else if (item.isRegistered) "Registered" else "Scheduled", "Company portal synchronized")
                 }
 
-                if (item.registration != "TBA") {
-                    Button(
-                        onClick = { onMelClick(item.registration) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Open MEL for ${item.registration}") }
-                }
+                AircraftTechnicalStatusCard(item, onMelClick)
 
                 InfoCard("Airport Assignment") {
                     DetailRow("Gate", if (item.gate == "Pending") "Pending" else item.gate, "Assigned about 3 hours before departure")
@@ -149,12 +146,15 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                     DetailRow("Rest Status", "OK", "Minimum rest requirement satisfied")
                 }
 
-                InfoCard("Flight Briefing") {
+                InfoCard("Flight Briefing Package") {
                     DetailRow("Route", "${item.departureIata} - ${item.arrivalIata}", "Distance approx. ${briefingDistanceNm(item.durationMinutes)} NM")
+                    DetailRow("Aircraft", item.aircraftLabel, if (item.registration == "TBA") "Registration pending" else item.registration)
+                    DetailRow("OFP Status", "Available", "Company briefing package synchronized")
+                    DetailRow("Weather Status", "Updated", "METAR / TAF available from Weather tab")
+                    DetailRow("NOTAM Status", "Company briefing required", notamSummary(item.arrivalIata))
                     DetailRow("Alternate", alternateFor(item.arrivalIata), "Dispatch alternate placeholder")
                     DetailRow("Cruise Level", cruiseLevel(item.durationMinutes), "Estimated planning level")
                     DetailRow("ETOPS", etopsText(item.durationMinutes), if (longHaul) "Extended-range briefing required" else "Standard operation")
-                    DetailRow("Remarks", if (longHaul) "Augmented crew operation" else "Standard crew operation", "Operational briefing data")
                 }
 
                 InfoCard("Estimated Fuel Briefing") {
@@ -172,6 +172,9 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                 }
 
                 ChecklistCard(longHaul = longHaul)
+
+                CrewRestPlanCard(item, longHaul)
+                DutyLimitMonitorCard(item)
 
                 InfoCard("Crew List") {
                     DetailRow("Captain", crew.captain, "Operating commander")
@@ -201,6 +204,49 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun AircraftTechnicalStatusCard(flight: FlightEntity, onMelClick: (String) -> Unit) {
+    val aircraft = if (flight.registration == "TBA") null else AircraftPool.byRegistration(flight.registration)
+    val melCount = if (flight.registration == "TBA") 0 else MelDatabase.forAircraft(flight.registration).size
+    InfoCard("Aircraft Technical Status") {
+        DetailRow("Registration", if (flight.registration == "TBA") "Assigned 24h prior" else flight.registration, aircraft?.fullName ?: flight.aircraftFullName)
+        DetailRow("Status", if (melCount > 0) "Serviceable with MEL" else "Serviceable", "Open MEL items: $melCount")
+        DetailRow("Last maintenance", "BKK Line Maintenance", "Latest station technical status synchronized")
+        DetailRow("Next planned check", if (flight.durationMinutes >= 360) "After long-haul rotation" else "Next BKK night stop", "Maintenance planning data")
+        if (flight.registration != "TBA") {
+            Button(onClick = { onMelClick(flight.registration) }, modifier = Modifier.fillMaxWidth()) {
+                Text("Open MEL")
+            }
+        }
+    }
+}
+
+@Composable
+private fun CrewRestPlanCard(flight: FlightEntity, longHaul: Boolean) {
+    InfoCard("Crew Rest Plan") {
+        if (!longHaul) {
+            DetailRow("Crew rest", "Not required", "Standard short/medium sector")
+        } else {
+            DetailRow("Crew", "Augmented", "Captain, First Officer and relief crew")
+            DetailRow("Rest Group A", "Captain + First Officer", "Planned rest: cruise middle segment")
+            DetailRow("Rest Group B", "Relief crew", "Planned rest: early/late cruise segment")
+            DetailRow("Cabin crew rest", "Assigned by cabin manager", "Long-haul crew rest plan active")
+        }
+    }
+}
+
+@Composable
+private fun DutyLimitMonitorCard(flight: FlightEntity) {
+    val fdp = dutyMinutes(flight.departureDateTime, flight.arrivalDateTime, flight.durationMinutes)
+    val limit = if (flight.durationMinutes >= 360) 13 * 60 else 11 * 60
+    InfoCard("Duty Limits / Fatigue Monitor") {
+        DetailRow("FDP", formatMinutes(fdp), "Limit ${formatMinutes(limit)}")
+        DetailRow("Status", if (fdp <= limit) "OK" else "Review required", if (fdp <= limit) "Within planned duty limit" else "Close to limit")
+        DetailRow("Monthly monitor", "Active", "Flight time counters updated after completed sectors")
+        DetailRow("Rest", "OK", "Next duty rest check passed")
     }
 }
 

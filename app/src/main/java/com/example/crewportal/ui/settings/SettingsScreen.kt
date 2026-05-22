@@ -103,10 +103,10 @@ fun SettingsScreen(
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ru) "Приложение" else "Application", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("Crew Portal 1.6.9", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Пакет обновления: CrewPortal-1.6.9.apk" else "Update package: CrewPortal-1.6.9.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Crew Portal 1.7.0", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Пакет обновления: CrewPortal-1.7.0.apk" else "Update package: CrewPortal-1.7.0.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Ростер: GitHub + локальная база" else "Roster sync: GitHub + local database", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "MEL: локальная база отложенных дефектов по бортам" else "MEL: local deferred defects database by aircraft", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "MEL: GitHub + локальная база по бортам" else "MEL: GitHub + local defects database by aircraft", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Карта: OpenStreetMap / osmdroid" else "Map source: OpenStreetMap / osmdroid", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -134,12 +134,12 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 1.6.9", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• MEL database by aircraft registration.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Type-specific flight time counters.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• GitHub roster sync and app update checker.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Roster hides elapsed duties; Calendar keeps full archive.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Improved Refresh feedback and language selector state.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 1.7.0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Update Center added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• MEL sync from GitHub added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Refresh preserves registration/completed states.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Flight Briefing Package 2.0 added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Airport Info, Crew Rest and Fatigue Monitor added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

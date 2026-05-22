@@ -310,9 +310,6 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, onMelClick: (String) -
                 Column(Modifier.weight(1f)) {
                     Text("REGISTRATION", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
                     Text(if (flight.registration == "TBA") "Assigned 24h prior" else flight.registration, style = MaterialTheme.typography.titleMedium)
-                    if (flight.registration != "TBA") {
-                        TextButton(onClick = { onMelClick(flight.registration) }) { Text("MEL") }
-                    }
                 }
             }
             Spacer(Modifier.height(8.dp))

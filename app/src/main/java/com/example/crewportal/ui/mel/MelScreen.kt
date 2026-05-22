@@ -13,16 +13,37 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.data.mel.MelDatabase
 import com.example.crewportal.data.mel.MelDefect
 import com.example.crewportal.ui.theme.SuccessGreen
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 @Composable
 fun MelScreen(registration: String) {
-    val defects = MelDatabase.forAircraft(registration)
+    var allDefects by remember { mutableStateOf(MelDatabase.all()) }
+    var syncStatus by remember { mutableStateOf("Local MEL database loaded") }
+
+    LaunchedEffect(registration) {
+        val remote = withContext(Dispatchers.IO) { loadMelFromGitHub() }
+        if (remote != null) {
+            allDefects = remote
+            syncStatus = "GitHub MEL database synchronized"
+        }
+    }
+
+    val defects = allDefects.filter { it.aircraftRegistration.equals(registration, ignoreCase = true) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -32,17 +53,29 @@ fun MelScreen(registration: String) {
     ) {
         Text("MEL / Deferred Defects", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text(registration, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(syncStatus, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+
         if (defects.isEmpty()) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("No active MEL items", fontWeight = FontWeight.Bold, color = SuccessGreen)
-                    Text("No deferred defects are currently recorded for this aircraft in the local company database.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("No deferred defects are currently recorded for this aircraft.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
             defects.forEach { MelCard(it) }
         }
-        Text("Simulation data based on public MMEL/MEL structure examples. Not for operational use.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+private fun loadMelFromGitHub(): List<MelDefect>? {
+    return try {
+        val client = OkHttpClient()
+        val response = client.newCall(Request.Builder().url(MelDatabase.githubMelUrl).build()).execute()
+        val body = response.body?.string().orEmpty()
+        if (!response.isSuccessful || body.isBlank()) null else MelDatabase.fromJson(body)
+    } catch (_: Exception) {
+        null
     }
 }
 
