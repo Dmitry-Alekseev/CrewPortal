@@ -48,7 +48,7 @@ fun SettingsScreen(flightRepository: FlightRepository, onLogout: suspend () -> U
                 Text("Aircraft assignment released", color = TextMuted)
                 Text("Roster changes and operational messages", color = TextMuted)
                 Text("Qualification expiry reminders", color = TextMuted)
-                Text("Flight completed and logbook updated", color = TextMuted)
+                Text("Flight completed and flight time updated", color = TextMuted)
             }
         }
 

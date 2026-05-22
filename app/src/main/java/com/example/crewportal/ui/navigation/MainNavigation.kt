@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AirplanemodeActive
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Flight
@@ -14,16 +15,18 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.WorkHistory
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -31,7 +34,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -42,7 +44,6 @@ import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.data.repository.PreferencesRepository
 import com.example.crewportal.ui.calendar.CalendarScreen
 import com.example.crewportal.ui.fleet.FleetScreen
-import com.example.crewportal.ui.logbook.LogbookScreen
 import com.example.crewportal.ui.notifications.NotificationsScreen
 import com.example.crewportal.ui.profile.ProfileScreen
 import com.example.crewportal.ui.schedule.FlightDetailsScreen
@@ -52,16 +53,16 @@ import com.example.crewportal.ui.weather.WeatherScreen
 
 sealed class Screen(val route: String, val label: String) {
     data object Schedule : Screen("schedule", "Roster")
-    data object Calendar : Screen("calendar", "Cal")
-    data object Weather : Screen("weather", "WX")
+    data object Calendar : Screen("calendar", "Calendar")
+    data object Weather : Screen("weather", "Weather")
     data object Fleet : Screen("fleet", "Fleet")
-    data object Logbook : Screen("logbook", "Log")
     data object More : Screen("more", "More")
     data object Alerts : Screen("alerts", "Alerts")
     data object Profile : Screen("profile", "Profile")
     data object Settings : Screen("settings", "Settings")
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainNavigation(
     flightRepository: FlightRepository,
@@ -75,11 +76,35 @@ fun MainNavigation(
         Screen.Calendar,
         Screen.Weather,
         Screen.Fleet,
-        Screen.Logbook,
         Screen.More
     )
 
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val showBackButton = currentRoute != null &&
+        currentRoute != Screen.Schedule.route &&
+        currentRoute != "details/{flightId}"
+
     Scaffold(
+        topBar = {
+            if (showBackButton) {
+                TopAppBar(
+                    title = { Text(titleForRoute(currentRoute)) },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            if (!navController.popBackStack()) {
+                                navController.navigate(Screen.Schedule.route)
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                )
+            }
+        },
         bottomBar = {
             BottomBar(navController = navController, items = bottomItems)
         }
@@ -107,7 +132,6 @@ fun MainNavigation(
             composable(Screen.Calendar.route) { CalendarScreen(flightRepository) }
             composable(Screen.Weather.route) { WeatherScreen(weatherRepository) }
             composable(Screen.Fleet.route) { FleetScreen() }
-            composable(Screen.Logbook.route) { LogbookScreen(flightRepository) }
             composable(Screen.Alerts.route) { NotificationsScreen(flightRepository) }
             composable(Screen.Profile.route) { ProfileScreen(preferencesRepository) }
             composable(Screen.Settings.route) {
@@ -120,6 +144,19 @@ fun MainNavigation(
                 MoreScreen(navController = navController)
             }
         }
+    }
+}
+
+private fun titleForRoute(route: String?): String {
+    return when (route) {
+        Screen.Calendar.route -> "Calendar"
+        Screen.Weather.route -> "Weather"
+        Screen.Fleet.route -> "Fleet"
+        Screen.More.route -> "More"
+        Screen.Alerts.route -> "Alerts"
+        Screen.Profile.route -> "Profile"
+        Screen.Settings.route -> "Settings"
+        else -> "Crew Portal"
     }
 }
 
@@ -139,7 +176,6 @@ private fun BottomBar(
                 Screen.Calendar -> Icons.Default.DateRange
                 Screen.Weather -> Icons.Default.Cloud
                 Screen.Fleet -> Icons.Default.AirplanemodeActive
-                Screen.Logbook -> Icons.Default.WorkHistory
                 Screen.More -> Icons.Default.Menu
                 Screen.Alerts -> Icons.Default.Notifications
                 Screen.Profile -> Icons.Default.Person
@@ -160,12 +196,11 @@ private fun BottomBar(
             NavigationBarItem(
                 selected = selected,
                 onClick = {
-                    navController.navigate(screen.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+                    if (currentRoute != screen.route) {
+                        navController.navigate(screen.route) {
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 },
                 icon = {

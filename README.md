@@ -55,3 +55,9 @@ app/build/outputs/apk/debug/*.apk
 - Terminal assignment by departure airport
 - Gate/stand notifications and notifications center entries
 - Status timeline now includes Gate / Stand Assigned
+
+
+## Version 1.6.1 additions
+- Added back navigation to secondary menu screens.
+- Bottom menu history now allows returning to the previous menu screen.
+- Renamed Fleet wording from aircraft rotation to assigned sectors for clarity.

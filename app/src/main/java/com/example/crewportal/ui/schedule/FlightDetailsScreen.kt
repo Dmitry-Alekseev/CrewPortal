@@ -3,7 +3,6 @@ package com.example.crewportal.ui.schedule
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -36,8 +35,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -202,6 +199,7 @@ private fun RouteMapCard(flight: FlightEntity) {
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
                     settings.cacheMode = WebSettings.LOAD_DEFAULT
+                    settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                     settings.loadWithOverviewMode = true
                     settings.useWideViewPort = true
                     setBackgroundColor(android.graphics.Color.TRANSPARENT)
@@ -369,7 +367,7 @@ private fun StatusTimelineCard(flight: FlightEntity) {
         "Registered" to flight.isRegistered,
         "Report Time" to false,
         "Arrived" to hasArrived(flight.arrivalDateTime),
-        "Logbook Updated" to flight.isFlightTimeAdded
+        "Flight Time Added" to flight.isFlightTimeAdded
     )
     InfoCard("Flight Status Timeline") {
         stages.forEach { (label, active) ->

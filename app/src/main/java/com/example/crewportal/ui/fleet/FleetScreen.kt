@@ -42,8 +42,8 @@ fun FleetScreen() {
                         }
                         Text(item.fullName)
                         Text("Configuration: ${item.configuration}", color = TextMuted)
+                        Text("Engine type: ${item.engineType}", color = TextMuted)
                         Text("Operation class: ${item.routeClass}", color = TextMuted)
-                        Text("Aircraft rotation: generated when assigned to roster sectors", color = TextMuted)
                     }
                 }
             }

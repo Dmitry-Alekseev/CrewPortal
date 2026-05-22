@@ -53,7 +53,7 @@ fun NotificationsScreen(flightRepository: FlightRepository) {
             item { NotificationCard("Airport assignment updated", "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: $position, ${flight.terminal}.") }
         }
         completed.forEach { flight ->
-            item { NotificationCard("Logbook updated", "${flight.flightNumber} on ${displayDate(flight.departureDateTime)} completed. Block time added automatically.") }
+            item { NotificationCard("Flight time updated", "${flight.flightNumber} on ${displayDate(flight.departureDateTime)} completed. Block time added automatically.") }
         }
         CompanyMessages.messages.forEach { message ->
             item { NotificationCard("Company message", message) }
