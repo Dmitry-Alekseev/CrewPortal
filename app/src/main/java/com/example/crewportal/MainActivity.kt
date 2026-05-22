@@ -46,7 +46,7 @@ class MainActivity : FragmentActivity() {
 
                 LaunchedEffect(Unit) {
                     authRepository.signOut()
-                    flightRepository.refreshBuiltInRosterOnAppUpdate(BuildConfig.VERSION_NAME)
+                    flightRepository.refreshBuiltInRosterOnAppUpdate("1.6.3")
                     flightRepository.refreshCompletedFlights()
                 }
 

@@ -327,7 +327,7 @@ private fun DrawScope.drawNativeRouteMap(
         isAntiAlias = true
         color = android.graphics.Color.rgb(55, 42, 69)
         textSize = 31f
-        fakeBoldText = true
+        isFakeBoldText = true
     }
     val subPaint = android.graphics.Paint().apply {
         isAntiAlias = true
