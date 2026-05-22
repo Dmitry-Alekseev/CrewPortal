@@ -69,8 +69,12 @@ fun ScheduleScreen(
         item {
             Text("Schedule", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(if (showUtc) "UTC times • Company roster synchronized" else "Local times • Company roster synchronized", color = TextMuted, modifier = Modifier.weight(1f))
-                Text("UTC", color = TextMuted)
+                Text(
+                    if (showUtc) "UTC times • Company roster synchronized" else "Local times • Company roster synchronized",
+                    color = TextMuted,
+                    modifier = Modifier.weight(1f).padding(end = 18.dp)
+                )
+                Text("UTC", color = TextMuted, modifier = Modifier.padding(end = 14.dp))
                 Switch(checked = showUtc, onCheckedChange = { showUtc = it })
             }
             Spacer(Modifier.height(8.dp))
@@ -162,9 +166,15 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                     Text(flight.departureAirport, color = TextMuted)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                    Text(if (showUtc) AirportDatabase.utcText(flight.departureDateTime, flight.departureIata).takeLast(9) else displayTime(flight.departureDateTime), style = MaterialTheme.typography.headlineMedium)
-                    Text(if (showUtc) "UTC" else displayDate(flight.departureDateTime), color = TextMuted)
-                    Text(displayDay(flight.departureDateTime), color = TextMuted)
+                    Text(
+                        text = if (showUtc) AirportDatabase.utcText(flight.departureDateTime, flight.departureIata) else displayTime(flight.departureDateTime),
+                        style = if (showUtc) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (showUtc) "Local ${displayDate(flight.departureDateTime)} • ${displayDay(flight.departureDateTime)}" else displayDate(flight.departureDateTime),
+                        color = TextMuted
+                    )
                     Text("✈", color = ThaiPurple, style = MaterialTheme.typography.headlineMedium)
                     Text(formatMinutes(flight.durationMinutes), color = TextMuted)
                 }

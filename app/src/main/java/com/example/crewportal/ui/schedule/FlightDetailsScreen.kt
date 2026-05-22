@@ -1,8 +1,6 @@
 package com.example.crewportal.ui.schedule
 
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -35,9 +33,14 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.airport.AirportInfo
 import com.example.crewportal.data.crew.CrewPool
@@ -62,6 +65,8 @@ import com.example.crewportal.util.notamSummary
 import com.example.crewportal.util.reportDateTime
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
+import kotlin.math.max
+import kotlin.math.min
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -179,49 +184,24 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
 private fun RouteMapCard(flight: FlightEntity) {
     val departurePoint = routeMapPoint(flight.departureIata) ?: MapPoint(13.69f, 100.75f)
     val arrivalPoint = routeMapPoint(flight.arrivalIata) ?: MapPoint(11.99f, 109.22f)
-    val html = remember(flight.departureIata, flight.arrivalIata) {
-        routeMapHtml(
-            departureIata = flight.departureIata,
-            arrivalIata = flight.arrivalIata,
-            departurePoint = departurePoint,
-            arrivalPoint = arrivalPoint
-        )
+    val bounds = remember(flight.departureIata, flight.arrivalIata) {
+        routeMapBounds(departurePoint, arrivalPoint)
     }
 
     InfoCard("Route Map") {
-        AndroidView(
+        Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(250.dp),
-            factory = { context ->
-                WebView(context).apply {
-                    webViewClient = WebViewClient()
-                    settings.javaScriptEnabled = true
-                    settings.domStorageEnabled = true
-                    settings.cacheMode = WebSettings.LOAD_DEFAULT
-                    settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    settings.loadWithOverviewMode = true
-                    settings.useWideViewPort = true
-                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                    loadDataWithBaseURL(
-                        "https://www.openstreetmap.org/",
-                        html,
-                        "text/html",
-                        "UTF-8",
-                        null
-                    )
-                }
-            },
-            update = { webView ->
-                webView.loadDataWithBaseURL(
-                    "https://www.openstreetmap.org/",
-                    html,
-                    "text/html",
-                    "UTF-8",
-                    null
-                )
-            }
-        )
+                .height(260.dp)
+        ) {
+            drawNativeRouteMap(
+                departureIata = flight.departureIata,
+                arrivalIata = flight.arrivalIata,
+                departurePoint = departurePoint,
+                arrivalPoint = arrivalPoint,
+                bounds = bounds
+            )
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -245,97 +225,150 @@ private fun RouteMapCard(flight: FlightEntity) {
     }
 }
 
-private fun routeMapHtml(
-    departureIata: String,
-    arrivalIata: String,
-    departurePoint: MapPoint,
-    arrivalPoint: MapPoint
-): String {
-    val centerLat = (departurePoint.latitude + arrivalPoint.latitude) / 2f
-    val centerLon = (departurePoint.longitude + arrivalPoint.longitude) / 2f
-
-    return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-            <style>
-                html, body, #map {
-                    height: 100%;
-                    width: 100%;
-                    margin: 0;
-                    padding: 0;
-                    background: #f7f3fb;
-                    font-family: Arial, sans-serif;
-                }
-                .airport-label {
-                    background: #4b0082;
-                    color: white;
-                    border-radius: 14px;
-                    padding: 4px 8px;
-                    font-size: 12px;
-                    font-weight: bold;
-                    border: 2px solid white;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-                }
-            </style>
-        </head>
-        <body>
-            <div id="map"></div>
-            <script>
-                const dep = [${departurePoint.latitude}, ${departurePoint.longitude}];
-                const arr = [${arrivalPoint.latitude}, ${arrivalPoint.longitude}];
-
-                const map = L.map('map', {
-                    zoomControl: false,
-                    attributionControl: true,
-                    dragging: true,
-                    scrollWheelZoom: false,
-                    doubleClickZoom: false,
-                    boxZoom: false,
-                    keyboard: false
-                }).setView([${centerLat}, ${centerLon}], 5);
-
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 12,
-                    attribution: '&copy; OpenStreetMap'
-                }).addTo(map);
-
-                const route = L.polyline([dep, arr], {
-                    color: '#4b0082',
-                    weight: 4,
-                    opacity: 0.95
-                }).addTo(map);
-
-                const depIcon = L.divIcon({
-                    className: 'airport-label',
-                    html: '${departureIata}',
-                    iconSize: [52, 26],
-                    iconAnchor: [26, 13]
-                });
-
-                const arrIcon = L.divIcon({
-                    className: 'airport-label',
-                    html: '${arrivalIata}',
-                    iconSize: [52, 26],
-                    iconAnchor: [26, 13]
-                });
-
-                L.marker(dep, { icon: depIcon }).addTo(map);
-                L.marker(arr, { icon: arrIcon }).addTo(map);
-                map.fitBounds(route.getBounds(), { padding: [35, 35] });
-            </script>
-        </body>
-        </html>
-    """.trimIndent()
-}
-
-
 private data class MapPoint(
     val latitude: Float,
     val longitude: Float
+)
+
+private data class MapBounds(
+    val minLat: Float,
+    val maxLat: Float,
+    val minLon: Float,
+    val maxLon: Float
+)
+
+private fun routeMapBounds(departure: MapPoint, arrival: MapPoint): MapBounds {
+    val rawMinLat = min(departure.latitude, arrival.latitude)
+    val rawMaxLat = max(departure.latitude, arrival.latitude)
+    val rawMinLon = min(departure.longitude, arrival.longitude)
+    val rawMaxLon = max(departure.longitude, arrival.longitude)
+
+    val latSpan = max(rawMaxLat - rawMinLat, 6f)
+    val lonSpan = max(rawMaxLon - rawMinLon, 8f)
+    val paddingLat = latSpan * 0.35f
+    val paddingLon = lonSpan * 0.35f
+
+    return MapBounds(
+        minLat = rawMinLat - paddingLat,
+        maxLat = rawMaxLat + paddingLat,
+        minLon = rawMinLon - paddingLon,
+        maxLon = rawMaxLon + paddingLon
+    )
+}
+
+private fun DrawScope.project(point: MapPoint, bounds: MapBounds): Offset {
+    val mapPadding = 24f
+    val width = size.width - mapPadding * 2f
+    val height = size.height - mapPadding * 2f
+    val x = mapPadding + ((point.longitude - bounds.minLon) / (bounds.maxLon - bounds.minLon)) * width
+    val y = mapPadding + ((bounds.maxLat - point.latitude) / (bounds.maxLat - bounds.minLat)) * height
+    return Offset(x, y)
+}
+
+private fun DrawScope.drawNativeRouteMap(
+    departureIata: String,
+    arrivalIata: String,
+    departurePoint: MapPoint,
+    arrivalPoint: MapPoint,
+    bounds: MapBounds
+) {
+    drawRect(Color(0xFFEAF4FF))
+
+    repeat(5) { index ->
+        val fraction = (index + 1) / 6f
+        val x = size.width * fraction
+        val y = size.height * fraction
+        drawLine(
+            color = Color(0x66FFFFFF),
+            start = Offset(x, 0f),
+            end = Offset(x, size.height),
+            strokeWidth = 1f
+        )
+        drawLine(
+            color = Color(0x66FFFFFF),
+            start = Offset(0f, y),
+            end = Offset(size.width, y),
+            strokeWidth = 1f
+        )
+    }
+
+    landPolygons.forEach { polygon ->
+        val visible = polygon.any { point ->
+            point.latitude in bounds.minLat..bounds.maxLat && point.longitude in bounds.minLon..bounds.maxLon
+        }
+        if (visible) {
+            val path = Path()
+            polygon.forEachIndexed { index, point ->
+                val projected = project(point, bounds)
+                if (index == 0) path.moveTo(projected.x, projected.y) else path.lineTo(projected.x, projected.y)
+            }
+            path.close()
+            drawPath(path = path, color = Color(0xFFD9E4C7))
+            drawPath(path = path, color = Color(0xFFB8C7A1), style = Stroke(width = 2f))
+        }
+    }
+
+    val dep = project(departurePoint, bounds)
+    val arr = project(arrivalPoint, bounds)
+
+    drawLine(
+        color = ThaiPurple,
+        start = dep,
+        end = arr,
+        strokeWidth = 6f
+    )
+
+    drawCircle(color = ThaiPurple, radius = 13f, center = dep)
+    drawCircle(color = ThaiPurple, radius = 13f, center = arr)
+    drawCircle(color = Color.White, radius = 6f, center = dep)
+    drawCircle(color = Color.White, radius = 6f, center = arr)
+
+    val paint = android.graphics.Paint().apply {
+        isAntiAlias = true
+        color = android.graphics.Color.rgb(55, 42, 69)
+        textSize = 31f
+        fakeBoldText = true
+    }
+    val subPaint = android.graphics.Paint().apply {
+        isAntiAlias = true
+        color = android.graphics.Color.rgb(92, 82, 105)
+        textSize = 23f
+    }
+
+    drawContext.canvas.nativeCanvas.drawText(departureIata, dep.x + 16f, dep.y - 18f, paint)
+    drawContext.canvas.nativeCanvas.drawText(arrivalIata, arr.x + 16f, arr.y - 18f, paint)
+    drawContext.canvas.nativeCanvas.drawText("OFFLINE ROUTE MAP", 18f, size.height - 18f, subPaint)
+}
+
+private val landPolygons = listOf(
+    listOf(
+        MapPoint(32f, 66f), MapPoint(35f, 78f), MapPoint(30f, 92f), MapPoint(22f, 96f),
+        MapPoint(16f, 90f), MapPoint(7f, 80f), MapPoint(8f, 70f), MapPoint(20f, 62f)
+    ),
+    listOf(
+        MapPoint(30f, 92f), MapPoint(29f, 106f), MapPoint(23f, 113f), MapPoint(15f, 110f),
+        MapPoint(7f, 105f), MapPoint(1f, 101f), MapPoint(6f, 96f), MapPoint(16f, 96f)
+    ),
+    listOf(
+        MapPoint(5f, 95f), MapPoint(2f, 107f), MapPoint(-7f, 114f), MapPoint(-9f, 103f),
+        MapPoint(-4f, 95f)
+    ),
+    listOf(
+        MapPoint(72f, -12f), MapPoint(70f, 42f), MapPoint(58f, 58f), MapPoint(45f, 45f),
+        MapPoint(36f, 30f), MapPoint(38f, 8f), MapPoint(48f, -6f), MapPoint(60f, -15f)
+    ),
+    listOf(
+        MapPoint(42f, 26f), MapPoint(38f, 45f), MapPoint(27f, 56f), MapPoint(17f, 52f),
+        MapPoint(16f, 40f), MapPoint(24f, 32f), MapPoint(33f, 27f)
+    ),
+    listOf(
+        MapPoint(-10f, 112f), MapPoint(-13f, 142f), MapPoint(-25f, 154f), MapPoint(-40f, 145f),
+        MapPoint(-38f, 116f), MapPoint(-24f, 110f)
+    ),
+    listOf(
+        MapPoint(46f, 128f), MapPoint(44f, 146f), MapPoint(34f, 146f), MapPoint(30f, 132f),
+        MapPoint(36f, 126f)
+    )
 )
 
 private fun routeMapPoint(iata: String): MapPoint? {
@@ -355,7 +388,6 @@ private fun routeMapPoint(iata: String): MapPoint? {
         else -> null
     }
 }
-
 
 @Composable
 private fun StatusTimelineCard(flight: FlightEntity) {

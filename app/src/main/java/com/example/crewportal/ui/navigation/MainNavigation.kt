@@ -81,9 +81,10 @@ fun MainNavigation(
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val showBackButton = currentRoute != null &&
-        currentRoute != Screen.Schedule.route &&
-        currentRoute != "details/{flightId}"
+    val showBackButton = currentRoute in listOf(
+        Screen.Alerts.route,
+        Screen.Profile.route
+    )
 
     Scaffold(
         topBar = {

@@ -10,6 +10,7 @@ import com.example.crewportal.util.canRegister
 import com.example.crewportal.util.hasArrived
 import com.example.crewportal.util.parseLocalDateTime
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
 import org.json.JSONObject
 
@@ -25,6 +26,14 @@ class FlightRepository(
     suspend fun loadScheduleFromAssetsIfNeeded() {
         if (flightDao.count() > 0) return
         loadScheduleFromAssets(clearExisting = false)
+    }
+
+    suspend fun refreshBuiltInRosterOnAppUpdate(versionName: String) {
+        val installedVersion = preferencesRepository.installedAppVersion.first()
+        if (installedVersion != versionName) {
+            loadScheduleFromAssets(clearExisting = true)
+            preferencesRepository.setInstalledAppVersion(versionName)
+        }
     }
 
     suspend fun reloadScheduleFromAssets() {

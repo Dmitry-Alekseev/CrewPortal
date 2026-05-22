@@ -1,4 +1,4 @@
-# Crew Portal 1.4
+# Crew Portal 1.6.3
 
 Android/Kotlin Jetpack Compose crew portal demo.
 
@@ -57,7 +57,21 @@ app/build/outputs/apk/debug/*.apk
 - Status timeline now includes Gate / Stand Assigned
 
 
+## Version 1.6 additions
+- Removed Logbook from the bottom navigation.
+- Bottom navigation now uses Roster / Calendar / Weather / Fleet / More.
+- More screen contains Alerts, Profile and Settings.
+
 ## Version 1.6.1 additions
-- Added back navigation to secondary menu screens.
-- Bottom menu history now allows returning to the previous menu screen.
-- Renamed Fleet wording from aircraft rotation to assigned sectors for clarity.
+- Added contextual back navigation only for nested screens.
+
+## Version 1.6.2 additions
+- Fleet cards now show engine type instead of aircraft rotation / assigned sectors.
+
+## Version 1.6.3 additions
+- Updated version references across the project.
+- Corrected Airbus A320 and A321neo engine types for THAI fleet simulation.
+- Removed Back button from top-level screens and Settings.
+- Improved UTC toggle spacing and UTC time display.
+- Replaced WebView route map with a native offline route map renderer so it works without uninstalling or relying on map tiles.
+- Added automatic built-in roster refresh on app version update, so APK updates can be installed over the previous version.
