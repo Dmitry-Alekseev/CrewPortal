@@ -1,5 +1,6 @@
 package com.example.crewportal.ui.schedule
 
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -232,7 +233,7 @@ private fun ChecklistCard(longHaul: Boolean) {
 }
 
 @Composable
-private fun InfoCard(title: String, content: @Composable Column.() -> Unit) {
+private fun InfoCard(title: String, content: @Composable ColumnScope.() -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
