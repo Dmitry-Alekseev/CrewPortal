@@ -38,7 +38,7 @@ fun MelScreen(registration: String) {
         val remote = withContext(Dispatchers.IO) { loadMelFromGitHub() }
         if (remote != null) {
             allDefects = remote
-            syncStatus = "GitHub MEL database synchronized"
+            syncStatus = "Company MEL database synchronized"
         }
     }
 

@@ -1,16 +1,13 @@
 {
-  "latestVersion": "1.7.0",
-  "versionCode": 70,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v1.7.0/CrewPortal-1.7.0.apk",
+  "latestVersion": "1.7.1",
+  "versionCode": 71,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v1.7.1/CrewPortal-1.7.1.apk",
   "changelog": [
-    "Added Update Center",
-    "Added GitHub MEL synchronization",
-    "Refresh roster now preserves registration and completed flight state",
-    "Added Flight Briefing Package 2.0",
-    "Added Airport Info database screen",
-    "Added Crew Rest Plan for long-haul flights",
-    "Added Duty Limits and Fatigue Monitor",
-    "Integrated Aircraft Technical Status with MEL",
-    "Added Roster Change History"
+    "Fixed More screen scrolling",
+    "Updated Update Center wording to company network terminology",
+    "Removed aircraft age from Fleet cards",
+    "Improved state preservation after app and roster updates",
+    "Expanded Airport Info database",
+    "Added Airport Info search by ICAO, IATA and city"
   ]
 }

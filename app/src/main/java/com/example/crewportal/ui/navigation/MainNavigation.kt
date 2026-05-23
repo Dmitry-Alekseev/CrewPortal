@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AirplanemodeActive
 import androidx.compose.material.icons.filled.ArrowBack
@@ -300,6 +302,7 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -330,7 +333,7 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
 
         MoreMenuCard(
             title = if (ru) "Центр обновлений" else "Update Center",
-            subtitle = if (ru) "Версия приложения, GitHub sync и changelog" else "App version, GitHub sync and changelog",
+            subtitle = if (ru) "Версия приложения, синхронизация и журнал изменений" else "App version, synchronization and change log",
             onClick = { navController.navigate(Screen.UpdateCenter.route) }
         )
 

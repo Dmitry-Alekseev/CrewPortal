@@ -34,7 +34,7 @@ fun RosterChangeHistoryScreen(flightRepository: FlightRepository) {
     LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Text("Roster Change History", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Recent local and GitHub roster events", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Recent roster assignment and status events", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (events.isEmpty()) item { HistoryCard("No roster changes", "No assignment or status changes recorded yet.") }
         items(events.take(30)) { (title, flight) -> HistoryCard(title, lineFor(flight)) }

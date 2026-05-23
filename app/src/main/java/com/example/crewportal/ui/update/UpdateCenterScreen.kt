@@ -63,7 +63,7 @@ fun UpdateCenterScreen(
                 Button(onClick = {
                     updateRepository.openDownload(info.apkUrl)
                     updateInfo = null
-                }) { Text(if (ru) "Скачать APK" else "Download APK") }
+                }) { Text(if (ru) "Скачать" else "Download") }
             },
             dismissButton = { TextButton(onClick = { updateInfo = null }) { Text(if (ru) "Позже" else "Later") } }
         )
@@ -75,42 +75,42 @@ fun UpdateCenterScreen(
     ) {
         SnackbarHost(snackbarHostState)
         Text(if (ru) "Центр обновлений" else "Update Center", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Dmitry-Alekseev/CrewPortal", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(if (ru) "Синхронизация с сетью компании" else "Company network synchronization", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         InfoCard(if (ru) "Приложение" else "Application") {
-            Text("Current version: 1.7.0", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Latest version source: GitHub app_update.json", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Текущая версия: 1.7.1" else "Current version: 1.7.1", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Служба обновлений: доступна" else "Application update service: available", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Button(onClick = {
                 scope.launch {
                     val info = withContext(Dispatchers.IO) { updateRepository.checkForUpdate() }
-                    if (info == null) snackbarHostState.showSnackbar(if (ru) "Данные об обновлении недоступны" else "Update information unavailable") else updateInfo = info
+                    if (info == null) snackbarHostState.showSnackbar(if (ru) "Служба обновлений временно недоступна" else "Update service temporarily unavailable") else updateInfo = info
                 }
             }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Проверить обновления" else "Check app update") }
         }
 
         InfoCard(if (ru) "Ростер" else "Roster") {
-            Text("Source: roster/current_roster.json", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Источник: сеть компании" else "Source: company crew network", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Локальные отметки регистрации сохраняются при синхронизации." else "Local registration and completed-flight states are preserved during synchronization.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Button(onClick = {
                 scope.launch {
                     val ok = withContext(Dispatchers.IO) { flightRepository.syncRosterFromGitHub() }
-                    snackbarHostState.showSnackbar(if (ok) { if (ru) "Ростер обновлён" else "Roster updated successfully" } else { if (ru) "GitHub недоступен" else "GitHub unavailable" })
+                    snackbarHostState.showSnackbar(if (ok) { if (ru) "Ростер синхронизирован" else "Roster synchronized successfully" } else { if (ru) "Сеть компании недоступна" else "Company network unavailable" })
                 }
-            }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Обновить ростер" else "Refresh roster") }
+            }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Синхронизировать ростер" else "Synchronize roster") }
         }
 
         InfoCard("MEL") {
-            Text("Source: mel/current_mel.json", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(if (ru) "MEL обновляется при открытии экрана борта." else "MEL data is refreshed when an aircraft MEL screen is opened.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Источник: база дефектов компании" else "Source: company defects database", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "MEL обновляется при открытии карточки конкретного борта." else "MEL data is refreshed when an aircraft MEL screen is opened.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        InfoCard("Change log — 1.7.0") {
+        InfoCard(if (ru) "Журнал изменений — 1.7.1" else "Change log — 1.7.1") {
             listOf(
-                "Update Center added",
-                "MEL database can sync from GitHub",
-                "Roster refresh preserves registration and completed state",
-                "Flight briefing package reorganized",
-                "Airport info and fatigue monitor added",
-                "Aircraft technical status integrated with MEL"
+                if (ru) "Исправлена прокрутка экрана More." else "Fixed More screen scrolling.",
+                if (ru) "Обновлены формулировки центра синхронизации." else "Updated synchronization wording.",
+                if (ru) "Расширена база аэропортов." else "Expanded Airport Info database.",
+                if (ru) "Добавлен поиск аэропорта по ICAO/IATA/городу." else "Added airport search by ICAO, IATA and city.",
+                if (ru) "Улучшено сохранение состояния рейсов при обновлениях." else "Improved flight state preservation during updates."
             ).forEach { Text("• $it", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
     }

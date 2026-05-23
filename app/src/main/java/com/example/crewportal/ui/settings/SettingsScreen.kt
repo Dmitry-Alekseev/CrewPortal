@@ -103,22 +103,22 @@ fun SettingsScreen(
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ru) "Приложение" else "Application", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("Crew Portal 1.7.0", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Пакет обновления: CrewPortal-1.7.0.apk" else "Update package: CrewPortal-1.7.0.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Ростер: GitHub + локальная база" else "Roster sync: GitHub + local database", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "MEL: GitHub + локальная база по бортам" else "MEL: GitHub + local defects database by aircraft", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Crew Portal 1.7.1", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Пакет обновления: CrewPortal-1.7.1.apk" else "Update package: CrewPortal-1.7.1.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Ростер: сеть компании + локальная база" else "Roster sync: company network + local database", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "MEL: сеть компании + локальная база по бортам" else "MEL: company network + local defects database by aircraft", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Карта: OpenStreetMap / osmdroid" else "Map source: OpenStreetMap / osmdroid", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("GitHub Sync", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("Dmitry-Alekseev/CrewPortal", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Синхронизация" else "Synchronization", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(if (ru) "Подключение к сети компании активно" else "Company network connection available", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Button(onClick = {
                     scope.launch {
                         val ok = withContext(Dispatchers.IO) { flightRepository.syncRosterFromGitHub() }
-                        snackbarHostState.showSnackbar(if (ok) { if (ru) "Ростер обновлён" else "Roster updated successfully" } else { if (ru) "GitHub недоступен, выполнено локальное обновление" else "GitHub unavailable, local refresh completed" })
+                        snackbarHostState.showSnackbar(if (ok) { if (ru) "Ростер обновлён" else "Roster updated successfully" } else { if (ru) "Сеть компании недоступна, выполнено локальное обновление" else "Company network unavailable, local refresh completed" })
                     }
                 }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Обновить ростер" else "Refresh roster") }
 
@@ -134,12 +134,13 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 1.7.0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Update Center added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• MEL sync from GitHub added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Refresh preserves registration/completed states.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Flight Briefing Package 2.0 added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Airport Info, Crew Rest and Fatigue Monitor added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 1.7.1", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• More screen scrolling fixed.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Update Center wording cleaned up.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Aircraft age removed from Fleet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Airport Info database expanded.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Airport search by ICAO / IATA / city added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Registration state preservation improved.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

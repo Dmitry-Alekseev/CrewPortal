@@ -36,18 +36,18 @@ class FlightRepository(
     suspend fun refreshBuiltInRosterOnAppUpdate(versionName: String) {
         val installedVersion = preferencesRepository.installedAppVersion.first()
         if (installedVersion != versionName) {
-            loadScheduleFromAssets(clearExisting = true)
+            loadScheduleFromAssets(clearExisting = true, preserveExistingState = true)
             preferencesRepository.setInstalledAppVersion(versionName)
         }
     }
 
     suspend fun reloadScheduleFromAssets() {
-        loadScheduleFromAssets(clearExisting = true)
+        loadScheduleFromAssets(clearExisting = true, preserveExistingState = true)
     }
 
-    private suspend fun loadScheduleFromAssets(clearExisting: Boolean) {
+    private suspend fun loadScheduleFromAssets(clearExisting: Boolean, preserveExistingState: Boolean = false) {
         val json = context.assets.open("schedule.json").bufferedReader().use { it.readText() }
-        loadScheduleFromJson(json, clearExisting)
+        loadScheduleFromJson(json, clearExisting, preserveExistingState)
     }
 
     suspend fun syncRosterFromGitHub(): Boolean {

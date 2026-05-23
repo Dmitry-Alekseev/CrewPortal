@@ -43,7 +43,6 @@ fun FleetScreen() {
                         Text(item.fullName)
                         Text("Configuration: ${item.configuration}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("Engine type: ${item.engineType}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("Age: ${item.age}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("Operation class: ${item.routeClass}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
