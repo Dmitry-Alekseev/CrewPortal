@@ -26,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.crewportal.data.leave.LeaveDatabase
+import com.example.crewportal.data.leave.LeavePeriod
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.util.displayDay
@@ -48,6 +50,13 @@ fun CalendarScreen(flightRepository: FlightRepository) {
         date.year == targetMonth.year && date.month == targetMonth.month
     }
     val grouped = filtered.groupBy { parseLocalDateTime(it.departureDateTime).toLocalDate() }.toSortedMap()
+    val leaveGrouped = LeaveDatabase.leaveForMonth(java.time.YearMonth.from(targetMonth)).flatMap { period ->
+        generateSequence(maxOf(period.start, java.time.YearMonth.from(targetMonth).atDay(1))) { it.plusDays(1) }
+            .takeWhile { !it.isAfter(minOf(period.end, java.time.YearMonth.from(targetMonth).atEndOfMonth())) }
+            .map { it to period }
+            .toList()
+    }.groupBy({ it.first }, { it.second })
+    val allDates = (grouped.keys + leaveGrouped.keys).toSortedSet()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -62,22 +71,36 @@ fun CalendarScreen(flightRepository: FlightRepository) {
                 }
             }
         }
-        items(grouped.entries.toList()) { entry -> CalendarDayCard(entry.key, entry.value) }
+        items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty()) }
     }
 }
 
 @Composable
-private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>) {
+private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves: List<LeavePeriod>) {
     val isPast = date.isBefore(LocalDate.now())
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
-                    Text(displayShortDate(duties.first().departureDateTime), fontWeight = FontWeight.Bold, color = if (isPast) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
-                    Text(displayDay(duties.first().departureDateTime), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(date.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM", java.util.Locale.ENGLISH)).uppercase(), fontWeight = FontWeight.Bold, color = if (isPast) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
+                    Text(date.format(java.time.format.DateTimeFormatter.ofPattern("EEE", java.util.Locale.ENGLISH)).uppercase(), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 val block = duties.filter { it.dutyType == "FLIGHT" }.sumOf { it.durationMinutes }
                 if (block > 0) Text("Block ${formatMinutes(block)}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            }
+            leaves.distinctBy { it.id }.forEach { leave ->
+                val chipColor = when (leave.type) {
+                    "ANNUAL_LEAVE" -> Color(0xFFFFD54F).copy(alpha = 0.55f)
+                    "PERSONAL_LEAVE" -> Color(0xFF4FC3F7).copy(alpha = 0.45f)
+                    "SICK_LEAVE" -> Color(0xFFEF5350).copy(alpha = 0.35f)
+                    else -> MaterialTheme.colorScheme.surfaceVariant
+                }
+                Box(Modifier.fillMaxWidth().background(chipColor, RoundedCornerShape(10.dp)).padding(10.dp)) {
+                    Column {
+                        Text(leave.title.uppercase(), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(leave.note.ifBlank { "Approved leave" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
             duties.forEach { duty ->
                 val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") "OFF" else duty.dutyType

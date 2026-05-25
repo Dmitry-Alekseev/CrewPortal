@@ -1,13 +1,16 @@
 {
-  "latestVersion": "1.7.1",
-  "versionCode": 71,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v1.7.1/CrewPortal-1.7.1.apk",
+  "latestVersion": "1.8.0",
+  "versionCode": 80,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v1.8.0/CrewPortal-1.8.0.apk",
   "changelog": [
-    "Fixed More screen scrolling",
-    "Updated Update Center wording to company network terminology",
-    "Removed aircraft age from Fleet cards",
-    "Improved state preservation after app and roster updates",
-    "Expanded Airport Info database",
-    "Added Airport Info search by ICAO, IATA and city"
+    "Added Leave Management with annual, personal and sick leave logic",
+    "Added dynamic monthly target adjusted by leave and sick leave days",
+    "Added dynamic Today’s Duty states: pre-flight, in-flight, turnaround and leave",
+    "Improved Gate/Stand visibility by duty leg and layover logic",
+    "Added layover hotel names and BKK airport reserve hotel",
+    "Improved weather interpretation from METAR/TAF",
+    "Added Line Check record and instructor-ready profile data",
+    "Updated app icon and removed backup settings",
+    "Improved roster cards, monthly progress and sync indication"
   ]
 }

@@ -1,10 +1,23 @@
 # Crew Portal
 
-Version: 1.7.1
+Version: 1.8.0
 
-Android crew portal demo with roster, fleet, weather, MEL, company-network synchronization, application update checks and airport information.
+Crew Portal is a Kotlin / Jetpack Compose Android crew operations app.
 
-Public endpoints used by the demo app:
-- App update endpoint: `https://raw.githubusercontent.com/Dmitry-Alekseev/CrewPortal/main/update/app_update.json`
-- Roster endpoint: `https://raw.githubusercontent.com/Dmitry-Alekseev/CrewPortal/main/roster/current_roster.json`
-- MEL endpoint: `https://raw.githubusercontent.com/Dmitry-Alekseev/CrewPortal/main/mel/current_mel.json`
+## Highlights
+- Roster and calendar
+- GitHub-based company network update service
+- MEL database by aircraft registration
+- Airport information database
+- Weather METAR/TAF and operational interpretation
+- Fleet database
+- Profile, licenses and type-rating flight hours
+- Leave management and sick leave logic
+- Dynamic monthly flight-time target
+- Today’s Duty operational states
+
+## Build
+GitHub Actions builds the debug APK artifact.
+Expected release asset name:
+
+`CrewPortal-1.8.0.apk`

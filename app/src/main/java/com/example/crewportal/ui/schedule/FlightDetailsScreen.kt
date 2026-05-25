@@ -127,11 +127,13 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
 
                 AircraftTechnicalStatusCard(item, onMelClick)
 
-                InfoCard("Airport Assignment") {
-                    DetailRow("Gate", if (item.gate == "Pending") "Pending" else item.gate, "Assigned about 3 hours before departure")
-                    DetailRow("Stand", if (item.stand == "Pending") "Pending" else item.stand, "Used when no gate is assigned")
-                    DetailRow("Terminal", if (item.terminal == "Pending") "Pending" else item.terminal, "Airport operations synchronized")
-                    DetailRow("Updated", if (item.gate != "Pending" || item.stand != "Pending") "Available" else "Pending", "Company portal / airport data sync")
+                if (shouldShowAirportAssignment(item)) {
+                    InfoCard("Airport Assignment") {
+                        DetailRow("Gate", if (item.gate == "Pending") "Pending" else item.gate, "Assigned about 3 hours before departure")
+                        DetailRow("Stand", if (item.stand == "Pending") "Pending" else item.stand, "Used when no gate is assigned")
+                        DetailRow("Terminal", if (item.terminal == "Pending") "Pending" else item.terminal, "Airport operations synchronized")
+                        DetailRow("Updated", if (item.gate != "Pending" || item.stand != "Pending") "Available" else "Pending", "Company portal / airport data sync")
+                    }
                 }
 
                 InfoCard("Airport Database") {
@@ -187,8 +189,10 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
 
                 InfoCard("Layover / Turnaround") {
                     if (longHaul) {
-                        DetailRow("Hotel", "Company Crew Hotel", "Transport by company shuttle")
+                        DetailRow("Hotel", layoverHotelFor(item.arrivalIata), "Transport by company shuttle")
                         DetailRow("Pickup", "TBA by local station", "Shown after station update")
+                    } else if (item.dutyType == "RESERVE") {
+                        DetailRow("Hotel", "Hyatt Regency Bangkok Suvarnabhumi Airport", "Airport reserve accommodation")
                     } else {
                         DetailRow("Layover", "Not applicable", "Turnaround operation")
                     }
@@ -323,7 +327,7 @@ private fun RouteMapCard(flight: FlightEntity) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "A  ${flight.departureIata}",
+                text = flight.departureIata,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -334,17 +338,11 @@ private fun RouteMapCard(flight: FlightEntity) {
             )
 
             Text(
-                text = "B  ${flight.arrivalIata}",
+                text = flight.arrivalIata,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-
-        Text(
-            text = "A = departure • B = arrival",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall
-        )
     }
 }
 
@@ -412,6 +410,28 @@ private fun routeMapPoint(iata: String): MapPoint? {
         "CNX" -> MapPoint(18.77f, 98.96f)
         "SYD" -> MapPoint(-33.94f, 151.18f)
         else -> null
+    }
+}
+
+private fun shouldShowAirportAssignment(flight: FlightEntity): Boolean {
+    return flight.departureIata == "BKK" || flight.durationMinutes >= 360
+}
+
+private fun layoverHotelFor(iata: String): String {
+    return when (iata.uppercase()) {
+        "BKK" -> "Hyatt Regency Bangkok Suvarnabhumi Airport"
+        "IST" -> "Grand Hyatt Istanbul"
+        "FRA" -> "JW Marriott Hotel Frankfurt"
+        "SIN" -> "Pan Pacific Singapore"
+        "HKT" -> "The Slate Phuket"
+        "CXR" -> "Meliá Vinpearl Cam Ranh Beach Resort"
+        "NRT", "HND" -> "The Prince Gallery Tokyo Kioicho"
+        "LHR" -> "Sofitel London St James"
+        "ZRH" -> "Zurich Marriott Hotel"
+        "MUC" -> "Hilton Munich City"
+        "SYD" -> "Hilton Sydney"
+        "MEL" -> "Grand Hyatt Melbourne"
+        else -> "Company contracted crew hotel"
     }
 }
 

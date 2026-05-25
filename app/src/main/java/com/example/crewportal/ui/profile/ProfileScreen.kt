@@ -96,10 +96,19 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
             QualificationRow("Safety & Emergency Procedures — Land", "Completed: 06 April 2026", "Next: 06 October 2026", "VALID")
             QualificationRow("Safety & Emergency Procedures — Water", "Completed: 08 April 2026", "Next: 08 October 2026", "VALID")
             QualificationRow("Simulator Recurrent Session", "Completed: 18 January 2026", "Next: 18 July 2026", "VALID")
+            QualificationRow("Line Check", "Completed: 06 May 2026", "Next: 06 August 2026", "VALID")
+        }
+
+        InfoCard("Leave & Availability") {
+            ProfileRow("Annual leave", "50 / 80 days assigned")
+            ProfileRow("Personal leave", "4 / 40 days used")
+            ProfileRow("Sick leave", "3 days recorded")
+            Text("Open Leave Management from More to request personal leave or manage sick leave.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         InfoCard("Expiry Dashboard") {
             ProfileRow("Medical certificate", "Due Aug 2026")
+            ProfileRow("Line check", "Due Aug 2026")
             ProfileRow("Simulator recurrent", "Due Jul 2026")
             ProfileRow("Emergency procedures", "Due Oct 2026")
             Spacer(Modifier.height(4.dp))

@@ -49,7 +49,7 @@ object AirportAssignmentPool {
 
     private fun gateFor(airport: String, wideBody: Boolean, key: Int): String {
         val gates = when (airport) {
-            "BKK" -> if (wideBody) listOf("E4", "E6", "E8", "F2", "F4", "G3", "G5") else listOf("A2", "A4", "B3", "C2", "D1", "D4")
+            "BKK" -> if (wideBody) listOf("E4", "E6", "E8", "F2", "F4", "G3", "G5") else listOf("A2", "A4", "A7", "B2", "B3", "B6", "C2", "C5", "D1", "D4", "D7")
             "HKT" -> listOf("4", "5", "7", "9", "11")
             "SIN" -> if (wideBody) listOf("C18", "C20", "D34", "D36") else listOf("A12", "B4", "C15", "D30")
             "IST" -> listOf("B5", "D8", "F2", "F6", "G9")
@@ -64,7 +64,7 @@ object AirportAssignmentPool {
 
     private fun standFor(airport: String, wideBody: Boolean, key: Int): String {
         val stands = when (airport) {
-            "BKK" -> if (wideBody) listOf("501", "503", "506", "512") else listOf("207", "211", "304", "307", "312", "401")
+            "BKK" -> if (wideBody) listOf("501", "503", "506", "512") else listOf("207", "211", "219", "304", "307", "312", "318", "401", "406", "412")
             "HKT" -> listOf("21", "23", "25", "31", "33")
             "SIN" -> listOf("R12", "R14", "R18")
             "IST" -> listOf("705", "712", "724", "731")

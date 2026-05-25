@@ -48,7 +48,7 @@ fun AirportInfoScreen() {
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 label = { Text("Search airport") },
-                placeholder = { Text("VTBS, WSSS, EDDF, LTFM, BKK, Frankfurt...") },
+                placeholder = { Text("ICAO CODE / NAME") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
             )
         }

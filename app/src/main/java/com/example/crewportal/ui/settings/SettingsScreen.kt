@@ -103,8 +103,8 @@ fun SettingsScreen(
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ru) "Приложение" else "Application", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("Crew Portal 1.7.1", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Пакет обновления: CrewPortal-1.7.1.apk" else "Update package: CrewPortal-1.7.1.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Crew Portal 1.8.0", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Пакет обновления: CrewPortal-1.8.0.apk" else "Update package: CrewPortal-1.8.0.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Ростер: сеть компании + локальная база" else "Roster sync: company network + local database", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "MEL: сеть компании + локальная база по бортам" else "MEL: company network + local defects database by aircraft", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Карта: OpenStreetMap / osmdroid" else "Map source: OpenStreetMap / osmdroid", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -134,23 +134,15 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 1.7.1", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• More screen scrolling fixed.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Update Center wording cleaned up.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Aircraft age removed from Fleet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Airport Info database expanded.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Airport search by ICAO / IATA / city added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Registration state preservation improved.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 1.8.0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Leave Management and sick leave controls added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Monthly target now adjusts to leave and sick leave.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Today’s Duty now supports pre-flight, in-flight, turnaround and leave states.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Weather interpretation and runway condition estimate added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• New launcher icon and roster UI polish.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
-        Button(onClick = {
-            scope.launch {
-                flightRepository.reloadScheduleFromAssets()
-                flightRepository.refreshCompletedFlights()
-                snackbarHostState.showSnackbar(if (ru) "Локальный ростер обновлён" else "Local roster refreshed successfully")
-            }
-        }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Локальное обновление" else "Local Refresh") }
         Button(onClick = { scope.launch { flightRepository.simulateRosterChange() } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Имитировать изменение ростера" else "Simulate Roster Change") }
         Button(onClick = { scope.launch { onLogout() } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Выйти" else "Sign Out") }
     }

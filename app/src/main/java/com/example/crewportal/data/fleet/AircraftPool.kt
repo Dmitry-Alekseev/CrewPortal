@@ -22,8 +22,8 @@ object AircraftPool {
         FleetAircraft("HS-TXE", "A320", "Airbus A320-214", "SHORT", "C12 / Y144", "CFM56-5B4/3", "13y 1m"),
         FleetAircraft("HS-TXF", "A320", "Airbus A320-214", "SHORT", "C12 / Y144", "CFM56-5B4/3", "12y 10m"),
         FleetAircraft("HS-TXG", "A320", "Airbus A320-214", "SHORT", "C12 / Y144", "CFM56-5B4/3", "12y 7m"),
-        FleetAircraft("HS-TXH", "A321neo", "Airbus A321-251NX", "SHORT", "C16 / Y175", "CFM LEAP-1A32", "0y 5m", "New cabin"),
-        FleetAircraft("HS-TXI", "A321neo", "Airbus A321-251NX", "SHORT", "C16 / Y175", "CFM LEAP-1A32", "0y 4m", "New cabin"),
+        FleetAircraft("HS-TXH", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y175", "CFM LEAP-1A32", "0y 5m", "New cabin"),
+        FleetAircraft("HS-TXI", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y175", "CFM LEAP-1A32", "0y 4m", "New cabin"),
         FleetAircraft("HS-TXJ", "A320", "Airbus A320-214", "SHORT", "C12 / Y144", "CFM56-5B4/3", "11y 8m"),
         FleetAircraft("HS-TXS", "A320", "Airbus A320-214", "SHORT", "C12 / Y144", "CFM56-5B4/3", "10y 11m"),
         FleetAircraft("HS-TEO", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "14y 2m"),
@@ -52,8 +52,8 @@ object AircraftPool {
         val compatible = aircraft.filter { item ->
             val classOk = when (routeClass) {
                 "LONG" -> item.routeClass == "LONG"
-                "MEDIUM" -> item.routeClass == "MEDIUM" || item.routeClass == "LONG"
-                else -> item.routeClass == "SHORT"
+                "MEDIUM" -> item.routeClass.contains("MEDIUM") || item.routeClass == "LONG"
+                else -> item.routeClass.contains("SHORT")
             }
             val labelOk = aircraftLabel == item.label ||
                 (aircraftLabel.startsWith("A350") && item.label == "A350-900") ||

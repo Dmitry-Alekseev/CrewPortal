@@ -6,6 +6,7 @@ import com.example.crewportal.data.fleet.AircraftPool
 import com.example.crewportal.data.local.FlightDao
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.util.NotificationHelper
+import com.example.crewportal.util.RosterNotificationScheduler
 import com.example.crewportal.util.canRegister
 import com.example.crewportal.util.hasArrived
 import com.example.crewportal.util.parseLocalDateTime
@@ -134,6 +135,7 @@ class FlightRepository(
             }
         }
         flightDao.insertAll(flights)
+        RosterNotificationScheduler.scheduleRoster(context, flights)
     }
 
     suspend fun registerFlight(id: String) {
@@ -150,7 +152,9 @@ class FlightRepository(
     }
 
     suspend fun refreshCompletedFlights() {
-        flightDao.getAllOnce().forEach { flight ->
+        val rosterSnapshot = flightDao.getAllOnce()
+        RosterNotificationScheduler.scheduleRoster(context, rosterSnapshot)
+        rosterSnapshot.forEach { flight ->
             if (flight.dutyType == "FLIGHT" && canRegister(flight.departureDateTime, flight.isCompleted)) {
                 assignAircraftIfNeeded(flight)
                 if (!flight.registrationNotified) {

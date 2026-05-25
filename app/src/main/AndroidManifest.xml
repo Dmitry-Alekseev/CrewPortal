@@ -7,10 +7,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:icon="@drawable/app_icon"
         android:label="Crew Portal"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/app_icon"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <provider
@@ -22,6 +22,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+
+        <receiver
+            android:name=".util.RosterAlarmReceiver"
+            android:exported="false" />
 
         <activity
             android:name=".MainActivity"

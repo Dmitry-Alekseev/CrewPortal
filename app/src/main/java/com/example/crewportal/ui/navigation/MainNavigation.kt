@@ -58,7 +58,7 @@ import com.example.crewportal.ui.contacts.CompanyContactsScreen
 import com.example.crewportal.ui.update.UpdateCenterScreen
 import com.example.crewportal.ui.airport.AirportInfoScreen
 import com.example.crewportal.ui.history.RosterChangeHistoryScreen
-import com.example.crewportal.ui.emergency.EmergencyReferenceScreen
+import com.example.crewportal.ui.leave.LeaveManagementScreen
 
 sealed class Screen(val route: String, val label: String) {
     data object Schedule : Screen("schedule", "Roster")
@@ -73,7 +73,7 @@ sealed class Screen(val route: String, val label: String) {
     data object UpdateCenter : Screen("update_center", "Update Center")
     data object AirportInfo : Screen("airport_info", "Airport Info")
     data object RosterHistory : Screen("roster_history", "Roster History")
-    data object Emergency : Screen("emergency", "Emergency")
+    data object Leave : Screen("leave", "Leave")
     data object Mel : Screen("mel", "MEL")
 }
 
@@ -105,7 +105,8 @@ fun MainNavigation(
         Screen.UpdateCenter.route,
         Screen.AirportInfo.route,
         Screen.RosterHistory.route,
-        Screen.Emergency.route,
+        Screen.Leave.route,
+        Screen.Settings.route,
         "mel/{registration}"
     )
 
@@ -169,7 +170,7 @@ fun MainNavigation(
             composable(Screen.UpdateCenter.route) { UpdateCenterScreen(flightRepository, preferencesRepository) }
             composable(Screen.AirportInfo.route) { AirportInfoScreen() }
             composable(Screen.RosterHistory.route) { RosterChangeHistoryScreen(flightRepository) }
-            composable(Screen.Emergency.route) { EmergencyReferenceScreen() }
+            composable(Screen.Leave.route) { LeaveManagementScreen() }
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     flightRepository = flightRepository,
@@ -197,7 +198,7 @@ private fun titleForRoute(route: String?, ru: Boolean): String {
         Screen.UpdateCenter.route -> if (ru) "Центр обновлений" else "Update Center"
         Screen.AirportInfo.route -> if (ru) "Аэропорты" else "Airport Info"
         Screen.RosterHistory.route -> if (ru) "История ростера" else "Roster History"
-        Screen.Emergency.route -> if (ru) "Аварийные процедуры" else "Emergency Reference"
+        Screen.Leave.route -> if (ru) "Отпуск" else "Leave"
         "mel/{registration}" -> "MEL"
         else -> "Crew Portal"
     }
@@ -228,7 +229,7 @@ private fun BottomBar(
                 Screen.UpdateCenter -> Icons.Default.Settings
                 Screen.AirportInfo -> Icons.Default.AirplanemodeActive
                 Screen.RosterHistory -> Icons.Default.DateRange
-                Screen.Emergency -> Icons.Default.Notifications
+                Screen.Leave -> Icons.Default.DateRange
                 Screen.Mel -> Icons.Default.AirplanemodeActive
             }
 
@@ -242,7 +243,7 @@ private fun BottomBar(
                     Screen.UpdateCenter.route,
                     Screen.AirportInfo.route,
                     Screen.RosterHistory.route,
-                    Screen.Emergency.route
+                    Screen.Leave.route
                 )
             } else {
                 currentDestination?.hierarchy?.any { it.route == screen.route } == true
@@ -292,7 +293,7 @@ private fun bottomLabel(screen: Screen, ru: Boolean): String {
         Screen.UpdateCenter -> if (ru) "Обновл." else "Update"
         Screen.AirportInfo -> if (ru) "Аэроп." else "Airports"
         Screen.RosterHistory -> if (ru) "История" else "History"
-        Screen.Emergency -> if (ru) "SEP" else "SEP"
+        Screen.Leave -> if (ru) "Отпуск" else "Leave"
         Screen.Mel -> "MEL"
     }
 }
@@ -313,15 +314,15 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
         )
 
         MoreMenuCard(
-            title = if (ru) "Уведомления" else "Alerts",
-            subtitle = if (ru) "Сообщения экипажа и компании" else "Crew notifications and company messages",
-            onClick = { navController.navigate(Screen.Alerts.route) }
-        )
-
-        MoreMenuCard(
             title = if (ru) "Профиль" else "Profile",
             subtitle = if (ru) "Профиль пилота, налёт и квалификации" else "Pilot profile, flight time and qualifications",
             onClick = { navController.navigate(Screen.Profile.route) }
+        )
+
+        MoreMenuCard(
+            title = if (ru) "Уведомления" else "Alerts",
+            subtitle = if (ru) "Сообщения экипажа и компании" else "Crew notifications and company messages",
+            onClick = { navController.navigate(Screen.Alerts.route) }
         )
 
         MoreMenuCard(
@@ -344,17 +345,17 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
         )
 
         MoreMenuCard(
+            title = if (ru) "Отпуск и больничный" else "Leave Management",
+            subtitle = if (ru) "Отпуск, заявки и больничный" else "Annual leave, personal leave and sick leave",
+            onClick = { navController.navigate(Screen.Leave.route) }
+        )
+
+        MoreMenuCard(
             title = if (ru) "История ростера" else "Roster Change History",
             subtitle = if (ru) "Назначения бортов, гейтов и изменения" else "Aircraft, gate and roster assignment events",
             onClick = { navController.navigate(Screen.RosterHistory.route) }
         )
 
-
-        MoreMenuCard(
-            title = if (ru) "Аварийные процедуры" else "Emergency / SEP Reference",
-            subtitle = if (ru) "Краткие памятки по recurrent training" else "Quick recurrent-training reference",
-            onClick = { navController.navigate(Screen.Emergency.route) }
-        )
 
         MoreMenuCard(
             title = if (ru) "Настройки" else "Settings",
