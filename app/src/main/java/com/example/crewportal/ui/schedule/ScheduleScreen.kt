@@ -96,6 +96,7 @@ fun ScheduleScreen(
     val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
     val darkTheme by preferencesRepository.darkTheme.collectAsState(initial = false)
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
+    val nextMonthReviewed by preferencesRepository.nextMonthRosterReviewed.collectAsState(initial = false)
     val ru = language == "ru"
     var showUtc by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -144,7 +145,7 @@ fun ScheduleScreen(
             TodayDutyCard(flights = flights, onDutyClick = onDutyClick, ru = ru)
         }
 
-        item { MonthSwitchControls(showNextMonth = showNextMonth, ru = ru, onToggle = { showNextMonth = !showNextMonth }) }
+        item { MonthSwitchControls(showNextMonth = showNextMonth, ru = ru, canShow = nextMonthReviewed, onToggle = { showNextMonth = !showNextMonth }) }
 
         val now = LocalDateTime.now()
         val targetMonth = if (showNextMonth) YearMonth.now().plusMonths(1) else YearMonth.now()
@@ -217,12 +218,10 @@ private fun buildRosterItems(flights: List<FlightEntity>, month: YearMonth, now:
 }
 
 @Composable
-private fun MonthSwitchControls(showNextMonth: Boolean, ru: Boolean, onToggle: () -> Unit) {
-    val today = LocalDate.now()
-    val canPreview = today.dayOfMonth >= today.lengthOfMonth() - 6
-    if (canPreview || showNextMonth) {
+private fun MonthSwitchControls(showNextMonth: Boolean, ru: Boolean, canShow: Boolean, onToggle: () -> Unit) {
+    if (canShow || showNextMonth) {
         OutlinedButton(onClick = onToggle, modifier = Modifier.fillMaxWidth()) {
-            Text(if (showNextMonth) if (ru) "Вернуться к текущему месяцу" else "Back to current month" else if (ru) "Показать ростер следующего месяца" else "Show next month roster")
+            Text(if (showNextMonth) if (ru) "Вернуться к текущему месяцу" else "Back to current month" else if (ru) "Показать утверждённый ростер" else "Show approved next roster")
         }
     }
 }
@@ -383,14 +382,18 @@ private fun BriefingLine(flight: FlightEntity, ru: Boolean) {
     val briefing = departure.minusMinutes(90).format(DateTimeFormatter.ofPattern("HH:mm"))
     val debriefing = arrival.plusMinutes(30).format(DateTimeFormatter.ofPattern("HH:mm"))
     val longHaul = flight.durationMinutes >= 360
-    val returningHome = flight.arrivalIata == "BKK"
-    Text(
-        (if (ru) "Явка: " else "Briefing: ") + briefing,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-    if (longHaul || returningHome) {
+    val shortReturnHome = flight.durationMinutes < 360 && flight.arrivalIata == "BKK" && flight.departureIata != "BKK"
+
+    if (!shortReturnHome) {
         Text(
-            (if (ru) "Debriefing: " else "Debriefing: ") + debriefing,
+            (if (ru) "Явка: " else "Briefing: ") + briefing,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    if (longHaul || flight.arrivalIata == "BKK") {
+        Text(
+            (if (ru) "Разбор: " else "Debriefing: ") + debriefing,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }

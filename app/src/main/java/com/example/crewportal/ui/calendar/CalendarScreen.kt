@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -22,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -38,13 +42,16 @@ import com.example.crewportal.util.displayTime
 import com.example.crewportal.util.formatMinutes
 import com.example.crewportal.util.parseLocalDateTime
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 @Composable
 fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: PreferencesRepository) {
     val duties by flightRepository.observeFlights().collectAsState(initial = emptyList())
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
     val ru = language == "ru"
+    val scope = rememberCoroutineScope()
     var showNextMonth by remember { mutableStateOf(false) }
+    var showRosterDecisionDialog by remember { mutableStateOf(false) }
     val today = LocalDate.now()
     val targetMonth = if (showNextMonth) today.plusMonths(1) else today
     val canPreviewNext = today.dayOfMonth >= today.lengthOfMonth() - 6
@@ -61,6 +68,26 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
     }.groupBy({ it.first }, { it.second })
     val allDates = (grouped.keys + leaveGrouped.keys).toSortedSet()
 
+    if (showRosterDecisionDialog) {
+        AlertDialog(
+            onDismissRequest = { showRosterDecisionDialog = false },
+            title = { Text(if (ru) "Ростер просмотрен?" else "Roster reviewed?") },
+            text = { Text(if (ru) "Подтвердите ознакомление. Выберите стандартную норму 80 часов или усиленный месяц до 90 часов." else "Confirm that you reviewed the next roster. Choose standard 80h target or enhanced month up to 90h.") },
+            confirmButton = {
+                Button(onClick = {
+                    scope.launch { preferencesRepository.setNextMonthRosterDecision(reviewed = true, enhancedTarget = false) }
+                    showRosterDecisionDialog = false
+                }) { Text("80h") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    scope.launch { preferencesRepository.setNextMonthRosterDecision(reviewed = true, enhancedTarget = true) }
+                    showRosterDecisionDialog = false
+                }) { Text("90h") }
+            }
+        )
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -75,6 +102,16 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
             }
         }
         items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty(), ru) }
+        if (showNextMonth) {
+            item {
+                Button(
+                    onClick = { showRosterDecisionDialog = true },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp)
+                ) {
+                    Text(if (ru) "Я ознакомился с ростером" else "I have reviewed this roster")
+                }
+            }
+        }
     }
 }
 

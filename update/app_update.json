@@ -1,7 +1,7 @@
 {
-  "latestVersion": "2.0.0",
-  "versionCode": 200,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.0.0/CrewPortal-2.0.0.apk",
+  "latestVersion": "2.0.1",
+  "versionCode": 201,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.0.1/CrewPortal-2.0.1.apk",
   "changelog": [
     "Crew Portal 2.0 visual refresh",
     "Smart June roster generator test mode",

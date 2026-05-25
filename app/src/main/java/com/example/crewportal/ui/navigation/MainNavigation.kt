@@ -60,6 +60,7 @@ import com.example.crewportal.ui.airport.AirportInfoScreen
 import com.example.crewportal.ui.history.RosterChangeHistoryScreen
 import com.example.crewportal.ui.leave.LeaveManagementScreen
 import com.example.crewportal.ui.payroll.PayrollScreen
+import com.example.crewportal.ui.routes.CompanyRoutesScreen
 
 sealed class Screen(val route: String, val label: String) {
     data object Schedule : Screen("schedule", "Roster")
@@ -76,6 +77,7 @@ sealed class Screen(val route: String, val label: String) {
     data object RosterHistory : Screen("roster_history", "Roster History")
     data object Leave : Screen("leave", "Leave")
     data object Payroll : Screen("payroll", "Payroll")
+    data object CompanyRoutes : Screen("company_routes", "Company Routes")
     data object Mel : Screen("mel", "MEL")
 }
 
@@ -109,6 +111,8 @@ fun MainNavigation(
         Screen.RosterHistory.route,
         Screen.Leave.route,
         Screen.Settings.route,
+        Screen.Payroll.route,
+        Screen.CompanyRoutes.route,
         "mel/{registration}"
     )
 
@@ -174,6 +178,7 @@ fun MainNavigation(
             composable(Screen.RosterHistory.route) { RosterChangeHistoryScreen(flightRepository) }
             composable(Screen.Leave.route) { LeaveManagementScreen() }
             composable(Screen.Payroll.route) { PayrollScreen(flightRepository, preferencesRepository, ru = ru) }
+            composable(Screen.CompanyRoutes.route) { CompanyRoutesScreen(ru = ru) }
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     flightRepository = flightRepository,
@@ -203,6 +208,7 @@ private fun titleForRoute(route: String?, ru: Boolean): String {
         Screen.RosterHistory.route -> if (ru) "История ростера" else "Roster History"
         Screen.Leave.route -> if (ru) "Отпуск" else "Leave"
         Screen.Payroll.route -> if (ru) "Зарплата" else "Payroll"
+        Screen.CompanyRoutes.route -> if (ru) "Маршруты" else "Company Routes"
         "mel/{registration}" -> "MEL"
         else -> "Crew Portal"
     }
@@ -235,6 +241,7 @@ private fun BottomBar(
                 Screen.RosterHistory -> Icons.Default.DateRange
                 Screen.Leave -> Icons.Default.DateRange
                 Screen.Payroll -> Icons.Default.Settings
+                Screen.CompanyRoutes -> Icons.Default.Flight
                 Screen.Mel -> Icons.Default.AirplanemodeActive
             }
 
@@ -249,7 +256,8 @@ private fun BottomBar(
                     Screen.AirportInfo.route,
                     Screen.RosterHistory.route,
                     Screen.Leave.route,
-                    Screen.Payroll.route
+                    Screen.Payroll.route,
+                    Screen.CompanyRoutes.route
                 )
             } else {
                 currentDestination?.hierarchy?.any { it.route == screen.route } == true
@@ -301,6 +309,7 @@ private fun bottomLabel(screen: Screen, ru: Boolean): String {
         Screen.RosterHistory -> if (ru) "История" else "History"
         Screen.Leave -> if (ru) "Отпуск" else "Leave"
         Screen.Payroll -> if (ru) "Зарплата" else "Payroll"
+        Screen.CompanyRoutes -> if (ru) "Маршруты" else "Routes"
         Screen.Mel -> "MEL"
     }
 }
@@ -348,6 +357,12 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
             title = if (ru) "Контакты компании" else "Company Contacts",
             subtitle = if (ru) "Оперативные службы и контакты BKK" else "Operations, flight planning and BKK ATC contacts",
             onClick = { navController.navigate(Screen.Contacts.route) }
+        )
+
+        MoreMenuCard(
+            title = if (ru) "Маршрутная сеть" else "Company Routes",
+            subtitle = if (ru) "Маршруты Thai Airways и симуляционные направления" else "Thai Airways network and simulated routes",
+            onClick = { navController.navigate(Screen.CompanyRoutes.route) }
         )
 
         MoreMenuCard(

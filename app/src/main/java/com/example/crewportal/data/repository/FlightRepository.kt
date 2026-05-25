@@ -196,13 +196,16 @@ class FlightRepository(
 
     suspend fun generateJuneRosterTest() {
         val generated = RosterGenerator.generateJune2026()
+        val current = flightDao.getAllOnce()
+        val preserved = current.filterNot { it.departureDateTime.startsWith("2026-06") }
+        val merged = (preserved + generated).sortedBy { it.departureDateTime }
         flightDao.clearAll()
-        flightDao.insertAll(generated)
-        RosterNotificationScheduler.scheduleRoster(context, generated)
+        flightDao.insertAll(merged)
+        RosterNotificationScheduler.scheduleRoster(context, merged)
         NotificationHelper.show(
             context,
             "Generated roster applied",
-            "June 2026 generated roster test has been loaded.",
+            "June 2026 generated roster test has been loaded without changing May roster.",
             2_006_000
         )
     }

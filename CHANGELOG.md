@@ -1,6 +1,6 @@
 # Crew Portal Change Log
 
-## 2.0.0
+## 2.0.1
 - Added Smart Roster generator test mode for June 2026.
 - Added hidden 5-tap developer trigger on Settings version text.
 - Added Payroll / Payslip screen in USD with Salary and Bonus sections.

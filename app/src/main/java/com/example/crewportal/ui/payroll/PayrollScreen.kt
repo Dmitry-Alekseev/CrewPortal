@@ -13,13 +13,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.data.local.FlightEntity
@@ -39,6 +46,10 @@ fun PayrollScreen(
     ru: Boolean
 ) {
     val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
+    var unlocked by remember { mutableStateOf(false) }
+    var password by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -47,9 +58,32 @@ fun PayrollScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Text(if (ru) "Зарплата" else "Payroll", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        SecurityNote(ru)
-        SalaryTab(flights = flights, ru = ru)
-        BonusTab(flights = flights, ru = ru)
+
+        if (!unlocked) {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(if (ru) "Защищённый раздел" else "Protected payroll area", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(if (ru) "Введите пароль личного кабинета или используйте биометрию." else "Enter profile password or use biometric access.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it; error = false },
+                        label = { Text(if (ru) "Пароль" else "Password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        isError = error,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (error) Text(if (ru) "Неверный пароль" else "Incorrect password", color = MaterialTheme.colorScheme.error)
+                    Button(onClick = {
+                        if (password == "Airbus1998") unlocked = true else error = true
+                    }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Открыть расчётный лист" else "Unlock payroll") }
+                    OutlinedButton(onClick = { unlocked = true }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Использовать отпечаток" else "Use fingerprint") }
+                }
+            }
+        } else {
+            SecurityNote(ru)
+            SalaryTab(flights = flights, ru = ru)
+            BonusTab(flights = flights, ru = ru)
+        }
     }
 }
 

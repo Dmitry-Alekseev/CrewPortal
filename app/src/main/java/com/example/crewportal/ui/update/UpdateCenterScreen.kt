@@ -25,6 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.data.repository.FlightRepository
@@ -47,8 +48,8 @@ fun UpdateCenterScreen(
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
     val ru = language == "ru"
     var updateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
-    val currentVersionCode = 200
-    val currentVersionName = "2.0.0"
+    val currentVersionCode = 201
+    val currentVersionName = "2.0.1"
 
     if (updateInfo != null) {
         val info = updateInfo!!
@@ -80,14 +81,14 @@ fun UpdateCenterScreen(
         Text(if (ru) "Синхронизация с сетью компании" else "Company network synchronization", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         InfoCard(if (ru) "Приложение" else "Application") {
-            Text(if (ru) "Текущая версия: 2.0.0" else "Current version: 2.0.0", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Текущая версия: 2.0.1" else "Current version: 2.0.1", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(if (ru) "Служба обновлений: доступна" else "Application update service: available", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Button(onClick = {
                 scope.launch {
                     val info = withContext(Dispatchers.IO) { updateRepository.checkForUpdate() }
                     when {
-                        info == null -> snackbarHostState.showSnackbar(if (ru) "Служба обновлений временно недоступна" else "Update service temporarily unavailable")
-                        info.versionCode <= currentVersionCode -> snackbarHostState.showSnackbar(if (ru) "Установлена актуальная версия" else "Crew Portal is up to date")
+                        info == null -> Toast.makeText(context, if (ru) "Служба обновлений временно недоступна" else "Update service temporarily unavailable", Toast.LENGTH_SHORT).show()
+                        info.versionCode <= currentVersionCode -> Toast.makeText(context, if (ru) "Обновлений нет" else "Crew Portal is up to date", Toast.LENGTH_SHORT).show()
                         else -> updateInfo = info
                     }
                 }
@@ -110,7 +111,7 @@ fun UpdateCenterScreen(
             Text(if (ru) "MEL обновляется при открытии карточки конкретного борта." else "MEL data is refreshed when an aircraft MEL screen is opened.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        InfoCard(if (ru) "Журнал изменений — 2.0.0" else "Change log — 2.0.0") {
+        InfoCard(if (ru) "Журнал изменений — 2.0.1" else "Change log — 2.0.1") {
             listOf(
                 if (ru) "Убрана дублирующая статичная загрузка на заставке." else "Removed duplicated static splash loader.",
                 if (ru) "Погода BKK / VTBS отображается сразу и обновляется в фоне." else "BKK / VTBS weather is shown immediately and refreshed in the background.",

@@ -24,6 +24,8 @@ class PreferencesRepository(private val context: Context) {
         val INSTALLED_APP_VERSION = stringPreferencesKey("installed_app_version")
         val DARK_THEME = booleanPreferencesKey("dark_theme")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
+        val NEXT_MONTH_ROSTER_REVIEWED = booleanPreferencesKey("next_month_roster_reviewed")
+        val ENHANCED_ROSTER_TARGET = booleanPreferencesKey("enhanced_roster_target")
     }
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { it[Keys.IS_LOGGED_IN] ?: false }
@@ -37,6 +39,8 @@ class PreferencesRepository(private val context: Context) {
     val installedAppVersion: Flow<String> = context.dataStore.data.map { it[Keys.INSTALLED_APP_VERSION] ?: "" }
     val darkTheme: Flow<Boolean> = context.dataStore.data.map { it[Keys.DARK_THEME] ?: false }
     val appLanguage: Flow<String> = context.dataStore.data.map { it[Keys.APP_LANGUAGE] ?: "en" }
+    val nextMonthRosterReviewed: Flow<Boolean> = context.dataStore.data.map { it[Keys.NEXT_MONTH_ROSTER_REVIEWED] ?: false }
+    val enhancedRosterTarget: Flow<Boolean> = context.dataStore.data.map { it[Keys.ENHANCED_ROSTER_TARGET] ?: false }
 
     suspend fun setLoginState(loggedIn: Boolean, remember: Boolean, login: String) {
         context.dataStore.edit { preferences ->
@@ -54,6 +58,12 @@ class PreferencesRepository(private val context: Context) {
 
     suspend fun setDarkTheme(enabled: Boolean) { context.dataStore.edit { it[Keys.DARK_THEME] = enabled } }
     suspend fun setAppLanguage(language: String) { context.dataStore.edit { it[Keys.APP_LANGUAGE] = language } }
+    suspend fun setNextMonthRosterDecision(reviewed: Boolean, enhancedTarget: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.NEXT_MONTH_ROSTER_REVIEWED] = reviewed
+            preferences[Keys.ENHANCED_ROSTER_TARGET] = enhancedTarget
+        }
+    }
 
     suspend fun addFlightTime(minutes: Int, aircraftLabel: String = "") {
         context.dataStore.edit { preferences ->
