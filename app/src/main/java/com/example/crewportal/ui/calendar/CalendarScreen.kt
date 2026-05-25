@@ -30,6 +30,7 @@ import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.leave.LeavePeriod
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.repository.FlightRepository
+import com.example.crewportal.data.repository.PreferencesRepository
 import com.example.crewportal.util.displayDay
 import com.example.crewportal.util.displayMonth
 import com.example.crewportal.util.displayShortDate
@@ -39,8 +40,10 @@ import com.example.crewportal.util.parseLocalDateTime
 import java.time.LocalDate
 
 @Composable
-fun CalendarScreen(flightRepository: FlightRepository) {
+fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: PreferencesRepository) {
     val duties by flightRepository.observeFlights().collectAsState(initial = emptyList())
+    val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
+    val ru = language == "ru"
     var showNextMonth by remember { mutableStateOf(false) }
     val today = LocalDate.now()
     val targetMonth = if (showNextMonth) today.plusMonths(1) else today
@@ -63,20 +66,20 @@ fun CalendarScreen(flightRepository: FlightRepository) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("Roster Calendar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Roster month: ${displayMonth(targetMonth)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Календарь ростера" else "Roster Calendar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text((if (ru) "Месяц: " else "Roster month: ") + displayMonth(targetMonth), color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (canPreviewNext || showNextMonth) {
                 OutlinedButton(onClick = { showNextMonth = !showNextMonth }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    Text(if (showNextMonth) "Back to current month" else "Show next month roster")
+                    Text(if (showNextMonth) { if (ru) "Вернуться к текущему месяцу" else "Back to current month" } else { if (ru) "Показать следующий месяц" else "Show next month roster" })
                 }
             }
         }
-        items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty()) }
+        items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty(), ru) }
     }
 }
 
 @Composable
-private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves: List<LeavePeriod>) {
+private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves: List<LeavePeriod>, ru: Boolean) {
     val isPast = date.isBefore(LocalDate.now())
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -86,7 +89,7 @@ private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves:
                     Text(date.format(java.time.format.DateTimeFormatter.ofPattern("EEE", java.util.Locale.ENGLISH)).uppercase(), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 val block = duties.filter { it.dutyType == "FLIGHT" }.sumOf { it.durationMinutes }
-                if (block > 0) Text("Block ${formatMinutes(block)}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                if (block > 0) Text((if (ru) "Налёт " else "Block ") + formatMinutes(block), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
             leaves.distinctBy { it.id }.forEach { leave ->
                 val chipColor = when (leave.type) {
@@ -97,14 +100,14 @@ private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves:
                 }
                 Box(Modifier.fillMaxWidth().background(chipColor, RoundedCornerShape(10.dp)).padding(10.dp)) {
                     Column {
-                        Text(leave.title.uppercase(), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
-                        Text(leave.note.ifBlank { "Approved leave" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(localizedLeaveTitle(leave, ru), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(if (ru) localizedLeaveNote(leave) else leave.note.ifBlank { "Approved leave" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             val visibleDuties = if (leaves.isNotEmpty()) emptyList() else duties
             visibleDuties.forEach { duty ->
-                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") "OFF" else duty.dutyType
+                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") { if (ru) "ВЫХОДНОЙ" else "OFF" } else if (duty.dutyType == "RESERVE") { if (ru) "РЕЗЕРВ" else "RESERVE" } else duty.dutyType
                 val chipColor = when (duty.dutyType) {
                     "FLIGHT" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                     "RESERVE" -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
@@ -121,4 +124,22 @@ private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves:
             }
         }
     }
+}
+
+
+private fun localizedLeaveTitle(leave: LeavePeriod, ru: Boolean): String {
+    if (!ru) return leave.title.uppercase()
+    return when (leave.type) {
+        "ANNUAL_LEAVE" -> "ОСНОВНОЙ ОТПУСК"
+        "PERSONAL_LEAVE" -> "ЛИЧНЫЙ ОТПУСК"
+        "SICK_LEAVE" -> "БОЛЬНИЧНЫЙ"
+        else -> leave.title.uppercase()
+    }
+}
+
+private fun localizedLeaveNote(leave: LeavePeriod): String = when (leave.type) {
+    "ANNUAL_LEAVE" -> "Назначенный отпуск компании"
+    "PERSONAL_LEAVE" -> "Одобренный личный отпуск"
+    "SICK_LEAVE" -> "Больничный"
+    else -> "Одобрено"
 }

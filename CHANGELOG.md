@@ -1,6 +1,6 @@
 # Crew Portal Changelog
 
-## 1.8.1
+## 1.8.2
 - Fixed current-month leave overlay so roster and calendar remain consistent during testing.
 - Weather now loads BKK / VTBS automatically on screen open.
 - Added manual Weather refresh button and improved TAF card spacing.

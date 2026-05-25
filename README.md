@@ -1,6 +1,6 @@
 # Crew Portal
 
-Version: 1.8.1
+Version: 1.8.2
 
 Crew Portal is a Kotlin / Jetpack Compose Android crew operations app.
 
@@ -20,4 +20,4 @@ Crew Portal is a Kotlin / Jetpack Compose Android crew operations app.
 GitHub Actions builds the debug APK artifact.
 Expected release asset name:
 
-`CrewPortal-1.8.1.apk`
+`CrewPortal-1.8.2.apk`

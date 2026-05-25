@@ -21,12 +21,13 @@ import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.ui.theme.TextMuted
 import com.example.crewportal.ui.theme.ThaiPurple
 import com.example.crewportal.util.canRegister
+import com.example.crewportal.util.shouldShowRegistrationButton
 import com.example.crewportal.util.displayDate
 
 @Composable
 fun NotificationsScreen(flightRepository: FlightRepository) {
     val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
-    val openFlights = flights.filter { it.dutyType == "FLIGHT" && canRegister(it.departureDateTime, it.isCompleted) }
+    val openFlights = flights.filter { it.dutyType == "FLIGHT" && shouldShowRegistrationButton(it.departureIata, it.durationMinutes) && canRegister(it.departureDateTime, it.isCompleted) }
     val completed = flights.filter { it.isCompleted }.takeLast(5)
     val airportAssigned = flights.filter { it.dutyType == "FLIGHT" && (it.gate != "Pending" || it.stand != "Pending") && !it.isCompleted }
 

@@ -46,7 +46,7 @@ object LeaveDatabase {
     )
 
     // User-requested leave is created through Leave Management.
-    // Demo personal/sick records are intentionally empty in 1.8.1 so the current test roster is not overwritten.
+    // Demo personal/sick records are intentionally empty in 1.8.2 so the current test roster is not overwritten.
     val approvedPersonalLeave = emptyList<LeavePeriod>()
 
     val closedSickLeaves = emptyList<LeavePeriod>()

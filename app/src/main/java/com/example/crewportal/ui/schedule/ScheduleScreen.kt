@@ -66,6 +66,7 @@ import com.example.crewportal.util.dutyMinutes
 import com.example.crewportal.util.formatMinutes
 import com.example.crewportal.util.parseLocalDateTime
 import com.example.crewportal.util.reportDateTime
+import com.example.crewportal.util.shouldShowRegistrationButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -328,7 +329,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                     style = MaterialTheme.typography.labelLarge
                 )
                 Spacer(Modifier.weight(1f))
-                Text(if (flight.isCompleted) "COMPLETED" else if (flight.isRegistered) "REGISTERED" else flight.status, color = SuccessGreen, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Text(if (flight.isCompleted) { if (ru) "ВЫПОЛНЕНО" else "COMPLETED" } else if (flight.isRegistered) { if (ru) "ЗАРЕГИСТРИРОВАН" else "REGISTERED" } else { if (ru) "ПЛАН" else flight.status }, color = SuccessGreen, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(18.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -352,12 +353,12 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("AIRCRAFT", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
+                    Text(if (ru) "ВС" else "AIRCRAFT", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
                     Text(flight.aircraftFullName, style = MaterialTheme.typography.titleMedium)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("REGISTRATION", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
-                    Text(if (flight.registration == "TBA") "Assigned 24h prior" else flight.registration, style = MaterialTheme.typography.titleMedium)
+                    Text(if (ru) "БОРТ" else "REGISTRATION", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
+                    Text(if (flight.registration == "TBA") { if (ru) "За 24 часа" else "Assigned 24h prior" } else flight.registration, style = MaterialTheme.typography.titleMedium)
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -366,7 +367,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
             if (flight.isRegistered) {
                 Spacer(Modifier.height(12.dp))
                 Button(onClick = {}, enabled = true, colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen), modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Зарегистрирован" else "Registered") }
-            } else if (canRegister(flight.departureDateTime, flight.isCompleted)) {
+            } else if (shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted)) {
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(onClick = { scope.launch { flightRepository.registerFlight(flight.id) } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Регистрация" else "Register") }
             }

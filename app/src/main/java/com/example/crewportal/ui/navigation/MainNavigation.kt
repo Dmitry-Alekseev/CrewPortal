@@ -162,8 +162,8 @@ fun MainNavigation(
                 MelScreen(registration = entry.arguments?.getString("registration").orEmpty())
             }
 
-            composable(Screen.Calendar.route) { CalendarScreen(flightRepository) }
-            composable(Screen.Weather.route) { WeatherScreen(weatherRepository) }
+            composable(Screen.Calendar.route) { CalendarScreen(flightRepository, preferencesRepository) }
+            composable(Screen.Weather.route) { WeatherScreen(weatherRepository, preferencesRepository) }
             composable(Screen.Fleet.route) { FleetScreen() }
             composable(Screen.Alerts.route) { NotificationsScreen(flightRepository) }
             composable(Screen.Profile.route) { ProfileScreen(preferencesRepository) }

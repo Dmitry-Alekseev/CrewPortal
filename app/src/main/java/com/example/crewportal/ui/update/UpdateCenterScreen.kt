@@ -47,6 +47,8 @@ fun UpdateCenterScreen(
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
     val ru = language == "ru"
     var updateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
+    val currentVersionCode = 82
+    val currentVersionName = "1.8.2"
 
     if (updateInfo != null) {
         val info = updateInfo!!
@@ -56,7 +58,7 @@ fun UpdateCenterScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Crew Portal ${info.latestVersion}", fontWeight = FontWeight.Bold)
-                    info.changelog.forEach { Text("• $it") }
+                    (if (ru && info.changelogRu.isNotEmpty()) info.changelogRu else info.changelog).forEach { Text("• $it") }
                 }
             },
             confirmButton = {
@@ -78,12 +80,16 @@ fun UpdateCenterScreen(
         Text(if (ru) "Синхронизация с сетью компании" else "Company network synchronization", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         InfoCard(if (ru) "Приложение" else "Application") {
-            Text(if (ru) "Текущая версия: 1.8.1" else "Current version: 1.8.1", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Текущая версия: 1.8.2" else "Current version: 1.8.2", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(if (ru) "Служба обновлений: доступна" else "Application update service: available", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Button(onClick = {
                 scope.launch {
                     val info = withContext(Dispatchers.IO) { updateRepository.checkForUpdate() }
-                    if (info == null) snackbarHostState.showSnackbar(if (ru) "Служба обновлений временно недоступна" else "Update service temporarily unavailable") else updateInfo = info
+                    when {
+                        info == null -> snackbarHostState.showSnackbar(if (ru) "Служба обновлений временно недоступна" else "Update service temporarily unavailable")
+                        info.versionCode <= currentVersionCode -> snackbarHostState.showSnackbar(if (ru) "Установлена актуальная версия" else "Crew Portal is up to date")
+                        else -> updateInfo = info
+                    }
                 }
             }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Проверить обновления" else "Check app update") }
         }
@@ -104,13 +110,13 @@ fun UpdateCenterScreen(
             Text(if (ru) "MEL обновляется при открытии карточки конкретного борта." else "MEL data is refreshed when an aircraft MEL screen is opened.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        InfoCard(if (ru) "Журнал изменений — 1.8.1" else "Change log — 1.8.1") {
+        InfoCard(if (ru) "Журнал изменений — 1.8.2" else "Change log — 1.8.2") {
             listOf(
-                if (ru) "Исправлена прокрутка экрана More." else "Fixed More screen scrolling.",
-                if (ru) "Обновлены формулировки центра синхронизации." else "Updated synchronization wording.",
-                if (ru) "Расширена база аэропортов." else "Expanded Airport Info database.",
-                if (ru) "Добавлен поиск аэропорта по ICAO/IATA/городу." else "Added airport search by ICAO, IATA and city.",
-                if (ru) "Улучшено сохранение состояния рейсов при обновлениях." else "Improved flight state preservation during updates."
+                if (ru) "Убрана дублирующая статичная загрузка на заставке." else "Removed duplicated static splash loader.",
+                if (ru) "Погода BKK / VTBS отображается сразу и обновляется в фоне." else "BKK / VTBS weather is shown immediately and refreshed in the background.",
+                if (ru) "Убраны демонстрационные дни больничного." else "Removed demo sick leave records.",
+                if (ru) "Проверка обновлений теперь корректно определяет актуальную версию." else "Update check now correctly detects the installed version.",
+                if (ru) "Для коротких обратных секторов убрана отдельная регистрация." else "Removed separate registration for short turnaround return sectors."
             ).forEach { Text("• $it", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
     }

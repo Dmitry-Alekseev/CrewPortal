@@ -11,7 +11,8 @@ data class AppUpdateInfo(
     val latestVersion: String,
     val versionCode: Int,
     val apkUrl: String,
-    val changelog: List<String>
+    val changelog: List<String>,
+    val changelogRu: List<String> = emptyList()
 )
 
 class UpdateRepository(private val context: Context) {
@@ -24,15 +25,16 @@ class UpdateRepository(private val context: Context) {
             val body = response.body?.string().orEmpty()
             if (!response.isSuccessful || body.isBlank()) return null
             val root = JSONObject(body)
-            val changes = root.optJSONArray("changelog")
-            val list = buildList {
-                if (changes != null) for (i in 0 until changes.length()) add(changes.getString(i))
+            fun readList(name: String): List<String> {
+                val arr = root.optJSONArray(name) ?: return emptyList()
+                return buildList { for (i in 0 until arr.length()) add(arr.getString(i)) }
             }
             AppUpdateInfo(
                 latestVersion = root.optString("latestVersion", ""),
                 versionCode = root.optInt("versionCode", 0),
                 apkUrl = root.optString("apkUrl", ""),
-                changelog = list
+                changelog = readList("changelog"),
+                changelogRu = readList("changelogRu")
             )
         } catch (_: Exception) {
             null

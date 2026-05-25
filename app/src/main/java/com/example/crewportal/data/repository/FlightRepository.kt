@@ -10,6 +10,7 @@ import com.example.crewportal.util.RosterNotificationScheduler
 import com.example.crewportal.util.canRegister
 import com.example.crewportal.util.hasArrived
 import com.example.crewportal.util.parseLocalDateTime
+import com.example.crewportal.util.shouldShowRegistrationButton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
@@ -155,7 +156,7 @@ class FlightRepository(
         val rosterSnapshot = flightDao.getAllOnce()
         RosterNotificationScheduler.scheduleRoster(context, rosterSnapshot)
         rosterSnapshot.forEach { flight ->
-            if (flight.dutyType == "FLIGHT" && canRegister(flight.departureDateTime, flight.isCompleted)) {
+            if (flight.dutyType == "FLIGHT" && shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted)) {
                 assignAircraftIfNeeded(flight)
                 if (!flight.registrationNotified) {
                     flightDao.markRegistrationNotified(flight.id)

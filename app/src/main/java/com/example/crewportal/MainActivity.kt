@@ -84,7 +84,7 @@ class MainActivity : FragmentActivity() {
 
                 LaunchedEffect(Unit) {
                     authRepository.signOut()
-                    flightRepository.refreshBuiltInRosterOnAppUpdate("1.8.1")
+                    flightRepository.refreshBuiltInRosterOnAppUpdate("1.8.2")
                     flightRepository.refreshCompletedFlights()
                     delay(1800)
                     showSplash = false

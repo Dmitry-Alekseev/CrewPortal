@@ -1,15 +1,21 @@
 {
-  "latestVersion": "1.8.1",
-  "versionCode": 81,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v1.8.1/CrewPortal-1.8.1.apk",
+  "latestVersion": "1.8.2",
+  "versionCode": 82,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v1.8.2/CrewPortal-1.8.2.apk",
   "changelog": [
-    "Fixed current-month leave overlay so test roster and calendar stay consistent",
-    "Weather now loads BKK / VTBS automatically and includes manual refresh",
-    "Improved TAF card spacing to prevent clipped text",
-    "Improved company network sync indicator pulse",
-    "Leave calendar can switch months and uses distinct leave colors",
-    "Moved Leave and Payroll entries higher in More",
-    "Added splash screen with animated loader and post-login synchronization dialog",
-    "Reduced A320/A321 short-haul cabin crew count to 4 plus cabin manager"
+    "Removed static loader from splash background; loader is now only animated in app",
+    "Improved Russian localization coverage for roster, calendar, weather and update screens",
+    "Weather screen now shows BKK / VTBS immediately while refreshing in background",
+    "Removed demo sick leave counters from profile and leave balance",
+    "Update Center now reports no update when the current version is already installed",
+    "Turnaround return sectors no longer show a separate registration button"
+  ],
+  "changelogRu": [
+    "Убрана статичная загрузка с фоновой заставки; теперь крутится только реальный индикатор приложения",
+    "Расширена русская локализация ростера, календаря, погоды и центра обновлений",
+    "Экран погоды сразу показывает BKK / VTBS и обновляет данные в фоне",
+    "Убраны демонстрационные дни больничного из профиля и баланса отпусков",
+    "Центр обновлений больше не предлагает обновление, если установлена актуальная версия",
+    "На обратных секторах короткого turnaround больше нет отдельной кнопки регистрации"
   ]
 }

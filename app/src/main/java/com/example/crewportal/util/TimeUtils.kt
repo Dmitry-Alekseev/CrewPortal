@@ -22,6 +22,13 @@ fun displayTime(value: String): String = parseLocalDateTime(value).format(timeFo
 fun formatMinutes(minutes: Int): String = "${minutes / 60}h ${minutes % 60}m"
 fun formatTotalMinutes(minutes: Int): String = "${minutes / 60}h ${minutes % 60}m"
 
+
+fun shouldShowRegistrationButton(departureIata: String, durationMinutes: Int): Boolean {
+    // One registration is enough for a short same-day turnaround duty.
+    // Show registration on the first/base sector and on long layover-return sectors.
+    return departureIata == "BKK" || durationMinutes >= 240
+}
+
 fun canRegister(departureDateTime: String, completed: Boolean): Boolean {
     if (completed) return false
     val now = LocalDateTime.now()

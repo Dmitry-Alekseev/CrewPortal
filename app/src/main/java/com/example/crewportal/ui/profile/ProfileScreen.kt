@@ -101,8 +101,8 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
 
         InfoCard("Leave & Availability") {
             ProfileRow("Annual leave", "50 / 80 days assigned")
-            ProfileRow("Personal leave", "4 / 40 days used")
-            ProfileRow("Sick leave", "3 days recorded")
+            ProfileRow("Personal leave", "0 / 40 days used")
+            ProfileRow("Sick leave", "No records")
             Text("Open Leave Management from More to request personal leave or manage sick leave.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
