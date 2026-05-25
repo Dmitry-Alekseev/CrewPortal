@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.crewportal"
         minSdk = 26
         targetSdk = 35
-        versionCode = 82
-        versionName = "1.8.2"
+        versionCode = 200
+        versionName = "2.0.0"
     }
 
     signingConfigs {
@@ -78,7 +78,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     implementation("androidx.biometric:biometric:1.1.0")
-    implementation("androidx.fragment:fragment-ktx:1.8.2")
+    implementation("androidx.fragment:fragment-ktx:2.0.0")
     implementation("androidx.core:core:1.13.1")
 
     implementation("org.osmdroid:osmdroid-android:6.1.20")

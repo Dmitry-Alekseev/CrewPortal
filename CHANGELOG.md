@@ -1,18 +1,14 @@
-# Crew Portal Changelog
+# Crew Portal Change Log
+
+## 2.0.0
+- Added Smart Roster generator test mode for June 2026.
+- Added hidden 5-tap developer trigger on Settings version text.
+- Added Payroll / Payslip screen in USD with Salary and Bonus sections.
+- Added briefing and debriefing time display to roster cards.
+- Added generated route set including Tashkent and simulated Russia/CIS network support.
+- Added long-haul payroll logic basis for operating/relief captain duties.
+- Refreshed visual theme with cleaner light mode and a darker, more readable dark mode.
+- Update Center now correctly reports no update when current version matches latest version.
 
 ## 1.8.2
-- Fixed current-month leave overlay so roster and calendar remain consistent during testing.
-- Weather now loads BKK / VTBS automatically on screen open.
-- Added manual Weather refresh button and improved TAF card spacing.
-- Made company network synchronization indicator pulse more frequently.
-- Leave calendar now supports previous/next month navigation and separate colors for company, personal and sick leave.
-- Moved Leave and Payroll / Salary higher in More.
-- Added Payroll placeholder for version 1.9.
-- Added splash screen with animated loader and post-login company database synchronization dialog.
-- Reduced A320/A321 short-haul cabin crew count to 4 plus cabin manager.
-
-## 1.7.1
-- Airport database expansion and search improvements.
-- Update Center wording made more corporate.
-- Fleet age removed.
-- State preservation improved.
+- Hotfix: splash loader cleanup, Weather BKK default, localization fixes, sick leave demo cleanup, update check state, turnaround registration logic.

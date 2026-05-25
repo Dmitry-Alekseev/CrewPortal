@@ -10,32 +10,31 @@ import androidx.compose.ui.graphics.Color
 private val LightColors = lightColorScheme(
     primary = ThaiPurple,
     onPrimary = Color.White,
-    secondary = ThaiPurple,
-    background = Color(0xFFF7F5FA),
-    onBackground = Color(0xFF1D1B20),
-    surface = Color.White,
-    onSurface = Color(0xFF1D1B20),
-    surfaceVariant = Color(0xFFF0EAF7),
-    onSurfaceVariant = Color(0xFF5F6270)
+    secondary = GoldAccent,
+    background = Color(0xFFF5F2F8),
+    onBackground = Color(0xFF17131D),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF17131D),
+    surfaceVariant = Color(0xFFECE5F3),
+    onSurfaceVariant = Color(0xFF52505A),
+    tertiary = Color(0xFF7C4D00)
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFE1C4FF),
-    onPrimary = Color(0xFF1D1028),
-    secondary = Color(0xFFE1C4FF),
-    background = Color(0xFF100C16),
-    onBackground = Color(0xFFF6EFFA),
-    surface = Color(0xFF21182C),
-    onSurface = Color(0xFFF6EFFA),
-    surfaceVariant = Color(0xFF302540),
-    onSurfaceVariant = Color(0xFFD7CDE0)
+    primary = GoldAccent,
+    onPrimary = Color(0xFF171008),
+    secondary = Color(0xFFB89CFF),
+    background = Color(0xFF0B0D12),
+    onBackground = Color(0xFFF4F1F8),
+    surface = Color(0xFF161A22),
+    onSurface = Color(0xFFF4F1F8),
+    surfaceVariant = Color(0xFF222835),
+    onSurfaceVariant = Color(0xFFD8D3E1),
+    tertiary = Color(0xFFE9C86E)
 )
 
 @Composable
 fun CrewPortalTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
     val colors = if (darkTheme ?: isSystemInDarkTheme()) DarkColors else LightColors
-    MaterialTheme(
-        colorScheme = colors,
-        content = content
-    )
+    MaterialTheme(colorScheme = colors, content = content)
 }

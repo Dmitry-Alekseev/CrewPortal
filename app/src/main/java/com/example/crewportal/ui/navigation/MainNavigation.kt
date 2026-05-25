@@ -59,6 +59,7 @@ import com.example.crewportal.ui.update.UpdateCenterScreen
 import com.example.crewportal.ui.airport.AirportInfoScreen
 import com.example.crewportal.ui.history.RosterChangeHistoryScreen
 import com.example.crewportal.ui.leave.LeaveManagementScreen
+import com.example.crewportal.ui.payroll.PayrollScreen
 
 sealed class Screen(val route: String, val label: String) {
     data object Schedule : Screen("schedule", "Roster")
@@ -172,7 +173,7 @@ fun MainNavigation(
             composable(Screen.AirportInfo.route) { AirportInfoScreen() }
             composable(Screen.RosterHistory.route) { RosterChangeHistoryScreen(flightRepository) }
             composable(Screen.Leave.route) { LeaveManagementScreen() }
-            composable(Screen.Payroll.route) { PayrollPlaceholderScreen(ru = ru) }
+            composable(Screen.Payroll.route) { PayrollScreen(flightRepository, preferencesRepository, ru = ru) }
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     flightRepository = flightRepository,
@@ -333,7 +334,7 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
 
         MoreMenuCard(
             title = if (ru) "Зарплата" else "Payroll / Salary",
-            subtitle = if (ru) "Расчётный лист и премии — в версии 1.9" else "Payslip and bonus module — coming in version 1.9",
+            subtitle = if (ru) "Расчётный лист, премия и начисления" else "Payslip, bonus and salary breakdown",
             onClick = { navController.navigate(Screen.Payroll.route) }
         )
 

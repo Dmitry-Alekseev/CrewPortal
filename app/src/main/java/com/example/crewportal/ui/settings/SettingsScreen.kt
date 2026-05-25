@@ -1,5 +1,6 @@
 package com.example.crewportal.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,6 +52,7 @@ fun SettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var updateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
     var updateChecked by remember { mutableStateOf(false) }
+    var versionTapCount by remember { mutableStateOf(0) }
 
     if (updateInfo != null) {
         val info = updateInfo!!
@@ -103,8 +105,22 @@ fun SettingsScreen(
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ru) "Приложение" else "Application", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("Crew Portal 1.8.2", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Пакет обновления: CrewPortal-1.8.2.apk" else "Update package: CrewPortal-1.8.2.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Crew Portal 2.0.0",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clickable {
+                        versionTapCount += 1
+                        if (versionTapCount >= 5) {
+                            versionTapCount = 0
+                            scope.launch {
+                                withContext(Dispatchers.IO) { flightRepository.generateJuneRosterTest() }
+                                snackbarHostState.showSnackbar(if (ru) "Тестовый ростер июня создан" else "Generated June roster test applied")
+                            }
+                        }
+                    }
+                )
+                Text(if (ru) "Пакет обновления: CrewPortal-2.0.0.apk" else "Update package: CrewPortal-2.0.0.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Секретный тест: 5 тапов по версии генерируют июньский ростер" else "Developer test: 5 taps on version generate June roster", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Ростер: сеть компании + локальная база" else "Roster sync: company network + local database", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "MEL: сеть компании + локальная база по бортам" else "MEL: company network + local defects database by aircraft", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Карта: OpenStreetMap / osmdroid" else "Map source: OpenStreetMap / osmdroid", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -126,7 +142,11 @@ fun SettingsScreen(
                     scope.launch {
                         updateChecked = true
                         val info = withContext(Dispatchers.IO) { updateRepository.checkForUpdate() }
-                        if (info == null) snackbarHostState.showSnackbar(if (ru) "Обновления не найдены" else "No update information found") else updateInfo = info
+                        when {
+                            info == null -> snackbarHostState.showSnackbar(if (ru) "Служба обновлений недоступна" else "Update service unavailable")
+                            info.versionCode <= 200 -> snackbarHostState.showSnackbar(if (ru) "Обновлений нет" else "Crew Portal is up to date")
+                            else -> updateInfo = info
+                        }
                     }
                 }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Проверить обновления приложения" else "Check app updates") }
             }
@@ -134,12 +154,12 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 1.8.2", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Leave Management and sick leave controls added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Monthly target now adjusts to leave and sick leave.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Today’s Duty now supports pre-flight, in-flight, turnaround and leave states.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Weather interpretation and runway condition estimate added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• New launcher icon and roster UI polish.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 2.0.0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Smart Roster test mode added for June generation.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Payroll / Payslip module added in USD.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Briefing and debriefing time shown in roster.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Long-haul operating/relief captain logic prepared.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Visual refresh and dark theme polish.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

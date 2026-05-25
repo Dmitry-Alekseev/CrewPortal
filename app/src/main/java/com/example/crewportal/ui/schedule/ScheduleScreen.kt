@@ -362,6 +362,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                 }
             }
             Spacer(Modifier.height(8.dp))
+            BriefingLine(flight = flight, ru = ru)
             airportAssignmentLine(flight).takeIf { it.isNotBlank() }?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             Text((if (ru) "Время duty: " else "Duty time: ") + formatMinutes(dutyMinutes(flight.departureDateTime, flight.arrivalDateTime, flight.durationMinutes)), color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (flight.isRegistered) {
@@ -372,6 +373,26 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                 OutlinedButton(onClick = { scope.launch { flightRepository.registerFlight(flight.id) } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Регистрация" else "Register") }
             }
         }
+    }
+}
+
+@Composable
+private fun BriefingLine(flight: FlightEntity, ru: Boolean) {
+    val departure = parseLocalDateTime(flight.departureDateTime)
+    val arrival = parseLocalDateTime(flight.arrivalDateTime)
+    val briefing = departure.minusMinutes(90).format(DateTimeFormatter.ofPattern("HH:mm"))
+    val debriefing = arrival.plusMinutes(30).format(DateTimeFormatter.ofPattern("HH:mm"))
+    val longHaul = flight.durationMinutes >= 360
+    val returningHome = flight.arrivalIata == "BKK"
+    Text(
+        (if (ru) "Явка: " else "Briefing: ") + briefing,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    if (longHaul || returningHome) {
+        Text(
+            (if (ru) "Debriefing: " else "Debriefing: ") + debriefing,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

@@ -1,21 +1,21 @@
 {
-  "latestVersion": "1.8.2",
-  "versionCode": 82,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v1.8.2/CrewPortal-1.8.2.apk",
+  "latestVersion": "2.0.0",
+  "versionCode": 200,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.0.0/CrewPortal-2.0.0.apk",
   "changelog": [
-    "Removed static loader from splash background; loader is now only animated in app",
-    "Improved Russian localization coverage for roster, calendar, weather and update screens",
-    "Weather screen now shows BKK / VTBS immediately while refreshing in background",
-    "Removed demo sick leave counters from profile and leave balance",
-    "Update Center now reports no update when the current version is already installed",
-    "Turnaround return sectors no longer show a separate registration button"
+    "Crew Portal 2.0 visual refresh",
+    "Smart June roster generator test mode",
+    "Payroll and payslip module",
+    "Briefing/debriefing time added to roster",
+    "Long-haul crew role and payroll logic",
+    "Training/check events prepared for generated roster"
   ],
   "changelogRu": [
-    "Убрана статичная загрузка с фоновой заставки; теперь крутится только реальный индикатор приложения",
-    "Расширена русская локализация ростера, календаря, погоды и центра обновлений",
-    "Экран погоды сразу показывает BKK / VTBS и обновляет данные в фоне",
-    "Убраны демонстрационные дни больничного из профиля и баланса отпусков",
-    "Центр обновлений больше не предлагает обновление, если установлена актуальная версия",
-    "На обратных секторах короткого turnaround больше нет отдельной кнопки регистрации"
+    "Визуальное обновление Crew Portal 2.0",
+    "Тестовый генератор ростера на июнь",
+    "Модуль зарплаты и расчётного листа",
+    "В ростер добавлены briefing/debriefing time",
+    "Логика long-haul экипажа и payroll",
+    "Подготовлена интеграция training/check events в генератор"
   ]
 }

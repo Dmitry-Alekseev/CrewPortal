@@ -42,8 +42,7 @@ fun hasArrived(arrivalDateTime: String): Boolean {
 }
 
 fun reportDateTime(departureDateTime: String, durationMinutes: Int): LocalDateTime {
-    val reportOffset = if (durationMinutes >= 240) 90L else 60L
-    return parseLocalDateTime(departureDateTime).minusMinutes(reportOffset)
+    return parseLocalDateTime(departureDateTime).minusMinutes(90)
 }
 
 fun dutyEndDateTime(arrivalDateTime: String): LocalDateTime = parseLocalDateTime(arrivalDateTime).plusMinutes(30)

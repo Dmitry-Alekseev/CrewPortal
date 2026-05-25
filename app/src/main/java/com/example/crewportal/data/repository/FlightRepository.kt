@@ -5,6 +5,7 @@ import com.example.crewportal.data.airport.AirportAssignmentPool
 import com.example.crewportal.data.fleet.AircraftPool
 import com.example.crewportal.data.local.FlightDao
 import com.example.crewportal.data.local.FlightEntity
+import com.example.crewportal.data.roster.RosterGenerator
 import com.example.crewportal.util.NotificationHelper
 import com.example.crewportal.util.RosterNotificationScheduler
 import com.example.crewportal.util.canRegister
@@ -191,6 +192,19 @@ class FlightRepository(
                 )
             }
         }
+    }
+
+    suspend fun generateJuneRosterTest() {
+        val generated = RosterGenerator.generateJune2026()
+        flightDao.clearAll()
+        flightDao.insertAll(generated)
+        RosterNotificationScheduler.scheduleRoster(context, generated)
+        NotificationHelper.show(
+            context,
+            "Generated roster applied",
+            "June 2026 generated roster test has been loaded.",
+            2_006_000
+        )
     }
 
     suspend fun simulateRosterChange() {
