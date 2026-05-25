@@ -24,6 +24,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,7 +57,7 @@ import java.util.Locale
 fun LeaveManagementScreen() {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    val month = remember { YearMonth.now() }
+    var month by remember { mutableStateOf(YearMonth.now()) }
     val days = remember(month) { (1..month.lengthOfMonth()).map { month.atDay(it) } }
     val balance = LeaveDatabase.balance()
     var selectedStart by remember { mutableStateOf<LocalDate?>(null) }
@@ -155,7 +160,16 @@ fun LeaveManagementScreen() {
         }
 
         item {
-            Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { month = month.minusMonths(1) }) { Icon(Icons.Default.ChevronLeft, contentDescription = "Previous month") }
+                Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                IconButton(onClick = { month = month.plusMonths(1) }) { Icon(Icons.Default.ChevronRight, contentDescription = "Next month") }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                LegendChip("Company", Color(0xFFFFD54F).copy(alpha = 0.55f))
+                LegendChip("Personal", Color(0xFF4FC3F7).copy(alpha = 0.45f))
+                LegendChip("Sick", Color(0xFFEF5350).copy(alpha = 0.35f))
+            }
         }
 
         item {
@@ -244,3 +258,11 @@ private fun selectedText(start: LocalDate?, end: LocalDate?): String = when {
 }
 
 private fun formatDate(date: LocalDate): String = date.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)).uppercase(Locale.ENGLISH)
+
+
+@Composable
+private fun LegendChip(label: String, color: Color) {
+    Box(Modifier.background(color, RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 4.dp)) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
+    }
+}

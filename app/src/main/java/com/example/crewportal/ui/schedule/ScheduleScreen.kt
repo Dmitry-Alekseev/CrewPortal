@@ -183,7 +183,7 @@ private fun CompanySyncLine(ru: Boolean) {
     val alpha by transition.animateFloat(
         initialValue = 0.55f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(animation = tween(1600), repeatMode = RepeatMode.Reverse),
+        animationSpec = infiniteRepeatable(animation = tween(520), repeatMode = RepeatMode.Reverse),
         label = "syncAlpha"
     )
     Text(

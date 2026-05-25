@@ -45,27 +45,11 @@ object LeaveDatabase {
         )
     )
 
-    val approvedPersonalLeave = listOf(
-        LeavePeriod(
-            id = "personal-jun-2026-demo",
-            type = "PERSONAL_LEAVE",
-            title = "Personal Leave",
-            start = LocalDate.of(2026, 6, 17),
-            end = LocalDate.of(2026, 6, 20),
-            note = "Approved personal leave request"
-        )
-    )
+    // User-requested leave is created through Leave Management.
+    // Demo personal/sick records are intentionally empty in 1.8.1 so the current test roster is not overwritten.
+    val approvedPersonalLeave = emptyList<LeavePeriod>()
 
-    val closedSickLeaves = listOf(
-        LeavePeriod(
-            id = "sick-may-2026-demo",
-            type = "SICK_LEAVE",
-            title = "Sick Leave",
-            start = LocalDate.of(2026, 5, 26),
-            end = LocalDate.of(2026, 5, 28),
-            note = "Closed sick leave record"
-        )
-    )
+    val closedSickLeaves = emptyList<LeavePeriod>()
 
     fun allApproved(): List<LeavePeriod> = assignedLeave + approvedPersonalLeave + closedSickLeaves
 

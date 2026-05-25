@@ -78,7 +78,7 @@ fun UpdateCenterScreen(
         Text(if (ru) "Синхронизация с сетью компании" else "Company network synchronization", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         InfoCard(if (ru) "Приложение" else "Application") {
-            Text(if (ru) "Текущая версия: 1.8.0" else "Current version: 1.8.0", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Текущая версия: 1.8.1" else "Current version: 1.8.1", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(if (ru) "Служба обновлений: доступна" else "Application update service: available", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Button(onClick = {
                 scope.launch {
@@ -104,7 +104,7 @@ fun UpdateCenterScreen(
             Text(if (ru) "MEL обновляется при открытии карточки конкретного борта." else "MEL data is refreshed when an aircraft MEL screen is opened.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        InfoCard(if (ru) "Журнал изменений — 1.8.0" else "Change log — 1.8.0") {
+        InfoCard(if (ru) "Журнал изменений — 1.8.1" else "Change log — 1.8.1") {
             listOf(
                 if (ru) "Исправлена прокрутка экрана More." else "Fixed More screen scrolling.",
                 if (ru) "Обновлены формулировки центра синхронизации." else "Updated synchronization wording.",

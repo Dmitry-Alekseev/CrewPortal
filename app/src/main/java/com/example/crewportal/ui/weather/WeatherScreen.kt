@@ -2,23 +2,32 @@ package com.example.crewportal.ui.weather
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,12 +46,46 @@ fun WeatherScreen(weatherRepository: WeatherRepository) {
     var taf by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
+    fun loadWeather(code: String) {
+        scope.launch {
+            loading = true
+            error = null
+            try {
+                val clean = code.uppercase().take(4)
+                val report = weatherRepository.getReport(clean)
+                searchedIcao = clean
+                metar = report.first
+                taf = report.second
+            } catch (_: IOException) {
+                error = "No internet connection"
+            } catch (e: Exception) {
+                error = e.message ?: "Unable to load weather data"
+            } finally {
+                loading = false
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        loadWeather("VTBS")
+    }
+
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("METAR / TAF", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Enter airport ICAO code", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("METAR / TAF", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text("BKK / VTBS loads automatically", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = { loadWeather(searchedIcao) }, enabled = !loading) {
+                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+            }
+        }
         OutlinedTextField(
             value = icao,
             onValueChange = { icao = it.uppercase().take(4) },
@@ -52,24 +95,7 @@ fun WeatherScreen(weatherRepository: WeatherRepository) {
             modifier = Modifier.fillMaxWidth()
         )
         Button(
-            onClick = {
-                scope.launch {
-                    loading = true
-                    error = null
-                    try {
-                        val report = weatherRepository.getReport(icao)
-                        searchedIcao = icao
-                        metar = report.first
-                        taf = report.second
-                    } catch (_: IOException) {
-                        error = "No internet connection"
-                    } catch (e: Exception) {
-                        error = e.message ?: "Unable to load weather data"
-                    } finally {
-                        loading = false
-                    }
-                }
-            },
+            onClick = { loadWeather(icao) },
             enabled = !loading && icao.length == 4,
             modifier = Modifier.fillMaxWidth()
         ) { Text(if (loading) "Loading..." else if (metar.isBlank() && taf.isBlank()) "Search" else "Refresh") }
@@ -88,8 +114,9 @@ private fun WeatherCard(title: String, text: String) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Spacer(Modifier.height(8.dp))
-            Text(text, color = MaterialTheme.colorScheme.onSurface)
+            Spacer(Modifier.height(10.dp))
+            Text(text, color = MaterialTheme.colorScheme.onSurface, lineHeight = MaterialTheme.typography.bodyMedium.lineHeight)
+            Spacer(Modifier.height(6.dp))
         }
     }
 }
@@ -100,34 +127,30 @@ private fun WeatherInterpretationCard(metar: String, taf: String) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Operational Conditions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(analysis.status, color = if (analysis.hazards.isEmpty()) SuccessGreen else MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-            if (analysis.hazards.isEmpty()) {
-                Text("No significant weather hazards detected in current METAR/TAF text.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else {
-                analysis.hazards.forEach { Text("• $it", color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            }
-            Text("Runway condition estimate: ${analysis.brakingAction}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(analysis.status, color = if (analysis.isGood) SuccessGreen else MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
+            analysis.notes.forEach { Text("• $it", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            Text("Runway condition: ${analysis.runway}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
-private data class WeatherAnalysis(val status: String, val hazards: List<String>, val brakingAction: String)
+private data class WeatherAnalysis(val status: String, val isGood: Boolean, val runway: String, val notes: List<String>)
 
 private fun interpretWeather(raw: String): WeatherAnalysis {
     val text = raw.uppercase()
-    val hazards = buildList {
-        if ("TS" in text) add("Thunderstorm activity reported or forecast")
-        if ("CB" in text) add("Cumulonimbus cloud reported")
-        if ("+RA" in text || "HVY RA" in text) add("Heavy rain may affect visibility and runway condition")
-        if ("RA" in text && "+RA" !in text) add("Rain reported or forecast")
-        if ("FG" in text || "BR" in text) add("Reduced visibility due to fog/mist")
-        if ("WS" in text) add("Windshear information present")
-        if ("G" in text && Regex("\\d{2}G\\d{2}KT").containsMatchIn(text)) add("Gusty wind reported")
+    val notes = mutableListOf<String>()
+    var good = true
+    if ("TS" in text) { notes += "Thunderstorm activity reported or forecast"; good = false }
+    if ("CB" in text) { notes += "Cumulonimbus clouds present"; good = false }
+    if ("+RA" in text || "SHRA" in text) { notes += "Heavy rain / showers may affect operation"; good = false }
+    if ("FG" in text || "BR" in text) { notes += "Reduced visibility possible"; good = false }
+    if ("WS" in text) { notes += "Windshear indication requires attention"; good = false }
+    if ("CAVOK" in text) notes += "CAVOK conditions reported"
+    if (notes.isEmpty()) notes += "No significant weather hazards detected from METAR/TAF"
+    val runway = when {
+        "+RA" in text || "TS" in text || "SHRA" in text -> "WET / monitor braking action"
+        "FG" in text || "BR" in text -> "NORMAL / visibility monitoring required"
+        else -> "NORMAL"
     }
-    val braking = when {
-        hazards.any { it.contains("Heavy rain") || it.contains("Thunderstorm") } -> "Monitor — possible reduced braking action if runway is wet"
-        hazards.any { it.contains("Rain") } -> "Good to medium expected if runway wet"
-        else -> "Good / dry runway expected"
-    }
-    return WeatherAnalysis(if (hazards.isEmpty()) "Conditions look good" else "Weather requires attention", hazards, braking)
+    return WeatherAnalysis(if (good) "Good operational conditions" else "Weather requires attention", good, runway, notes)
 }

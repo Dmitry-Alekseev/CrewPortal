@@ -102,7 +102,8 @@ private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves:
                     }
                 }
             }
-            duties.forEach { duty ->
+            val visibleDuties = if (leaves.isNotEmpty()) emptyList() else duties
+            visibleDuties.forEach { duty ->
                 val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") "OFF" else duty.dutyType
                 val chipColor = when (duty.dutyType) {
                     "FLIGHT" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)

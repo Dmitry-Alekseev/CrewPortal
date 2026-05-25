@@ -39,7 +39,7 @@ object CrewPool {
                 cabinCrewCount = 10 + seed % 4
             )
         } else {
-            FlightCrew(captain, fo, null, null, cm, 4 + seed % 3)
+            FlightCrew(captain, fo, null, null, cm, 4)
         }
     }
 }

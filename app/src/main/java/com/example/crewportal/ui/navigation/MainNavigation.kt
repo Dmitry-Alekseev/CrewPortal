@@ -74,6 +74,7 @@ sealed class Screen(val route: String, val label: String) {
     data object AirportInfo : Screen("airport_info", "Airport Info")
     data object RosterHistory : Screen("roster_history", "Roster History")
     data object Leave : Screen("leave", "Leave")
+    data object Payroll : Screen("payroll", "Payroll")
     data object Mel : Screen("mel", "MEL")
 }
 
@@ -171,6 +172,7 @@ fun MainNavigation(
             composable(Screen.AirportInfo.route) { AirportInfoScreen() }
             composable(Screen.RosterHistory.route) { RosterChangeHistoryScreen(flightRepository) }
             composable(Screen.Leave.route) { LeaveManagementScreen() }
+            composable(Screen.Payroll.route) { PayrollPlaceholderScreen(ru = ru) }
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     flightRepository = flightRepository,
@@ -199,6 +201,7 @@ private fun titleForRoute(route: String?, ru: Boolean): String {
         Screen.AirportInfo.route -> if (ru) "Аэропорты" else "Airport Info"
         Screen.RosterHistory.route -> if (ru) "История ростера" else "Roster History"
         Screen.Leave.route -> if (ru) "Отпуск" else "Leave"
+        Screen.Payroll.route -> if (ru) "Зарплата" else "Payroll"
         "mel/{registration}" -> "MEL"
         else -> "Crew Portal"
     }
@@ -230,6 +233,7 @@ private fun BottomBar(
                 Screen.AirportInfo -> Icons.Default.AirplanemodeActive
                 Screen.RosterHistory -> Icons.Default.DateRange
                 Screen.Leave -> Icons.Default.DateRange
+                Screen.Payroll -> Icons.Default.Settings
                 Screen.Mel -> Icons.Default.AirplanemodeActive
             }
 
@@ -243,7 +247,8 @@ private fun BottomBar(
                     Screen.UpdateCenter.route,
                     Screen.AirportInfo.route,
                     Screen.RosterHistory.route,
-                    Screen.Leave.route
+                    Screen.Leave.route,
+                    Screen.Payroll.route
                 )
             } else {
                 currentDestination?.hierarchy?.any { it.route == screen.route } == true
@@ -294,6 +299,7 @@ private fun bottomLabel(screen: Screen, ru: Boolean): String {
         Screen.AirportInfo -> if (ru) "Аэроп." else "Airports"
         Screen.RosterHistory -> if (ru) "История" else "History"
         Screen.Leave -> if (ru) "Отпуск" else "Leave"
+        Screen.Payroll -> if (ru) "Зарплата" else "Payroll"
         Screen.Mel -> "MEL"
     }
 }
@@ -320,6 +326,18 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
         )
 
         MoreMenuCard(
+            title = if (ru) "Отпуск и больничный" else "Leave Management",
+            subtitle = if (ru) "Отпуск, заявки и больничный" else "Annual leave, personal leave and sick leave",
+            onClick = { navController.navigate(Screen.Leave.route) }
+        )
+
+        MoreMenuCard(
+            title = if (ru) "Зарплата" else "Payroll / Salary",
+            subtitle = if (ru) "Расчётный лист и премии — в версии 1.9" else "Payslip and bonus module — coming in version 1.9",
+            onClick = { navController.navigate(Screen.Payroll.route) }
+        )
+
+        MoreMenuCard(
             title = if (ru) "Уведомления" else "Alerts",
             subtitle = if (ru) "Сообщения экипажа и компании" else "Crew notifications and company messages",
             onClick = { navController.navigate(Screen.Alerts.route) }
@@ -331,7 +349,6 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
             onClick = { navController.navigate(Screen.Contacts.route) }
         )
 
-
         MoreMenuCard(
             title = if (ru) "Центр обновлений" else "Update Center",
             subtitle = if (ru) "Версия приложения, синхронизация и журнал изменений" else "App version, synchronization and change log",
@@ -342,12 +359,6 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
             title = if (ru) "Аэропорты" else "Airport Info",
             subtitle = if (ru) "ВПП, часовые пояса и заметки станций" else "Runways, time zones and station notes",
             onClick = { navController.navigate(Screen.AirportInfo.route) }
-        )
-
-        MoreMenuCard(
-            title = if (ru) "Отпуск и больничный" else "Leave Management",
-            subtitle = if (ru) "Отпуск, заявки и больничный" else "Annual leave, personal leave and sick leave",
-            onClick = { navController.navigate(Screen.Leave.route) }
         )
 
         MoreMenuCard(
@@ -397,6 +408,23 @@ private fun MoreMenuCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Open")
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun PayrollPlaceholderScreen(ru: Boolean) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Text(if (ru) "Зарплата" else "Payroll / Salary", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(if (ru) "Модуль расчётного листа" else "Payslip module", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(if (ru) "Появится в Crew Portal 1.9: зарплата, премия и расчётный лист." else "Coming in Crew Portal 1.9: salary, bonus and monthly payslip.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

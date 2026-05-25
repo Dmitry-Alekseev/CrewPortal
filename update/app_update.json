@@ -1,16 +1,15 @@
 {
-  "latestVersion": "1.8.0",
-  "versionCode": 80,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v1.8.0/CrewPortal-1.8.0.apk",
+  "latestVersion": "1.8.1",
+  "versionCode": 81,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v1.8.1/CrewPortal-1.8.1.apk",
   "changelog": [
-    "Added Leave Management with annual, personal and sick leave logic",
-    "Added dynamic monthly target adjusted by leave and sick leave days",
-    "Added dynamic Today’s Duty states: pre-flight, in-flight, turnaround and leave",
-    "Improved Gate/Stand visibility by duty leg and layover logic",
-    "Added layover hotel names and BKK airport reserve hotel",
-    "Improved weather interpretation from METAR/TAF",
-    "Added Line Check record and instructor-ready profile data",
-    "Updated app icon and removed backup settings",
-    "Improved roster cards, monthly progress and sync indication"
+    "Fixed current-month leave overlay so test roster and calendar stay consistent",
+    "Weather now loads BKK / VTBS automatically and includes manual refresh",
+    "Improved TAF card spacing to prevent clipped text",
+    "Improved company network sync indicator pulse",
+    "Leave calendar can switch months and uses distinct leave colors",
+    "Moved Leave and Payroll entries higher in More",
+    "Added splash screen with animated loader and post-login synchronization dialog",
+    "Reduced A320/A321 short-haul cabin crew count to 4 plus cabin manager"
   ]
 }
