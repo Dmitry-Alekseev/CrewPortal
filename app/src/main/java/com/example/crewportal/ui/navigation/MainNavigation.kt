@@ -361,7 +361,7 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
 
         MoreMenuCard(
             title = if (ru) "Маршрутная сеть" else "Company Routes",
-            subtitle = if (ru) "Маршруты Thai Airways и симуляционные направления" else "Thai Airways network and simulated routes",
+            subtitle = if (ru) "Маршруты Thai Airways" else "Thai Airways route network",
             onClick = { navController.navigate(Screen.CompanyRoutes.route) }
         )
 

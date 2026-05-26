@@ -20,12 +20,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,6 +48,7 @@ fun PayrollScreen(
     ru: Boolean
 ) {
     val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
+    val context = LocalContext.current
     var unlocked by remember { mutableStateOf(false) }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf(false) }
@@ -76,7 +79,9 @@ fun PayrollScreen(
                     Button(onClick = {
                         if (password == "Airbus1998") unlocked = true else error = true
                     }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Открыть расчётный лист" else "Unlock payroll") }
-                    OutlinedButton(onClick = { unlocked = true }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Использовать отпечаток" else "Use fingerprint") }
+                    OutlinedButton(onClick = {
+                        Toast.makeText(context, if (ru) "Биометрия будет запрошена системой. Пока используйте пароль." else "Biometric prompt is not available in this build. Use password.", Toast.LENGTH_SHORT).show()
+                    }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Использовать отпечаток" else "Use fingerprint") }
                 }
             }
         } else {

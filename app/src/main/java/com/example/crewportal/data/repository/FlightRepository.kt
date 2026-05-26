@@ -202,6 +202,7 @@ class FlightRepository(
         flightDao.clearAll()
         flightDao.insertAll(merged)
         RosterNotificationScheduler.scheduleRoster(context, merged)
+        preferencesRepository.resetNextMonthRosterDecision()
         NotificationHelper.show(
             context,
             "Generated roster applied",

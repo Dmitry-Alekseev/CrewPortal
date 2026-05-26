@@ -65,6 +65,13 @@ class PreferencesRepository(private val context: Context) {
         }
     }
 
+    suspend fun resetNextMonthRosterDecision() {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.NEXT_MONTH_ROSTER_REVIEWED] = false
+            preferences[Keys.ENHANCED_ROSTER_TARGET] = false
+        }
+    }
+
     suspend fun addFlightTime(minutes: Int, aircraftLabel: String = "") {
         context.dataStore.edit { preferences ->
             val currentTotal = preferences[Keys.TOTAL_MINUTES] ?: 240000

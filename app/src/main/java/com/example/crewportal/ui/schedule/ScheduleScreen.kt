@@ -409,15 +409,21 @@ private fun AirlineBadge(airline: String) {
 @Composable
 fun DutyCard(flight: FlightEntity, onClick: (() -> Unit)?) {
     val isOff = flight.dutyType == "OFF"
+    val isStay = flight.dutyType == "STAY"
+    val title = when {
+        isOff -> "OFF"
+        isStay -> flight.flightNumber
+        else -> flight.dutyType
+    }
     Card(modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable { onClick() } else Modifier), shape = RoundedCornerShape(18.dp), elevation = CardDefaults.cardElevation(2.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text(if (isOff) "OFF" else flight.dutyType, color = if (isOff) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(title, color = if (isOff) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
                 Text(flight.status, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             }
             Text("${displayDate(flight.departureDateTime)} • ${displayTime(flight.departureDateTime)}-${displayTime(flight.arrivalDateTime)}")
-            Text(flight.dutyNote.ifBlank { if (isOff) "Day off" else "Hotel standby duty" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(flight.dutyNote.ifBlank { if (isOff) "Day off" else if (isStay) "Layover stay" else "Hotel standby duty" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (!isOff) Text("Location: ${flight.departureAirport}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

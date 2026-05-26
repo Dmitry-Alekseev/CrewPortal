@@ -49,6 +49,7 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
     val duties by flightRepository.observeFlights().collectAsState(initial = emptyList())
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
     val ru = language == "ru"
+    val nextMonthReviewed by preferencesRepository.nextMonthRosterReviewed.collectAsState(initial = false)
     val scope = rememberCoroutineScope()
     var showNextMonth by remember { mutableStateOf(false) }
     var showRosterDecisionDialog by remember { mutableStateOf(false) }
@@ -104,11 +105,20 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
         items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty(), ru) }
         if (showNextMonth) {
             item {
-                Button(
-                    onClick = { showRosterDecisionDialog = true },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp)
-                ) {
-                    Text(if (ru) "Я ознакомился с ростером" else "I have reviewed this roster")
+                if (nextMonthReviewed) {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp)) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(if (ru) "Ростер подтверждён" else "Roster reviewed", fontWeight = FontWeight.Bold)
+                            Text(if (ru) "Следующий месяц доступен в Roster." else "The next month roster is now available in Roster.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                } else {
+                    Button(
+                        onClick = { showRosterDecisionDialog = true },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp)
+                    ) {
+                        Text(if (ru) "Я ознакомился с ростером" else "I have reviewed this roster")
+                    }
                 }
             }
         }
@@ -144,12 +154,13 @@ private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves:
             }
             val visibleDuties = if (leaves.isNotEmpty()) emptyList() else duties
             visibleDuties.forEach { duty ->
-                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") { if (ru) "ВЫХОДНОЙ" else "OFF" } else if (duty.dutyType == "RESERVE") { if (ru) "РЕЗЕРВ" else "RESERVE" } else duty.dutyType
+                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") { if (ru) "ВЫХОДНОЙ" else "OFF" } else if (duty.dutyType == "RESERVE") { if (ru) "РЕЗЕРВ" else "RESERVE" } else if (duty.dutyType == "STAY") duty.flightNumber else duty.dutyType
                 val chipColor = when (duty.dutyType) {
                     "FLIGHT" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                     "RESERVE" -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
                     "TRAINING" -> Color(0xFFFFB74D).copy(alpha = 0.26f)
                     "OFF" -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.62f)
+                    "STAY" -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f)
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }
                 Box(Modifier.fillMaxWidth().background(chipColor, RoundedCornerShape(10.dp)).padding(10.dp)) {

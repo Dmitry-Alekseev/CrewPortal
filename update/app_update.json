@@ -1,21 +1,19 @@
 {
-  "latestVersion": "2.0.1",
-  "versionCode": 201,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.0.1/CrewPortal-2.0.1.apk",
+  "latestVersion": "2.0.2a",
+  "versionCode": 203,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.0.2a/CrewPortal-2.0.2a.apk",
   "changelog": [
-    "Crew Portal 2.0 visual refresh",
-    "Smart June roster generator test mode",
-    "Payroll and payslip module",
-    "Briefing/debriefing time added to roster",
-    "Long-haul crew role and payroll logic",
-    "Training/check events prepared for generated roster"
+    "Expanded Thai flight crew database",
+    "Added 10 Thai line instructors",
+    "Added 20 Thai captains and 20 Thai first officers",
+    "Crew assignment now uses Thai pilot names more consistently",
+    "Reduced repeated Russian/foreign names in Crew List"
   ],
   "changelogRu": [
-    "Визуальное обновление Crew Portal 2.0",
-    "Тестовый генератор ростера на июнь",
-    "Модуль зарплаты и расчётного листа",
-    "В ростер добавлены briefing/debriefing time",
-    "Логика long-haul экипажа и payroll",
-    "Подготовлена интеграция training/check events в генератор"
+    "Расширена база тайских пилотов",
+    "Добавлены 10 тайских инструкторов",
+    "Добавлены 20 тайских КВС и 20 вторых пилотов",
+    "Назначение экипажа теперь чаще использует тайские имена",
+    "Убрано повторение русских/иностранных имён в Crew List"
   ]
 }

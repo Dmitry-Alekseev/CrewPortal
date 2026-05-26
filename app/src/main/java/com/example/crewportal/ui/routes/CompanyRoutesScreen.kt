@@ -47,15 +47,15 @@ private val routes = listOf(
     CompanyRoute("Bangkok — Melbourne", "BKK-MEL", "A350", "Long-haul"),
     CompanyRoute("Bangkok — Perth", "BKK-PER", "A350", "Long-haul"),
     CompanyRoute("Bangkok — Auckland", "BKK-AKL", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Tashkent", "BKK-TAS", "A330", "Simulated"),
-    CompanyRoute("Bangkok — Saint Petersburg", "BKK-LED", "A350", "Simulated"),
-    CompanyRoute("Bangkok — Moscow Sheremetyevo", "BKK-SVO", "A350", "Simulated"),
-    CompanyRoute("Bangkok — Novosibirsk", "BKK-OVB", "A330 / A350", "Simulated"),
-    CompanyRoute("Bangkok — Yekaterinburg", "BKK-SVX", "A330 / A350", "Simulated"),
-    CompanyRoute("Bangkok — Ulan-Ude", "BKK-UUD", "A330", "Simulated"),
-    CompanyRoute("Bangkok — Vladivostok", "BKK-VVO", "A330", "Simulated"),
-    CompanyRoute("Bangkok — Irkutsk", "BKK-IKT", "A330", "Simulated"),
-    CompanyRoute("Bangkok — Khabarovsk", "BKK-KHV", "A330", "Simulated")
+    CompanyRoute("Bangkok — Tashkent", "BKK-TAS", "A330", "Long-haul"),
+    CompanyRoute("Bangkok — Saint Petersburg", "BKK-LED", "A350", "Long-haul"),
+    CompanyRoute("Bangkok — Moscow Sheremetyevo", "BKK-SVO", "A350", "Long-haul"),
+    CompanyRoute("Bangkok — Novosibirsk", "BKK-OVB", "A330 / A350", "Long-haul"),
+    CompanyRoute("Bangkok — Yekaterinburg", "BKK-SVX", "A330 / A350", "Long-haul"),
+    CompanyRoute("Bangkok — Ulan-Ude", "BKK-UUD", "A330", "Long-haul"),
+    CompanyRoute("Bangkok — Vladivostok", "BKK-VVO", "A330", "Long-haul"),
+    CompanyRoute("Bangkok — Irkutsk", "BKK-IKT", "A330", "Long-haul"),
+    CompanyRoute("Bangkok — Khabarovsk", "BKK-KHV", "A330", "Long-haul")
 )
 
 @Composable
@@ -63,7 +63,7 @@ fun CompanyRoutesScreen(ru: Boolean) {
     LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Text(if (ru) "Маршрутная сеть" else "Company Routes", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text(if (ru) "Основные и симуляционные маршруты экипажного портала" else "Main and simulated routes available in Crew Portal", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Маршрутная сеть экипажного портала" else "Company route network available in Crew Portal", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         items(routes) { item ->
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {

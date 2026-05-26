@@ -95,6 +95,17 @@ object AirportDatabase {
         AirportInfo("MXP", "LIMC", "Milan Malpensa", "Milan", "Italy", 120, 768, "17L/35R, 17R/35L", "Europe station.", "Northern Italy long-haul station."),
         AirportInfo("AMS", "EHAM", "Amsterdam Schiphol", "Amsterdam", "Netherlands", 120, -11, "04/22, 06/24, 09/27, 18L/36R, 18C/36C, 18R/36L", "Europe station.", "Large multi-runway airport; future network use."),
 
+
+        AirportInfo("TAS", "UTTT", "Tashkent Intl", "Tashkent", "Uzbekistan", 300, 1417, "08L/26R, 08R/26L", "Central Asia station.", "Medium-haul station; layover handling by local station."),
+        AirportInfo("LED", "ULLI", "Pulkovo", "Saint Petersburg", "Russia", 180, 78, "10L/28R, 10R/28L", "Russia station.", "Long-haul seasonal/special network station; winter operations briefing required."),
+        AirportInfo("SVO", "UUEE", "Sheremetyevo", "Moscow", "Russia", 180, 622, "06L/24R, 06C/24C, 06R/24L", "Russia station.", "Long-haul station; winter operations and de-icing planning where applicable."),
+        AirportInfo("OVB", "UNNT", "Tolmachevo", "Novosibirsk", "Russia", 420, 365, "07/25, 16/34", "Russia station.", "Siberia station; cold weather briefing required in winter season."),
+        AirportInfo("SVX", "USSS", "Koltsovo", "Yekaterinburg", "Russia", 300, 764, "08L/26R, 08R/26L", "Russia station.", "Ural station; winter and runway condition monitoring required."),
+        AirportInfo("UUD", "UIUU", "Baikal", "Ulan-Ude", "Russia", 480, 1690, "08/26", "Russia station.", "Eastern Siberia station; cold weather performance briefing may be required."),
+        AirportInfo("VVO", "UHWW", "Vladivostok", "Vladivostok", "Russia", 600, 46, "07L/25R, 07R/25L", "Russia station.", "Far East station; coastal weather monitoring required."),
+        AirportInfo("IKT", "UIII", "Irkutsk", "Irkutsk", "Russia", 480, 1675, "12/30", "Russia station.", "Baikal region station; terrain and winter operations briefing required."),
+        AirportInfo("KHV", "UHHH", "Khabarovsk Novy", "Khabarovsk", "Russia", 600, 244, "05L/23R, 05R/23L", "Russia station.", "Far East station; winter operations briefing required."),
+
         AirportInfo("SYD", "YSSY", "Sydney Kingsford Smith", "Sydney", "Australia", 600, 21, "16L/34R, 16R/34L, 07/25", "Australia long-haul station.", "Long-haul station, curfew and slot awareness required."),
         AirportInfo("MEL", "YMML", "Melbourne Intl", "Melbourne", "Australia", 600, 434, "16/34, 09/27", "Australia long-haul station.", "Long-haul station; crew transport by local handler."),
         AirportInfo("PER", "YPPH", "Perth Intl", "Perth", "Australia", 480, 67, "03/21, 06/24", "Australia station.", "Medium/long-haul station."),

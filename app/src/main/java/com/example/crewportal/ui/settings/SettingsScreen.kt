@@ -107,7 +107,7 @@ fun SettingsScreen(
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ru) "Приложение" else "Application", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    "Crew Portal 2.0.1",
+                    "Crew Portal 2.0.2a",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.clickable {
                         versionTapCount += 1
@@ -120,7 +120,7 @@ fun SettingsScreen(
                         }
                     }
                 )
-                Text(if (ru) "Пакет обновления: CrewPortal-2.0.1.apk" else "Update package: CrewPortal-2.0.1.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Пакет обновления: CrewPortal-2.0.2a.apk" else "Update package: CrewPortal-2.0.2a.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Секретный тест: 5 тапов по версии генерируют июньский ростер" else "Developer test: 5 taps on version generate June roster", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Ростер: сеть компании + локальная база" else "Roster sync: company network + local database", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "MEL: сеть компании + локальная база по бортам" else "MEL: company network + local defects database by aircraft", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -145,7 +145,7 @@ fun SettingsScreen(
                         val info = withContext(Dispatchers.IO) { updateRepository.checkForUpdate() }
                         when {
                             info == null -> Toast.makeText(context, if (ru) "Служба обновлений недоступна" else "Update service unavailable", Toast.LENGTH_SHORT).show()
-                            info.versionCode <= 201 -> Toast.makeText(context, if (ru) "Обновлений нет" else "Crew Portal is up to date", Toast.LENGTH_SHORT).show()
+                            info.versionCode <= 202 -> Toast.makeText(context, if (ru) "Обновлений нет" else "Crew Portal is up to date", Toast.LENGTH_SHORT).show()
                             else -> updateInfo = info
                         }
                     }
@@ -155,7 +155,7 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.0.1", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Change Log — 2.0.2a", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text("• Smart Roster test mode added for June generation.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Payroll / Payslip module added in USD.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Briefing and debriefing time shown in roster.", color = MaterialTheme.colorScheme.onSurfaceVariant)
