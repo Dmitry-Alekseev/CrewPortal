@@ -202,11 +202,12 @@ class FlightRepository(
         flightDao.clearAll()
         flightDao.insertAll(merged)
         RosterNotificationScheduler.scheduleRoster(context, merged)
-        preferencesRepository.resetNextMonthRosterDecision()
+        preferencesRepository.setNextMonthRosterPrepared(true)
+        preferencesRepository.setNextMonthRosterDecision(reviewed = false, enhancedTarget = false)
         NotificationHelper.show(
             context,
-            "Generated roster applied",
-            "June 2026 generated roster test has been loaded without changing May roster.",
+            "Generated roster prepared",
+            "June 2026 generated roster test is ready for calendar review.",
             2_006_000
         )
     }

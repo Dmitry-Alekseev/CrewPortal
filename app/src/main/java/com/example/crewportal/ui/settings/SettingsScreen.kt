@@ -107,7 +107,7 @@ fun SettingsScreen(
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ru) "Приложение" else "Application", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    "Crew Portal 2.0.3",
+                    "Crew Portal 2.0.4",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.clickable {
                         versionTapCount += 1
@@ -115,12 +115,12 @@ fun SettingsScreen(
                             versionTapCount = 0
                             scope.launch {
                                 withContext(Dispatchers.IO) { flightRepository.generateJuneRosterTest() }
-                                snackbarHostState.showSnackbar(if (ru) "Тестовый ростер июня создан" else "Generated June roster test applied")
+                                snackbarHostState.showSnackbar(if (ru) "Тестовый ростер июня подготовлен" else "Generated June roster test prepared")
                             }
                         }
                     }
                 )
-                Text(if (ru) "Пакет обновления: CrewPortal-2.0.3.apk" else "Update package: CrewPortal-2.0.3.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Пакет обновления: CrewPortal-2.0.4.apk" else "Update package: CrewPortal-2.0.4.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Секретный тест: 5 тапов по версии генерируют июньский ростер" else "Developer test: 5 taps on version generate June roster", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Ростер: сеть компании + локальная база" else "Roster sync: company network + local database", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "MEL: сеть компании + локальная база по бортам" else "MEL: company network + local defects database by aircraft", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -155,7 +155,7 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.0.3", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Change Log — 2.0.4", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text("• Smart Roster test mode added for June generation.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Payroll / Payslip module added in USD.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Briefing and debriefing time shown in roster.", color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -98,8 +98,12 @@ fun ScheduleScreen(
     val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
     val darkTheme by preferencesRepository.darkTheme.collectAsState(initial = false)
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
+    val nextPrepared by preferencesRepository.nextMonthRosterPrepared.collectAsState(initial = false)
+    val nextReviewed by preferencesRepository.nextMonthRosterReviewed.collectAsState(initial = false)
+    val enhancedTarget by preferencesRepository.enhancedRosterTarget.collectAsState(initial = false)
     val ru = language == "ru"
     var showUtc by remember { mutableStateOf(false) }
+    var showNextRoster by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -161,10 +165,30 @@ fun ScheduleScreen(
             MonthlyProgressCard(flights = flights, ru = ru)
             Spacer(Modifier.height(8.dp))
             TodayDutyCard(flights = flights, onDutyClick = onDutyClick, ru = ru)
+            if (nextPrepared && nextReviewed) {
+                Spacer(Modifier.height(8.dp))
+                Button(onClick = { showNextRoster = !showNextRoster }, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        if (showNextRoster) {
+                            if (ru) "Вернуться к текущему ростеру" else "Back to current roster"
+                        } else {
+                            if (ru) "Показать ростер следующего месяца" else "Show next month roster"
+                        }
+                    )
+                }
+                Text(
+                    if (enhancedTarget) {
+                        if (ru) "Выбран усиленный план: 90 часов" else "Enhanced target selected: 90h"
+                    } else {
+                        if (ru) "Выбран стандартный план: 80 часов" else "Standard target selected: 80h"
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         val now = LocalDateTime.now()
-        val targetMonth = YearMonth.now()
+        val targetMonth = if (showNextRoster && nextReviewed) YearMonth.now().plusMonths(1) else YearMonth.now()
         val displayItems = buildRosterItems(flights, targetMonth, now)
 
         items(displayItems, key = { item ->

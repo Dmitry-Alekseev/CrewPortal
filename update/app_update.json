@@ -1,19 +1,19 @@
 {
-  "latestVersion": "2.0.3",
+  "latestVersion": "2.0.4",
   "versionCode": 204,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.0.3/CrewPortal-2.0.3.apk",
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.0.4/CrewPortal-2.0.4.apk",
   "changelog": [
     "Removed roster refresh button and added pull-to-refresh gesture",
     "Notifications now open the related Crew Portal screen",
     "Removed next-month roster preview from Calendar and Roster",
     "Kept hidden 5-tap generated roster test mode",
-    "Updated version to 2.0.3"
+    "Updated version to 2.0.4"
   ],
   "changelogRu": [
     "Убрана кнопка обновления ростера, добавлен pull-to-refresh жест",
     "Уведомления теперь открывают связанный экран Crew Portal",
     "Убран показ расписания следующего месяца из Calendar и Roster",
     "Оставлен скрытый тест генерации ростера по 5 тапам",
-    "Версия обновлена до 2.0.3"
+    "Версия обновлена до 2.0.4"
   ]
 }

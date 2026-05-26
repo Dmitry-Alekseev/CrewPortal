@@ -35,34 +35,60 @@ import com.example.crewportal.data.leave.LeavePeriod
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.data.repository.PreferencesRepository
-import com.example.crewportal.util.displayDay
 import com.example.crewportal.util.displayMonth
-import com.example.crewportal.util.displayShortDate
 import com.example.crewportal.util.displayTime
 import com.example.crewportal.util.formatMinutes
 import com.example.crewportal.util.parseLocalDateTime
 import java.time.LocalDate
+import java.time.YearMonth
 import kotlinx.coroutines.launch
 
 @Composable
 fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: PreferencesRepository) {
     val duties by flightRepository.observeFlights().collectAsState(initial = emptyList())
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
+    val nextPrepared by preferencesRepository.nextMonthRosterPrepared.collectAsState(initial = false)
+    val nextReviewed by preferencesRepository.nextMonthRosterReviewed.collectAsState(initial = false)
     val ru = language == "ru"
     val today = LocalDate.now()
-    val targetMonth = today
+    val currentMonth = YearMonth.from(today)
+    var showingNextMonth by remember { mutableStateOf(false) }
+    var showTargetDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    val targetYearMonth = if (showingNextMonth) currentMonth.plusMonths(1) else currentMonth
     val filtered = duties.filter {
         val date = parseLocalDateTime(it.departureDateTime).toLocalDate()
-        date.year == targetMonth.year && date.month == targetMonth.month
+        YearMonth.from(date) == targetYearMonth
     }
     val grouped = filtered.groupBy { parseLocalDateTime(it.departureDateTime).toLocalDate() }.toSortedMap()
-    val leaveGrouped = LeaveDatabase.leaveForMonth(java.time.YearMonth.from(targetMonth)).flatMap { period ->
-        generateSequence(maxOf(period.start, java.time.YearMonth.from(targetMonth).atDay(1))) { it.plusDays(1) }
-            .takeWhile { !it.isAfter(minOf(period.end, java.time.YearMonth.from(targetMonth).atEndOfMonth())) }
+    val leaveGrouped = LeaveDatabase.leaveForMonth(targetYearMonth).flatMap { period ->
+        generateSequence(maxOf(period.start, targetYearMonth.atDay(1))) { it.plusDays(1) }
+            .takeWhile { !it.isAfter(minOf(period.end, targetYearMonth.atEndOfMonth())) }
             .map { it to period }
             .toList()
     }.groupBy({ it.first }, { it.second })
     val allDates = (grouped.keys + leaveGrouped.keys).toSortedSet()
+
+    if (showTargetDialog) {
+        AlertDialog(
+            onDismissRequest = { showTargetDialog = false },
+            title = { Text(if (ru) "Подтверждение графика" else "Roster confirmation") },
+            text = { Text(if (ru) "Выберите плановую норму для следующего месяца." else "Choose monthly target for the generated roster.") },
+            confirmButton = {
+                Button(onClick = {
+                    scope.launch { preferencesRepository.setNextMonthRosterDecision(reviewed = true, enhancedTarget = false) }
+                    showTargetDialog = false
+                }) { Text(if (ru) "80 часов" else "Standard 80h") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    scope.launch { preferencesRepository.setNextMonthRosterDecision(reviewed = true, enhancedTarget = true) }
+                    showTargetDialog = false
+                }) { Text(if (ru) "90 часов" else "Enhanced 90h") }
+            }
+        )
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -70,9 +96,26 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
     ) {
         item {
             Text(if (ru) "Календарь ростера" else "Roster Calendar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text((if (ru) "Месяц: " else "Roster month: ") + displayMonth(targetMonth), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text((if (ru) "Месяц: " else "Roster month: ") + displayMonth(targetYearMonth.atDay(1)), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (nextPrepared && !showingNextMonth) {
+                Button(onClick = { showingNextMonth = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Text(if (ru) "Показать следующий месяц" else "Show next month")
+                }
+            }
+            if (showingNextMonth) {
+                OutlinedButton(onClick = { showingNextMonth = false }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Text(if (ru) "Вернуться к текущему месяцу" else "Back to current month")
+                }
+            }
         }
         items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty(), ru) }
+        if (showingNextMonth && nextPrepared && !nextReviewed) {
+            item {
+                Button(onClick = { showTargetDialog = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (ru) "Я ознакомился с графиком" else "I have reviewed this roster")
+                }
+            }
+        }
     }
 }
 
@@ -124,7 +167,6 @@ private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves:
         }
     }
 }
-
 
 private fun localizedLeaveTitle(leave: LeavePeriod, ru: Boolean): String {
     if (!ru) return leave.title.uppercase()
