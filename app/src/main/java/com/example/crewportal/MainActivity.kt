@@ -86,7 +86,7 @@ class MainActivity : FragmentActivity() {
 
                 LaunchedEffect(Unit) {
                     authRepository.signOut()
-                    flightRepository.refreshBuiltInRosterOnAppUpdate("2.0.6b")
+                    flightRepository.refreshBuiltInRosterOnAppUpdate(BuildConfig.VERSION_NAME)
                     flightRepository.refreshCompletedFlights()
                     delay(1800)
                     showSplash = false
@@ -170,6 +170,12 @@ private fun SplashScreen() {
                 text = "Connecting to company network...",
                 color = Color.White.copy(alpha = 0.88f),
                 style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = "v${BuildConfig.VERSION_NAME}",
+                color = Color.White.copy(alpha = 0.74f),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }

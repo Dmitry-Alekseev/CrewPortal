@@ -18,8 +18,6 @@ import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.json.JSONObject
 
 class FlightRepository(
@@ -27,16 +25,15 @@ class FlightRepository(
     private val flightDao: FlightDao,
     private val preferencesRepository: PreferencesRepository
 ) {
-    private val httpClient = OkHttpClient()
-    private val githubRosterUrl = "https://raw.githubusercontent.com/Dmitry-Alekseev/CrewPortal/main/roster/current_roster.json"
-
     fun observeFlights(): Flow<List<FlightEntity>> = flightDao.observeAll()
     fun observeCompleted(): Flow<List<FlightEntity>> = flightDao.observeCompleted()
     fun observeFlight(id: String): Flow<FlightEntity?> = flightDao.observeById(id)
 
     suspend fun loadScheduleFromAssetsIfNeeded() {
         if (flightDao.count() > 0) return
-        loadScheduleFromAssets(clearExisting = false)
+        val currentMonthRoster = RosterGenerator.generateForMonth(YearMonth.now())
+        flightDao.insertAll(currentMonthRoster)
+        RosterNotificationScheduler.scheduleRoster(context, currentMonthRoster)
     }
 
     suspend fun refreshBuiltInRosterOnAppUpdate(versionName: String) {
@@ -84,22 +81,17 @@ class FlightRepository(
     }
 
     private suspend fun loadScheduleFromAssets(clearExisting: Boolean, preserveExistingState: Boolean = false) {
-        val json = context.assets.open("schedule.json").bufferedReader().use { it.readText() }
-        loadScheduleFromJson(json, clearExisting, preserveExistingState)
+        val generated = RosterGenerator.generateForMonth(YearMonth.now())
+        if (clearExisting) flightDao.clearAll()
+        flightDao.insertAll(generated)
+        RosterNotificationScheduler.scheduleRoster(context, generated)
     }
 
     suspend fun syncRosterFromGitHub(): Boolean {
-        return try {
-            val request = Request.Builder().url(githubRosterUrl).build()
-            val response = httpClient.newCall(request).execute()
-            val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful || body.isBlank()) return false
-            loadScheduleFromJson(body, clearExisting = true, preserveExistingState = true)
-            refreshCompletedFlights()
-            true
-        } catch (_: Exception) {
-            false
-        }
+        // Crew Portal 2.1: roster JSON is no longer an active source.
+        // Manual refresh only updates local completion/registration/assignment state.
+        refreshCompletedFlights()
+        return true
     }
 
     private suspend fun loadScheduleFromJson(json: String, clearExisting: Boolean) {
@@ -245,20 +237,24 @@ class FlightRepository(
     }
 
     suspend fun generateJuneRosterTest() {
-        val generated = RosterGenerator.generateJune2026()
+        if (preferencesRepository.secretRosterGeneratorUsed.first()) return
+        val targetMonth = YearMonth.now().plusMonths(1)
+        val generated = RosterGenerator.generateForMonth(targetMonth)
+        val prefix = "%04d-%02d".format(targetMonth.year, targetMonth.monthValue)
         val current = flightDao.getAllOnce()
-        val preserved = current.filterNot { it.departureDateTime.startsWith("2026-06") }
+        val preserved = current.filterNot { it.departureDateTime.startsWith(prefix) }
         val merged = (preserved + generated).sortedBy { it.departureDateTime }
         flightDao.clearAll()
         flightDao.insertAll(merged)
         RosterNotificationScheduler.scheduleRoster(context, merged)
         preferencesRepository.setNextMonthRosterPrepared(true)
         preferencesRepository.setNextMonthRosterDecision(reviewed = false, enhancedTarget = false)
+        preferencesRepository.setSecretRosterGeneratorUsed(true)
         NotificationHelper.show(
             context,
             "Generated roster prepared",
-            "June 2026 generated roster test is ready for calendar review.",
-            2_006_000
+            "${targetMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${targetMonth.year} roster is ready for calendar review.",
+            2_100_000 + targetMonth.monthValue
         )
     }
 

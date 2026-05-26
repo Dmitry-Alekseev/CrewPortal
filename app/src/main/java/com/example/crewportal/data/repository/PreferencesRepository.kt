@@ -27,6 +27,7 @@ class PreferencesRepository(private val context: Context) {
         val NEXT_MONTH_ROSTER_PREPARED = booleanPreferencesKey("next_month_roster_prepared")
         val NEXT_MONTH_ROSTER_REVIEWED = booleanPreferencesKey("next_month_roster_reviewed")
         val ENHANCED_ROSTER_TARGET = booleanPreferencesKey("enhanced_roster_target")
+        val SECRET_ROSTER_GENERATOR_USED = booleanPreferencesKey("secret_roster_generator_used")
     }
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { it[Keys.IS_LOGGED_IN] ?: false }
@@ -43,6 +44,7 @@ class PreferencesRepository(private val context: Context) {
     val nextMonthRosterPrepared: Flow<Boolean> = context.dataStore.data.map { it[Keys.NEXT_MONTH_ROSTER_PREPARED] ?: false }
     val nextMonthRosterReviewed: Flow<Boolean> = context.dataStore.data.map { it[Keys.NEXT_MONTH_ROSTER_REVIEWED] ?: false }
     val enhancedRosterTarget: Flow<Boolean> = context.dataStore.data.map { it[Keys.ENHANCED_ROSTER_TARGET] ?: false }
+    val secretRosterGeneratorUsed: Flow<Boolean> = context.dataStore.data.map { it[Keys.SECRET_ROSTER_GENERATOR_USED] ?: false }
 
     suspend fun setLoginState(loggedIn: Boolean, remember: Boolean, login: String) {
         context.dataStore.edit { preferences ->
@@ -72,6 +74,10 @@ class PreferencesRepository(private val context: Context) {
             preferences[Keys.NEXT_MONTH_ROSTER_REVIEWED] = reviewed
             preferences[Keys.ENHANCED_ROSTER_TARGET] = enhancedTarget
         }
+    }
+
+    suspend fun setSecretRosterGeneratorUsed(used: Boolean) {
+        context.dataStore.edit { preferences -> preferences[Keys.SECRET_ROSTER_GENERATOR_USED] = used }
     }
 
     suspend fun resetNextMonthRosterDecision() {

@@ -30,7 +30,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -80,6 +79,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 private sealed class RosterItem {
@@ -89,6 +89,16 @@ private sealed class RosterItem {
     }
     data class LeaveDuty(val period: LeavePeriod, val date: LocalDate) : RosterItem() {
         override val sortDateTime: LocalDateTime = date.atStartOfDay()
+    }
+    data class RestPeriod(
+        val start: LocalDateTime,
+        val end: LocalDateTime,
+        val nextDutyLabel: String,
+        val offDays: Int,
+        val leaveDays: Int,
+        val layoverDays: Int
+    ) : RosterItem() {
+        override val sortDateTime: LocalDateTime = end.minusMinutes(1)
     }
 }
 
@@ -108,11 +118,10 @@ fun ScheduleScreen(
     val enhancedTarget by preferencesRepository.enhancedRosterTarget.collectAsState(initial = false)
     val ru = language == "ru"
     var showUtc by remember { mutableStateOf(false) }
-    var showNextRoster by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val now = LocalDateTime.now()
-    val targetMonth = if (showNextRoster && nextReviewed) YearMonth.now().plusMonths(1) else YearMonth.now()
+    val targetMonth = if (nextPrepared && nextReviewed) YearMonth.now().plusMonths(1) else YearMonth.now()
     var isRefreshing by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights() }
@@ -121,8 +130,7 @@ fun ScheduleScreen(
         if (!isRefreshing) {
             scope.launch {
                 isRefreshing = true
-                val synced = withContext(Dispatchers.IO) { flightRepository.syncRosterFromGitHub() }
-                if (!synced) flightRepository.refreshCompletedFlights()
+                withContext(Dispatchers.IO) { flightRepository.refreshCompletedFlights() }
                 isRefreshing = false
                 snackbarHostState.showSnackbar(if (ru) "Ростер обновлён" else "Roster updated successfully")
             }
@@ -165,20 +173,11 @@ fun ScheduleScreen(
             TodayDutyCard(flights = flights, onDutyClick = onDutyClick, ru = ru)
             if (nextPrepared && nextReviewed) {
                 Spacer(Modifier.height(8.dp))
-                Button(onClick = { showNextRoster = !showNextRoster }, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        if (showNextRoster) {
-                            if (ru) "Вернуться к текущему ростеру" else "Back to current roster"
-                        } else {
-                            if (ru) "Показать ростер следующего месяца" else "Show next month roster"
-                        }
-                    )
-                }
                 Text(
                     if (enhancedTarget) {
-                        if (ru) "Выбран усиленный план: 90 часов" else "Enhanced target selected: 90h"
+                        if (ru) "Следующий ростер подтверждён: 90 часов" else "Next roster confirmed: 90h target"
                     } else {
-                        if (ru) "Выбран стандартный план: 80 часов" else "Standard target selected: 80h"
+                        if (ru) "Следующий ростер подтверждён: 80 часов" else "Next roster confirmed: 80h target"
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -191,6 +190,7 @@ fun ScheduleScreen(
             when (item) {
                 is RosterItem.FlightDuty -> item.flight.id
                 is RosterItem.LeaveDuty -> item.period.id + item.date.toString()
+                is RosterItem.RestPeriod -> "REST-" + item.end.toString() + item.nextDutyLabel
             }
         }) { item ->
             when (item) {
@@ -209,6 +209,7 @@ fun ScheduleScreen(
                     }
                 }
                 is RosterItem.LeaveDuty -> LeaveRosterCard(item.period, item.date)
+                is RosterItem.RestPeriod -> RestPeriodCard(item, ru)
             }
         }
             item { Spacer(Modifier.height(18.dp)) }
@@ -256,10 +257,121 @@ private fun buildRosterItems(flights: List<FlightEntity>, month: YearMonth, now:
     }
     val leaveItems = leaveByDate.map { (date, leave) -> RosterItem.LeaveDuty(leave, date) }
         .filter { !it.date.atTime(23, 59).isBefore(now) }
-    return (flightItems + leaveItems).sortedBy { it.sortDateTime }
+    return insertRestPeriods((flightItems + leaveItems).sortedBy { it.sortDateTime })
+}
+
+private fun insertRestPeriods(items: List<RosterItem>): List<RosterItem> {
+    val result = mutableListOf<RosterItem>()
+    var previousWorkDuty: FlightEntity? = null
+
+    items.forEach { item ->
+        val currentWorkDuty = (item as? RosterItem.FlightDuty)?.flight?.takeIf { it.isOperationalDuty() }
+        if (currentWorkDuty != null && previousWorkDuty != null) {
+            val restStart = dutyEndForRest(previousWorkDuty)
+            val restEnd = dutyStartForRest(currentWorkDuty)
+            val restMinutes = ChronoUnit.MINUTES.between(restStart, restEnd)
+            if (restMinutes > 0) {
+                result += RosterItem.RestPeriod(
+                    start = restStart,
+                    end = restEnd,
+                    nextDutyLabel = currentWorkDuty.restLabel(),
+                    offDays = items.countRestDutyDays(restStart, restEnd, "OFF"),
+                    leaveDays = items.countLeaveDays(restStart, restEnd),
+                    layoverDays = items.countRestDutyDays(restStart, restEnd, "STAY")
+                )
+            }
+        }
+        result += item
+        if (currentWorkDuty != null) previousWorkDuty = currentWorkDuty
+    }
+    return result
+}
+
+private fun FlightEntity.isOperationalDuty(): Boolean = dutyType != "OFF" && dutyType != "STAY"
+
+private fun FlightEntity.restLabel(): String = when (dutyType) {
+    "FLIGHT" -> "$flightNumber $departureIata-$arrivalIata"
+    else -> flightNumber.ifBlank { dutyType }
+}
+
+private fun dutyStartForRest(flight: FlightEntity): LocalDateTime {
+    val departure = parseLocalDateTime(flight.departureDateTime)
+    return if (flight.dutyType == "FLIGHT") departure.minusMinutes(90) else departure
+}
+
+private fun dutyEndForRest(flight: FlightEntity): LocalDateTime {
+    val arrival = parseLocalDateTime(flight.arrivalDateTime)
+    return if (flight.dutyType == "FLIGHT") arrival.plusMinutes(30) else arrival
+}
+
+private fun List<RosterItem>.countRestDutyDays(start: LocalDateTime, end: LocalDateTime, dutyType: String): Int = count { item ->
+    val duty = (item as? RosterItem.FlightDuty)?.flight ?: return@count false
+    duty.dutyType == dutyType && parseLocalDateTime(duty.departureDateTime).isAfter(start.minusMinutes(1)) && parseLocalDateTime(duty.arrivalDateTime).isBefore(end.plusMinutes(1))
+}
+
+private fun List<RosterItem>.countLeaveDays(start: LocalDateTime, end: LocalDateTime): Int = count { item ->
+    val leave = item as? RosterItem.LeaveDuty ?: return@count false
+    val leaveDateTime = leave.date.atStartOfDay()
+    leaveDateTime.isAfter(start.minusMinutes(1)) && leaveDateTime.isBefore(end.plusMinutes(1))
 }
 
 @Composable
+@Composable
+private fun RestPeriodCard(rest: RosterItem.RestPeriod, ru: Boolean) {
+    val minutes = ChronoUnit.MINUTES.between(rest.start, rest.end).toInt().coerceAtLeast(0)
+    val details = buildList {
+        if (rest.offDays > 0) add(if (ru) "OFF: ${rest.offDays}" else "OFF: ${rest.offDays}")
+        if (rest.leaveDays > 0) add(if (ru) "отпуск: ${rest.leaveDays}" else "leave: ${rest.leaveDays}")
+        if (rest.layoverDays > 0) add(if (ru) "layover: ${rest.layoverDays}" else "layover: ${rest.layoverDays}")
+    }.joinToString(" • ")
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("☾", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    if (ru) "Отдых перед следующей duty" else "Rest before next duty",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    formatRestMinutes(minutes) + " → " + rest.nextDutyLabel,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                if (details.isNotBlank()) {
+                    Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Text(
+                rest.end.format(DateTimeFormatter.ofPattern("dd MMM HH:mm", Locale.ENGLISH)),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+private fun formatRestMinutes(totalMinutes: Int): String {
+    val days = totalMinutes / (24 * 60)
+    val hours = (totalMinutes % (24 * 60)) / 60
+    val minutes = totalMinutes % 60
+    return buildString {
+        if (days > 0) append("${days}d ")
+        append("${hours}h")
+        if (minutes > 0) append(" ${minutes}m")
+    }.trim()
+}
+
 private fun MonthlyProgressCard(flights: List<FlightEntity>, month: YearMonth, ru: Boolean) {
     val monthDate = month.atDay(1)
     val monthPrefix = monthDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
@@ -302,37 +414,37 @@ private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> 
     val currentOrNext = todayFlights.firstOrNull { parseLocalDateTime(it.arrivalDateTime).isAfter(now) }
     val previous = todayFlights.lastOrNull { parseLocalDateTime(it.arrivalDateTime).isBefore(now) }
 
-    Card(colors = CardDefaults.cardColors(containerColor = ThaiPurple), modifier = Modifier.fillMaxWidth()) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(if (ru) "Сегодня" else "Today’s Duty", color = Color.White, fontWeight = FontWeight.Bold)
+            Text(if (ru) "Сегодня" else "Today’s Duty", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
             when {
                 leave != null -> {
-                    Text(leave.title, color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text("${formatDate(leave.start)} — ${formatDate(leave.end)} • Day ${java.time.temporal.ChronoUnit.DAYS.between(leave.start, today).toInt() + 1} of ${leave.days}", color = Color.White.copy(alpha = 0.86f))
+                    Text(leave.title, color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text("${formatDate(leave.start)} — ${formatDate(leave.end)} • Day ${java.time.temporal.ChronoUnit.DAYS.between(leave.start, today).toInt() + 1} of ${leave.days}", color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.86f))
                 }
                 currentOrNext == null -> {
-                    Text(if (ru) "Сегодня duty нет" else "No duty today", color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(if (ru) "Следующая duty появится после 00:00 в дату ростера." else "Next duty will appear after 00:00 on its roster date.", color = Color.White.copy(alpha = 0.82f))
+                    Text(if (ru) "Сегодня duty нет" else "No duty today", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(if (ru) "Следующая duty появится после 00:00 в дату ростера." else "Next duty will appear after 00:00 on its roster date.", color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f))
                 }
                 now.isBefore(parseLocalDateTime(currentOrNext.departureDateTime)) && previous != null -> {
                     Column(Modifier.clickable { onDutyClick(currentOrNext.id) }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Turnaround", color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text("Next sector ${currentOrNext.flightNumber} ${currentOrNext.departureIata}-${currentOrNext.arrivalIata}", color = Color.White)
-                        Text("Departure ${displayTime(currentOrNext.departureDateTime)}", color = Color.White.copy(alpha = 0.88f))
+                        Text("Turnaround", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text("Next sector ${currentOrNext.flightNumber} ${currentOrNext.departureIata}-${currentOrNext.arrivalIata}", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text("Departure ${displayTime(currentOrNext.departureDateTime)}", color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.88f))
                     }
                 }
                 now.isBefore(parseLocalDateTime(currentOrNext.departureDateTime)) -> {
                     Column(Modifier.clickable { onDutyClick(currentOrNext.id) }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Pre-flight", color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text("${currentOrNext.flightNumber} / ${currentOrNext.departureIata}-${currentOrNext.arrivalIata}", color = Color.White)
-                        Text("Report ${reportDateTime(currentOrNext.departureDateTime, currentOrNext.durationMinutes).format(DateTimeFormatter.ofPattern("HH:mm"))} • Departure ${displayTime(currentOrNext.departureDateTime)}", color = Color.White)
+                        Text("Pre-flight", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text("${currentOrNext.flightNumber} / ${currentOrNext.departureIata}-${currentOrNext.arrivalIata}", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text("Report ${reportDateTime(currentOrNext.departureDateTime, currentOrNext.durationMinutes).format(DateTimeFormatter.ofPattern("HH:mm"))} • Departure ${displayTime(currentOrNext.departureDateTime)}", color = MaterialTheme.colorScheme.onPrimaryContainer)
                     }
                 }
                 now.isBefore(parseLocalDateTime(currentOrNext.arrivalDateTime)) -> {
                     Column(Modifier.clickable { onDutyClick(currentOrNext.id) }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("In flight", color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text("${currentOrNext.flightNumber} ${currentOrNext.departureIata}-${currentOrNext.arrivalIata}", color = Color.White)
-                        Text("Estimated arrival ${displayTime(currentOrNext.arrivalDateTime)}", color = Color.White.copy(alpha = 0.88f))
+                        Text("In flight", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text("${currentOrNext.flightNumber} ${currentOrNext.departureIata}-${currentOrNext.arrivalIata}", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text("Estimated arrival ${displayTime(currentOrNext.arrivalDateTime)}", color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.88f))
                     }
                 }
             }
@@ -355,7 +467,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                 Text("  ${flight.flightNumber}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Text(
                     text = " ${flight.aircraftLabel} ",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.padding(start = 10.dp).background(ThaiPurple, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.labelLarge
                 )
@@ -364,14 +476,14 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
             }
             Spacer(Modifier.height(18.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(0.9f)) {
+                Column(Modifier.weight(0.95f)) {
                     Text(flight.departureIata, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
                     Text(
-                        flight.departureCity,
+                        compactCityName(flight.departureCity),
                         style = MaterialTheme.typography.titleMedium,
+                        fontSize = 14.sp,
                         maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
+                        softWrap = false
                     )
                     Text(
                         compactAirportName(flight.departureAirport),
@@ -382,20 +494,20 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                         overflow = TextOverflow.Clip
                     )
                 }
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1.35f)) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1.1f)) {
                     Text(scheduleTimeLine(flight, showUtc), style = if (showUtc) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false, fontSize = if (showUtc) 18.sp else MaterialTheme.typography.headlineMedium.fontSize)
                     Text("${displayDate(flight.departureDateTime)} • ${displayDay(flight.departureDateTime)}", color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false)
                     Text("✈", color = ThaiPurple, style = MaterialTheme.typography.headlineMedium)
                     Text(formatMinutes(flight.durationMinutes), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Column(Modifier.weight(0.9f), horizontalAlignment = Alignment.End) {
+                Column(Modifier.weight(0.95f), horizontalAlignment = Alignment.End) {
                     Text(flight.arrivalIata, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
                     Text(
-                        flight.arrivalCity,
+                        compactCityName(flight.arrivalCity),
                         style = MaterialTheme.typography.titleMedium,
+                        fontSize = 14.sp,
                         maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
+                        softWrap = false
                     )
                     Text(
                         compactAirportName(flight.arrivalAirport),
@@ -424,7 +536,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
             Text((if (ru) "Время duty: " else "Duty time: ") + formatMinutes(dutyMinutes(flight.departureDateTime, flight.arrivalDateTime, flight.durationMinutes)), color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (flight.isRegistered) {
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = {}, enabled = true, colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen), modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Зарегистрирован" else "Registered") }
+                OutlinedButton(onClick = {}, enabled = true, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Зарегистрирован" else "Registered") }
             } else if (shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted)) {
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(onClick = { scope.launch { flightRepository.registerFlight(flight.id) } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Регистрация" else "Register") }
@@ -502,12 +614,20 @@ private fun LeaveRosterCard(period: LeavePeriod, date: LocalDate) {
 }
 
 
-private fun compactAirportName(name: String): String = name
-    .replace(" International", " Intl")
-    .replace(" Intl", "")
-    .replace(" Airport", "")
-    .replace(" Main", "")
-    .trim()
+private fun compactCityName(name: String): String = when (name) {
+    "Kuala Lumpur" -> "Kuala Lumpur"
+    else -> name
+}
+
+private fun compactAirportName(name: String): String = when {
+    name.contains("Kuala Lumpur", ignoreCase = true) -> "KLIA"
+    else -> name
+        .replace(" International", " Intl")
+        .replace(" Intl", "")
+        .replace(" Airport", "")
+        .replace(" Main", "")
+        .trim()
+}
 
 private fun scheduleTimeLine(flight: FlightEntity, showUtc: Boolean): String {
     val local = displayTime(flight.departureDateTime)

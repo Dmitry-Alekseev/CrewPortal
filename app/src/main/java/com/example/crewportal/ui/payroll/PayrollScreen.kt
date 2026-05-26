@@ -1,5 +1,6 @@
 package com.example.crewportal.ui.payroll
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.data.repository.PreferencesRepository
@@ -143,7 +145,6 @@ fun PayrollScreen(
                 }
             }
         } else {
-            SecurityNote(ru)
             SalaryTab(flights = flights, ru = ru)
             BonusTab(flights = flights, ru = ru)
         }
@@ -162,62 +163,158 @@ private fun SecurityNote(ru: Boolean) {
 
 @Composable
 private fun SalaryTab(flights: List<FlightEntity>, ru: Boolean) {
-    val month = YearMonth.of(2026, 5)
-    val monthFlights = flights.filter { it.dutyType == "FLIGHT" && it.departureDateTime.startsWith("2026-05") }
-    val completed = monthFlights.filter { it.isCompleted }
-    val source = if (completed.isNotEmpty()) completed else monthFlights
-    val blockMinutes = source.sumOf { it.durationMinutes }
-    val blockHours = blockMinutes / 60.0
-    val internationalSectors = source.count { it.departureIata != "BKK" || it.arrivalIata !in setOf("HKT", "CNX", "KBV") }
-    val reserveDays = flights.count { it.dutyType == "RESERVE" && it.departureDateTime.startsWith("2026-05") }
-    val longHaul = source.filter { it.durationMinutes >= 540 }
-    val briefingMinutes = source.count() * 90 + source.groupBy { it.departureDateTime.take(10) }.size * 30
-    val layoverDays = longHaul.size.coerceAtLeast(0)
+    val today = LocalDate.now()
+    val availableMonths = generateSequence(YearMonth.of(2026, 5)) { it.plusMonths(1) }
+        .takeWhile { it.isBefore(YearMonth.from(today)) || (it == YearMonth.from(today) && today.dayOfMonth >= 5) }
+        .filter { month -> today >= month.plusMonths(1).atDay(5) }
+        .toList()
+        .sortedDescending()
+    var selectedMonth by remember { mutableStateOf<YearMonth?>(null) }
 
-    val basic = 7800
-    val flightPay = (blockHours * 95).roundToInt()
-    val briefingPay = ((briefingMinutes / 60.0) * 22).roundToInt()
-    val intlBonus = internationalSectors * 75
-    val layover = layoverDays * 140
-    val reserve = reserveDays * 110
-    val safety = 650
-    val gross = basic + flightPay + briefingPay + intlBonus + layover + reserve + safety
-    val tax = (gross * 0.18).roundToInt()
-    val provident = (gross * 0.05).roundToInt()
-    val insurance = 180
-    val welfare = 75
-    val deductions = tax + provident + insurance + welfare
-    val net = gross - deductions
-
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(if (ru) "Расчётный лист — May 2026" else "Payslip — May 2026", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text("Thai Airways International", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Employee: Dmitrii Alekseev • ID 141901 • Captain", fontWeight = FontWeight.SemiBold)
-            Text("Working block hours: ${formatMinutes(blockMinutes)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(4.dp))
-            SectionTitle(if (ru) "Начисления" else "Earnings")
-            AmountRow("Basic Pay", basic)
-            AmountRow("Flight Pay", flightPay)
-            AmountRow("Briefing / Debriefing Pay", briefingPay)
-            if (intlBonus > 0) AmountRow("International Sector Bonus", intlBonus)
-            if (layover > 0) AmountRow("Meal / Layover", layover)
-            if (reserve > 0) AmountRow("Reserve / Standby Pay", reserve)
-            AmountRow("Safety & Performance", safety)
-            AmountRow("Total Earnings", gross, bold = true)
-            Spacer(Modifier.height(6.dp))
-            SectionTitle(if (ru) "Удержания" else "Deductions")
-            AmountRow("Income Tax", -tax)
-            AmountRow("Provident Fund", -provident)
-            AmountRow("Health Insurance", -insurance)
-            AmountRow("Crew Welfare", -welfare)
-            AmountRow("Total Deductions", -deductions, bold = true)
-            Spacer(Modifier.height(6.dp))
-            AmountRow("Net Pay", net, bold = true)
-            Text("${net.toWords()} Dollars", color = MaterialTheme.colorScheme.onSurfaceVariant)
+    if (selectedMonth == null) {
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(if (ru) "Расчётные листы" else "Monthly payslips", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                if (availableMonths.isEmpty()) {
+                    Text(
+                        if (ru) "May 2026 salary has not been calculated yet. Payslip will be available on 05 Jun 2026."
+                        else "May 2026 salary has not been calculated yet. Payslip will be available on 05 Jun 2026.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    availableMonths.forEach { month ->
+                        val calc = calculatePayslip(month, flights)
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            modifier = Modifier.fillMaxWidth().clickable { selectedMonth = month }
+                        ) {
+                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text("${month.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${month.year} Salary", fontWeight = FontWeight.Bold)
+                                Text("Ready • Net Pay: $${calc.net} • Block: ${formatMinutes(calc.blockMinutes)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        val month = selectedMonth!!
+        val calc = calculatePayslip(month, flights)
+        OutlinedButton(onClick = { selectedMonth = null }, modifier = Modifier.fillMaxWidth()) {
+            Text(if (ru) "Назад к списку" else "Back to payslips")
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Payslip — ${month.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${month.year}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Thai Airways International", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Employee: Dmitrii Alekseev • ID 141901 • Captain", fontWeight = FontWeight.SemiBold)
+                SectionTitle(if (ru) "Основа расчёта" else "Payroll basis")
+                Text("Block time: ${formatMinutes(calc.blockMinutes)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Briefing / debriefing: ${formatMinutes(calc.dutyMinutes)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Reserve days: ${calc.reserveDays}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Leave days: ${calc.leaveDays}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(4.dp))
+                SectionTitle(if (ru) "Начисления" else "Earnings")
+                AmountRow("Flight Pay", calc.flightPay)
+                AmountRow("Briefing / Debriefing Pay", calc.dutyPay)
+                if (calc.reservePay > 0) AmountRow("Reserve / Standby Pay", calc.reservePay)
+                if (calc.deadheadPay > 0) AmountRow("Deadhead Pay", calc.deadheadPay)
+                if (calc.nightPremium > 0) AmountRow("Night Premium", calc.nightPremium)
+                if (calc.holidayPremium > 0) AmountRow("Holiday Premium", calc.holidayPremium)
+                if (calc.augmentedRestPay > 0) AmountRow("Augmented Crew Rest Pay", calc.augmentedRestPay)
+                if (calc.layoverPay > 0) AmountRow("Meal / Layover", calc.layoverPay)
+                if (calc.leavePay > 0) AmountRow("Leave Pay", calc.leavePay)
+                if (calc.unusedLeaveCompensation > 0) AmountRow("Unused Leave Compensation", calc.unusedLeaveCompensation)
+                AmountRow("Total Earnings", calc.gross, bold = true)
+                Spacer(Modifier.height(6.dp))
+                SectionTitle(if (ru) "Удержания" else "Deductions")
+                AmountRow("Income Tax", -calc.tax)
+                AmountRow("Provident Fund", -calc.provident)
+                AmountRow("Health Insurance", -calc.insurance)
+                AmountRow("Crew Welfare", -calc.welfare)
+                AmountRow("Total Deductions", -calc.deductions, bold = true)
+                Spacer(Modifier.height(6.dp))
+                AmountRow("Net Pay", calc.net, bold = true)
+                Text("${calc.net.toWords()} Dollars", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
+
+data class PayslipCalc(
+    val blockMinutes: Int,
+    val dutyMinutes: Int,
+    val reserveDays: Int,
+    val leaveDays: Int,
+    val flightPay: Int,
+    val dutyPay: Int,
+    val reservePay: Int,
+    val deadheadPay: Int,
+    val nightPremium: Int,
+    val holidayPremium: Int,
+    val augmentedRestPay: Int,
+    val layoverPay: Int,
+    val leavePay: Int,
+    val unusedLeaveCompensation: Int,
+    val gross: Int,
+    val tax: Int,
+    val provident: Int,
+    val insurance: Int,
+    val welfare: Int,
+    val deductions: Int,
+    val net: Int
+)
+
+private fun calculatePayslip(month: YearMonth, flights: List<FlightEntity>): PayslipCalc {
+    val prefix = "%04d-%02d".format(month.year, month.monthValue)
+    val monthDuties = flights.filter { it.departureDateTime.startsWith(prefix) }
+    val completedFlights = monthDuties.filter { it.dutyType == "FLIGHT" && it.isCompleted }
+    val sourceFlights = completedFlights.ifEmpty { monthDuties.filter { it.dutyType == "FLIGHT" } }
+    val blockMinutes = sourceFlights.sumOf { it.durationMinutes }
+    val dutyMinutes = sourceFlights.count() * 90 + sourceFlights.groupBy { it.departureDateTime.take(10) }.size * 30
+    val reserveDays = monthDuties.count { it.dutyType == "RESERVE" }
+    val leaveDays = LeaveDatabase.leaveDaysInMonth(month)
+    val longHaulMinutes = sourceFlights.filter { it.durationMinutes >= 540 }.sumOf { it.durationMinutes }
+    val layoverDays = monthDuties.count { it.dutyType == "STAY" }
+
+    val flightPay = ((blockMinutes / 60.0) * 95).roundToInt()
+    val dutyPay = ((dutyMinutes / 60.0) * 24).roundToInt()
+    val reservePay = reserveDays * 120
+    val deadheadPay = monthDuties.count { it.dutyType == "DEADHEAD" } * 180
+    val nightPremium = ((sourceFlights.sumOf { nightMinutes(it) } / 60.0) * 95).roundToInt()
+    val holidayPremium = sourceFlights.filter { isHoliday(it.departureDateTime.take(10)) }.sumOf { ((it.durationMinutes / 60.0) * 95 * 1.5).roundToInt() }
+    val augmentedRestPay = ((longHaulMinutes / 2.0 / 60.0) * 95 * 0.75).roundToInt()
+    val layoverPay = layoverDays * 95
+    val dailyLeavePay = 180
+    val leavePay = leaveDays * dailyLeavePay
+    val unusedLeaveCompensation = if (month.monthValue == 1) {
+        val used = 40 - 0 // placeholder until prior-year leave balance exists in persistent state
+        maxOf(0, 40 - used) * dailyLeavePay * 2
+    } else 0
+    val gross = flightPay + dutyPay + reservePay + deadheadPay + nightPremium + holidayPremium + augmentedRestPay + layoverPay + leavePay + unusedLeaveCompensation
+    val tax = (gross * 0.12).roundToInt()
+    val provident = (gross * 0.04).roundToInt()
+    val insurance = if (gross > 0) 90 else 0
+    val welfare = if (gross > 0) 35 else 0
+    val deductions = tax + provident + insurance + welfare
+    val net = gross - deductions
+    return PayslipCalc(blockMinutes, dutyMinutes, reserveDays, leaveDays, flightPay, dutyPay, reservePay, deadheadPay, nightPremium, holidayPremium, augmentedRestPay, layoverPay, leavePay, unusedLeaveCompensation, gross, tax, provident, insurance, welfare, deductions, net)
+}
+
+private fun nightMinutes(flight: FlightEntity): Int {
+    val start = java.time.LocalDateTime.parse(flight.departureDateTime)
+    val end = java.time.LocalDateTime.parse(flight.arrivalDateTime)
+    var cursor = start
+    var minutes = 0
+    while (cursor.isBefore(end)) {
+        val hour = cursor.hour
+        if (hour >= 23 || hour < 6) minutes++
+        cursor = cursor.plusMinutes(1)
+    }
+    return minutes
+}
+
+private fun isHoliday(date: String): Boolean = date.endsWith("01-01") || date.endsWith("04-13") || date.endsWith("04-14") || date.endsWith("12-05") || date.endsWith("12-10")
 
 @Composable
 private fun BonusTab(flights: List<FlightEntity>, ru: Boolean) {

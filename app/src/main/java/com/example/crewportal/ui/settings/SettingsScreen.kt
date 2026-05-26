@@ -32,6 +32,7 @@ import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.data.repository.FlightRepository
+import com.example.crewportal.BuildConfig
 import com.example.crewportal.data.repository.PreferencesRepository
 import com.example.crewportal.data.update.AppUpdateInfo
 import com.example.crewportal.data.update.UpdateRepository
@@ -53,6 +54,8 @@ fun SettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var updateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
     var updateChecked by remember { mutableStateOf(false) }
+    var versionTapCount by remember { mutableStateOf(0) }
+    val secretUsed by preferencesRepository.secretRosterGeneratorUsed.collectAsState(initial = false)
     
     if (updateInfo != null) {
         val info = updateInfo!!
@@ -106,13 +109,24 @@ fun SettingsScreen(
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ru) "Приложение" else "Application", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    "Crew Portal 2.0.6b",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    "Crew Portal ${BuildConfig.VERSION_NAME}",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clickable {
+                        if (!secretUsed) {
+                            versionTapCount += 1
+                            if (versionTapCount >= 5) {
+                                scope.launch {
+                                    flightRepository.generateJuneRosterTest()
+                                    snackbarHostState.showSnackbar(if (ru) "Ростер следующего месяца сгенерирован" else "Next month roster generated")
+                                }
+                            }
+                        }
+                    }
                 )
-                Text(if (ru) "Пакет обновления: CrewPortal-2.0.6b.apk" else "Update package: CrewPortal-2.0.6b.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Генератор ростера: автоматическая подготовка следующего месяца за 7 дней" else "Roster generator: next month is prepared automatically 7 days before month end", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Ростер: сеть компании + локальная база" else "Roster sync: company network + local database", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "MEL: сеть компании + локальная база по бортам" else "MEL: company network + local defects database by aircraft", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Пакет обновления: CrewPortal-${BuildConfig.VERSION_NAME}.apk" else "Update package: CrewPortal-${BuildConfig.VERSION_NAME}.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Генератор ростера: локальная подготовка следующего месяца" else "Roster generator: local next-month preparation", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Ростер: локальная база и генератор" else "Roster: local database and generator", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "MEL: локальная база по типам ВС и бортам" else "MEL: local aircraft technical database", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Карта: OpenStreetMap / osmdroid" else "Map source: OpenStreetMap / osmdroid", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -120,13 +134,13 @@ fun SettingsScreen(
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ru) "Синхронизация" else "Synchronization", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(if (ru) "Подключение к сети компании активно" else "Company network connection available", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Button(onClick = {
+                Text(if (ru) "Локальное обновление статусов ростера" else "Local roster status refresh", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedButton(onClick = {
                     scope.launch {
-                        val ok = withContext(Dispatchers.IO) { flightRepository.syncRosterFromGitHub() }
-                        snackbarHostState.showSnackbar(if (ok) { if (ru) "Ростер обновлён" else "Roster updated successfully" } else { if (ru) "Сеть компании недоступна, выполнено локальное обновление" else "Company network unavailable, local refresh completed" })
+                        withContext(Dispatchers.IO) { flightRepository.refreshCompletedFlights() }
+                        snackbarHostState.showSnackbar(if (ru) "Локальный ростер обновлён" else "Local roster refreshed")
                     }
-                }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Обновить ростер" else "Refresh roster") }
+                }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Обновить статусы" else "Refresh status") }
 
                 Button(onClick = {
                     scope.launch {
@@ -134,7 +148,7 @@ fun SettingsScreen(
                         val info = withContext(Dispatchers.IO) { updateRepository.checkForUpdate() }
                         when {
                             info == null -> Toast.makeText(context, if (ru) "Служба обновлений недоступна" else "Update service unavailable", Toast.LENGTH_SHORT).show()
-                            info.versionCode <= 209 -> Toast.makeText(context, if (ru) "Обновлений нет" else "Crew Portal is up to date", Toast.LENGTH_SHORT).show()
+                            info.versionCode <= BuildConfig.VERSION_CODE -> Toast.makeText(context, if (ru) "Обновлений нет" else "Crew Portal is up to date", Toast.LENGTH_SHORT).show()
                             else -> updateInfo = info
                         }
                     }
@@ -144,16 +158,16 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.0.6b", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Clean airport names in roster cards without awkward ellipsis.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Automatic 1-5 monthly roster flight changes with notifications.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Briefing and debriefing time shown in roster.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Long-haul operating/relief captain logic prepared.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Visual refresh and dark theme polish.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 2.1.0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• JSON roster source removed; roster is local/generated.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• One-time hidden next-month roster generation from version label.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Splash version label and cleaner action styling.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Expanded aircraft MEL / technical remarks logic.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Payroll now waits until monthly closing date.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
-        Button(onClick = { scope.launch { flightRepository.simulateRosterChange() } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Имитировать изменение ростера" else "Simulate Roster Change") }
-        Button(onClick = { scope.launch { onLogout() } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Выйти" else "Sign Out") }
+        OutlinedButton(onClick = { scope.launch { flightRepository.simulateRosterChange() } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Имитировать изменение ростера" else "Simulate Roster Change") }
+        OutlinedButton(onClick = { scope.launch { onLogout() } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Выйти" else "Sign Out") }
     }
 }

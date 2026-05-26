@@ -1,21 +1,21 @@
 {
-  "latestVersion": "2.0.6b",
-  "versionCode": 209,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.0.6b/CrewPortal-2.0.6b.apk",
+  "latestVersion": "2.1.0",
+  "versionCode": 210,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.0/CrewPortal-2.1.0.apk",
   "changelog": [
-    "Fixed internal 2.0.6b version metadata for Update Center and GitHub release detection",
-    "Airport names remain visible under IATA codes without awkward ellipsis display",
-    "Airport-name line now uses compact labels like Suvarnabhumi and Sheremetyevo",
-    "Added automatic operational roster changes: 1-5 random same-day flight replacements per month",
-    "Roster changes reset registration/gate/stand data for the affected sectors and trigger a Crew Portal notification",
-    "Kept the 2.0.6 GitHub Actions build fix for Compose pull-to-refresh"
+    "Removed JSON roster as an active schedule source",
+    "Added one-time hidden next-month roster generation from Settings version label",
+    "Added app version label to splash screen",
+    "Reworked default purple action buttons into cleaner corporate cards/actions",
+    "Expanded MEL / Technical Remarks with dynamic aircraft-type based deferred items",
+    "Payroll now waits until monthly closing and shows payslip cards by month"
   ],
   "changelogRu": [
-    "Исправлены внутренние метаданные версии 2.0.6b для Центра обновлений и релиза GitHub",
-    "Названия аэропортов остаются видимыми под IATA-кодами без некрасивого многоточия",
-    "Строка аэропорта использует компактные подписи вроде Suvarnabhumi и Sheremetyevo",
-    "Добавлены автоматические операционные изменения ростера: 1-5 случайных замен рейсов в месяц",
-    "При изменении рейса сбрасываются регистрация, gate/stand для затронутых секторов и приходит уведомление Crew Portal",
-    "Сохранено исправление сборки 2.0.6 для Compose pull-to-refresh"
+    "JSON-ростер удалён как активный источник расписания",
+    "Добавлена одноразовая скрытая генерация следующего месяца через версию в Settings",
+    "Добавлена версия приложения на splash screen",
+    "Фиолетовые action-кнопки переработаны в более аккуратный корпоративный стиль",
+    "Расширена MEL / Technical Remarks база с динамическими замечаниями по типам ВС",
+    "Payroll теперь ждёт закрытия месяца и показывает карточки расчётных листов"
   ]
 }

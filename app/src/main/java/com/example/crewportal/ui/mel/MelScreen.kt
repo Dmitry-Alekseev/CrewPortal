@@ -35,11 +35,8 @@ fun MelScreen(registration: String) {
     var syncStatus by remember { mutableStateOf("Local MEL database loaded") }
 
     LaunchedEffect(registration) {
-        val remote = withContext(Dispatchers.IO) { loadMelFromGitHub() }
-        if (remote != null) {
-            allDefects = remote
-            syncStatus = "Company MEL database synchronized"
-        }
+        allDefects = MelDatabase.all()
+        syncStatus = "Aircraft technical database loaded"
     }
 
     val defects = allDefects.filter { it.aircraftRegistration.equals(registration, ignoreCase = true) }

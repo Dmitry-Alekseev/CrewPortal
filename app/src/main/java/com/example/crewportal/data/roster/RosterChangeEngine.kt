@@ -32,6 +32,106 @@ object RosterChangeEngine {
         val inbound = pair.second
         val replacement = chooseReplacementRoute(outbound, month) ?: return null
         val departureDate = LocalDateTime.parse(outbound.departureDateTime, formatter).toLocalDate()
+        val oldDepartureDate = LocalDateTime.parse(outbound.departureDateTime, formatter).toLocalDate()
+        val possibleOffSwapDay = findFutureOffDay(monthFlights, today, oldDepartureDate)
+        if (possibleOffSwapDay != null && abs((outbound.id + month + "off-swap").hashCode()) % 3 == 0) {
+            val reason = changeReason(month, oldDepartureDate.dayOfMonth)
+            val newOutboundDepartureSwap = LocalDateTime.parse("${possibleOffSwapDay}T${replacement.outboundTime}", formatter)
+            val newOutboundArrivalSwap = newOutboundDepartureSwap.plusMinutes(replacement.outboundMinutes.toLong())
+            val newInboundDepartureSwap = newOutboundArrivalSwap.plusMinutes(replacement.turnaroundMinutes.toLong())
+            val newInboundArrivalSwap = newInboundDepartureSwap.plusMinutes(replacement.inboundMinutes.toLong())
+            val offDuty = outbound.copy(
+                id = "${oldDepartureDate}-OFF-ROSTER-CHANGE",
+                flightNumber = "OFF",
+                aircraftLabel = "OFF",
+                aircraftFullName = "Day Off",
+                registration = "—",
+                status = "OFF",
+                departureIata = "BKK",
+                departureIcao = "VTBS",
+                departureCity = "Bangkok",
+                departureAirport = "Suvarnabhumi Intl",
+                arrivalIata = "BKK",
+                arrivalIcao = "VTBS",
+                arrivalCity = "Bangkok",
+                arrivalAirport = "Suvarnabhumi Intl",
+                departureDateTime = oldDepartureDate.atTime(0, 0).format(formatter),
+                arrivalDateTime = oldDepartureDate.atTime(23, 59).format(formatter),
+                durationMinutes = 0,
+                dutyType = "OFF",
+                dutyNote = "Roster change: ${outbound.flightNumber}/${inbound.flightNumber} removed and replaced by OFF. Reason: $reason",
+                isRegistered = false,
+                isCompleted = false,
+                isFlightTimeAdded = false,
+                registrationNotified = false,
+                changeNotified = true,
+                gate = "Pending",
+                stand = "Pending",
+                terminal = "Pending",
+                airportAssignmentNotified = false
+            )
+            val swapOutbound = outbound.copy(
+                id = "${possibleOffSwapDay}-${replacement.outboundFlight}-BKK-${replacement.iata}",
+                flightNumber = replacement.outboundFlight,
+                status = "CHANGED",
+                departureIata = "BKK",
+                departureIcao = "VTBS",
+                departureCity = "Bangkok",
+                departureAirport = "Suvarnabhumi Intl",
+                arrivalIata = replacement.iata,
+                arrivalIcao = replacement.icao,
+                arrivalCity = replacement.city,
+                arrivalAirport = replacement.airport,
+                departureDateTime = newOutboundDepartureSwap.format(formatter),
+                arrivalDateTime = newOutboundArrivalSwap.format(formatter),
+                durationMinutes = replacement.outboundMinutes,
+                dutyNote = "Roster change: OFF converted to ${replacement.outboundFlight} BKK-${replacement.iata}. Reason: $reason",
+                registration = "TBA",
+                isRegistered = false,
+                isCompleted = false,
+                isFlightTimeAdded = false,
+                registrationNotified = false,
+                changeNotified = true,
+                gate = "Pending",
+                stand = "Pending",
+                terminal = "Pending",
+                airportAssignmentNotified = false
+            )
+            val swapInbound = inbound.copy(
+                id = "${possibleOffSwapDay}-${replacement.inboundFlight}-${replacement.iata}-BKK",
+                flightNumber = replacement.inboundFlight,
+                status = "CHANGED",
+                departureIata = replacement.iata,
+                departureIcao = replacement.icao,
+                departureCity = replacement.city,
+                departureAirport = replacement.airport,
+                arrivalIata = "BKK",
+                arrivalIcao = "VTBS",
+                arrivalCity = "Bangkok",
+                arrivalAirport = "Suvarnabhumi Intl",
+                departureDateTime = newInboundDepartureSwap.format(formatter),
+                arrivalDateTime = newInboundArrivalSwap.format(formatter),
+                durationMinutes = replacement.inboundMinutes,
+                dutyNote = "Roster change: OFF converted to ${replacement.inboundFlight} ${replacement.iata}-BKK. Reason: $reason",
+                registration = "TBA",
+                isRegistered = false,
+                isCompleted = false,
+                isFlightTimeAdded = false,
+                registrationNotified = false,
+                changeNotified = true,
+                gate = "Pending",
+                stand = "Pending",
+                terminal = "Pending",
+                airportAssignmentNotified = false
+            )
+            val updated = roster
+                .filterNot { it.id == outbound.id || it.id == inbound.id || it.departureDateTime.startsWith(possibleOffSwapDay.toString()) && it.dutyType == "OFF" }
+                .plus(listOf(offDuty, swapOutbound, swapInbound))
+                .sortedBy { it.departureDateTime }
+            val body = "${outbound.flightNumber}/${inbound.flightNumber} moved from ${oldDepartureDate.dayOfMonth} to ${possibleOffSwapDay.dayOfMonth} ${month.month.name.lowercase().replaceFirstChar { it.uppercase() }} with route ${replacement.outboundFlight}/${replacement.inboundFlight} BKK-${replacement.iata}-BKK."
+            return RosterChangeResult(updated, "Roster change published", body, ("roster-offswap-${month}-${oldDepartureDate}-${possibleOffSwapDay}".hashCode()))
+        }
+
         val newOutboundDeparture = LocalDateTime.parse("${departureDate}T${replacement.outboundTime}", formatter)
         val newOutboundArrival = newOutboundDeparture.plusMinutes(replacement.outboundMinutes.toLong())
         val newInboundDeparture = newOutboundArrival.plusMinutes(replacement.turnaroundMinutes.toLong())
@@ -137,6 +237,15 @@ object RosterChangeEngine {
                 }
                 inbound?.let { outbound to it }
             }
+            .firstOrNull()
+    }
+
+    private fun findFutureOffDay(monthFlights: List<FlightEntity>, today: LocalDate, oldDate: LocalDate): LocalDate? {
+        return monthFlights
+            .filter { it.dutyType == "OFF" && !it.changeNotified }
+            .map { LocalDateTime.parse(it.departureDateTime, formatter).toLocalDate() }
+            .filter { it.isAfter(today.plusDays(2)) && it != oldDate }
+            .sorted()
             .firstOrNull()
     }
 

@@ -25,18 +25,15 @@ import com.example.crewportal.util.displayDate
 fun RosterChangeHistoryScreen(flightRepository: FlightRepository) {
     val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
     val events = buildList {
-        flights.filter { it.registration != "TBA" }.forEach { add("Aircraft assigned" to it) }
-        flights.filter { it.gate != "Pending" || it.stand != "Pending" }.forEach { add("Gate / stand updated" to it) }
-        flights.filter { it.isRegistered }.forEach { add("Registration completed" to it) }
-        flights.filter { it.isCompleted }.forEach { add("Flight completed" to it) }
+        flights.filter { it.changeNotified || it.dutyNote.contains("Roster change", ignoreCase = true) }.forEach { add("Roster change" to it) }
     }.sortedByDescending { it.second.departureDateTime }
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Text("Roster Change History", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Recent roster assignment and status events", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Operational roster changes only", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (events.isEmpty()) item { HistoryCard("No roster changes", "No assignment or status changes recorded yet.") }
+        if (events.isEmpty()) item { HistoryCard("No roster changes", "No operational roster changes recorded yet.") }
         items(events.take(30)) { (title, flight) -> HistoryCard(title, lineFor(flight)) }
     }
 }
@@ -52,11 +49,7 @@ private fun HistoryCard(title: String, body: String) {
 }
 
 private fun lineFor(flight: FlightEntity): String {
-    val position = when {
-        flight.gate != "Pending" && flight.gate != "—" -> "Gate ${flight.gate}"
-        flight.stand != "Pending" && flight.stand != "—" -> "Stand ${flight.stand}"
-        else -> "position pending"
-    }
-    val reg = if (flight.registration == "TBA") "aircraft pending" else flight.registration
-    return "${displayDate(flight.departureDateTime)} • ${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata} • $reg • $position"
+    val route = if (flight.dutyType == "FLIGHT") "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}" else flight.flightNumber
+    val note = flight.dutyNote.ifBlank { flight.status }
+    return "${displayDate(flight.departureDateTime)} • $route • $note"
 }

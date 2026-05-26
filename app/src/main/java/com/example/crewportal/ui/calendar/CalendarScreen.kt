@@ -52,11 +52,10 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
     val ru = language == "ru"
     val today = LocalDate.now()
     val currentMonth = YearMonth.from(today)
-    var showingNextMonth by remember { mutableStateOf(false) }
     var showTargetDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    val targetYearMonth = if (showingNextMonth) currentMonth.plusMonths(1) else currentMonth
+    val targetYearMonth = if (nextPrepared && !nextReviewed) currentMonth.plusMonths(1) else currentMonth
     val filtered = duties.filter {
         val date = parseLocalDateTime(it.departureDateTime).toLocalDate()
         YearMonth.from(date) == targetYearMonth
@@ -97,19 +96,17 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
         item {
             Text(if (ru) "Календарь ростера" else "Roster Calendar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text((if (ru) "Месяц: " else "Roster month: ") + displayMonth(targetYearMonth.atDay(1)), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (nextPrepared && !showingNextMonth) {
-                Button(onClick = { showingNextMonth = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                    Text(if (ru) "Показать следующий месяц" else "Show next month")
-                }
-            }
-            if (showingNextMonth) {
-                OutlinedButton(onClick = { showingNextMonth = false }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                    Text(if (ru) "Вернуться к текущему месяцу" else "Back to current month")
-                }
+            if (nextPrepared && !nextReviewed) {
+                Text(
+                    if (ru) "Новый ростер готов к ознакомлению" else "New roster is ready for review",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 10.dp)
+                )
             }
         }
         items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty(), ru) }
-        if (showingNextMonth && nextPrepared && !nextReviewed) {
+        if (nextPrepared && !nextReviewed) {
             item {
                 Button(onClick = { showTargetDialog = true }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (ru) "Я ознакомился с графиком" else "I have reviewed this roster")
