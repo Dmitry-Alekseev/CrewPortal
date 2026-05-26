@@ -6,11 +6,11 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +22,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -44,7 +48,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -88,6 +91,7 @@ private sealed class RosterItem {
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ScheduleScreen(
     flightRepository: FlightRepository,
@@ -106,8 +110,9 @@ fun ScheduleScreen(
     var showNextRoster by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val now = LocalDateTime.now()
+    val targetMonth = if (showNextRoster && nextReviewed) YearMonth.now().plusMonths(1) else YearMonth.now()
     var isRefreshing by remember { mutableStateOf(false) }
-    var pullDistance by remember { mutableStateOf(0f) }
 
     LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights() }
 
@@ -123,27 +128,19 @@ fun ScheduleScreen(
         }
     }
 
-    LazyColumn(
+    val pullRefreshState = rememberPullRefreshState(refreshing = isRefreshing, onRefresh = refreshRoster)
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(isRefreshing) {
-                detectVerticalDragGestures(
-                    onDragStart = { pullDistance = 0f },
-                    onVerticalDrag = { change, dragAmount ->
-                        if (dragAmount > 0) {
-                            pullDistance += dragAmount
-                        }
-                    },
-                    onDragEnd = {
-                        if (pullDistance > 180f) refreshRoster()
-                        pullDistance = 0f
-                    },
-                    onDragCancel = { pullDistance = 0f }
-                )
-            }
-            .padding(horizontal = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .pullRefresh(pullRefreshState)
     ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
         item {
             SnackbarHost(hostState = snackbarHostState)
             Spacer(Modifier.height(12.dp))
@@ -162,7 +159,7 @@ fun ScheduleScreen(
             }
 
             Spacer(Modifier.height(8.dp))
-            MonthlyProgressCard(flights = flights, ru = ru)
+            MonthlyProgressCard(flights = flights, month = targetMonth, ru = ru)
             Spacer(Modifier.height(8.dp))
             TodayDutyCard(flights = flights, onDutyClick = onDutyClick, ru = ru)
             if (nextPrepared && nextReviewed) {
@@ -187,8 +184,6 @@ fun ScheduleScreen(
             }
         }
 
-        val now = LocalDateTime.now()
-        val targetMonth = if (showNextRoster && nextReviewed) YearMonth.now().plusMonths(1) else YearMonth.now()
         val displayItems = buildRosterItems(flights, targetMonth, now)
 
         items(displayItems, key = { item ->
@@ -215,7 +210,13 @@ fun ScheduleScreen(
                 is RosterItem.LeaveDuty -> LeaveRosterCard(item.period, item.date)
             }
         }
-        item { Spacer(Modifier.height(18.dp)) }
+            item { Spacer(Modifier.height(18.dp)) }
+        }
+        PullRefreshIndicator(
+            refreshing = isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }
 
@@ -258,9 +259,8 @@ private fun buildRosterItems(flights: List<FlightEntity>, month: YearMonth, now:
 }
 
 @Composable
-private fun MonthlyProgressCard(flights: List<FlightEntity>, ru: Boolean) {
-    val monthDate = LocalDate.now()
-    val month = YearMonth.from(monthDate)
+private fun MonthlyProgressCard(flights: List<FlightEntity>, month: YearMonth, ru: Boolean) {
+    val monthDate = month.atDay(1)
     val monthPrefix = monthDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
     val monthLabel = monthDate.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH))
     val monthFlights = flights.filter { it.dutyType == "FLIGHT" && it.departureDateTime.startsWith(monthPrefix) && LeaveDatabase.leaveFor(parseLocalDateTime(it.departureDateTime).toLocalDate()) == null }

@@ -53,8 +53,7 @@ fun SettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var updateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
     var updateChecked by remember { mutableStateOf(false) }
-    var versionTapCount by remember { mutableStateOf(0) }
-
+    
     if (updateInfo != null) {
         val info = updateInfo!!
         AlertDialog(
@@ -107,21 +106,11 @@ fun SettingsScreen(
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ru) "Приложение" else "Application", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    "Crew Portal 2.0.4",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clickable {
-                        versionTapCount += 1
-                        if (versionTapCount >= 5) {
-                            versionTapCount = 0
-                            scope.launch {
-                                withContext(Dispatchers.IO) { flightRepository.generateJuneRosterTest() }
-                                snackbarHostState.showSnackbar(if (ru) "Тестовый ростер июня подготовлен" else "Generated June roster test prepared")
-                            }
-                        }
-                    }
+                    "Crew Portal 2.0.5",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(if (ru) "Пакет обновления: CrewPortal-2.0.4.apk" else "Update package: CrewPortal-2.0.4.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (ru) "Секретный тест: 5 тапов по версии генерируют июньский ростер" else "Developer test: 5 taps on version generate June roster", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Пакет обновления: CrewPortal-2.0.5.apk" else "Update package: CrewPortal-2.0.5.apk", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (ru) "Генератор ростера: автоматическая подготовка следующего месяца за 7 дней" else "Roster generator: next month is prepared automatically 7 days before month end", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Ростер: сеть компании + локальная база" else "Roster sync: company network + local database", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "MEL: сеть компании + локальная база по бортам" else "MEL: company network + local defects database by aircraft", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(if (ru) "Карта: OpenStreetMap / osmdroid" else "Map source: OpenStreetMap / osmdroid", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -145,7 +134,7 @@ fun SettingsScreen(
                         val info = withContext(Dispatchers.IO) { updateRepository.checkForUpdate() }
                         when {
                             info == null -> Toast.makeText(context, if (ru) "Служба обновлений недоступна" else "Update service unavailable", Toast.LENGTH_SHORT).show()
-                            info.versionCode <= 202 -> Toast.makeText(context, if (ru) "Обновлений нет" else "Crew Portal is up to date", Toast.LENGTH_SHORT).show()
+                            info.versionCode <= 205 -> Toast.makeText(context, if (ru) "Обновлений нет" else "Crew Portal is up to date", Toast.LENGTH_SHORT).show()
                             else -> updateInfo = info
                         }
                     }
@@ -155,8 +144,8 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.0.4", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Smart Roster test mode added for June generation.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 2.0.5", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Automatic next-month roster preparation added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Payroll / Payslip module added in USD.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Briefing and debriefing time shown in roster.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Long-haul operating/relief captain logic prepared.", color = MaterialTheme.colorScheme.onSurfaceVariant)

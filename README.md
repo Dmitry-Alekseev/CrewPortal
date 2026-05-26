@@ -1,20 +1,20 @@
 # Crew Portal
 
-Version: 2.0.4
+Version: 2.0.5
 
-Crew Portal is a simulated airline crew operations application for Android/Kotlin. It includes roster, calendar, flight details, fleet, airport info, MEL, weather, leave management, payroll, company contacts and GitHub-based update/data synchronization.
+Crew Portal is a simulated airline crew operations application for Android/Kotlin. It includes roster, calendar, flight details, fleet, airport info, MEL, weather, leave management, payroll, company contacts and company-network update/data synchronization.
 
-## Version 2.0 highlights
+## Version 2.0.5 highlights
 
-- Smart Roster generator test mode for June 2026.
-- Payroll / Payslip module in USD.
-- Expanded Thai flight crew database.
-- 10 line instructors, 20 captains and 20 first officers for randomized assignments.
-- Briefing and debriefing time in roster cards.
-- Visual refresh and improved dark theme.
+- Roster pull-to-refresh is implemented with a proper pull indicator.
+- Monthly flight-time card now follows the selected roster month.
+- The hidden 5-tap roster test was removed.
+- Next-month roster generation is prepared automatically 7 days before month end.
+- Calendar review flow remains required before the generated roster appears in Roster.
+- App updates no longer overwrite the active roster during version upgrades.
 
 ## APK
 
 GitHub Actions builds:
 
-`CrewPortal-2.0.4.apk`
+`CrewPortal-2.0.5.apk`

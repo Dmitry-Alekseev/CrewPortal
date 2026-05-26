@@ -14,7 +14,9 @@ import com.example.crewportal.util.parseLocalDateTime
 import com.example.crewportal.util.shouldShowRegistrationButton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.YearMonth
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -39,8 +41,40 @@ class FlightRepository(
     suspend fun refreshBuiltInRosterOnAppUpdate(versionName: String) {
         val installedVersion = preferencesRepository.installedAppVersion.first()
         if (installedVersion != versionName) {
-            loadScheduleFromAssets(clearExisting = true, preserveExistingState = true)
+            // From 2.0.5 onward app updates must not overwrite the active roster.
+            // Roster changes come from company sync or the automatic roster generator.
             preferencesRepository.setInstalledAppVersion(versionName)
+            val today = LocalDate.now()
+            val triggerDate = YearMonth.from(today).atEndOfMonth().minusDays(6)
+            if (today.isBefore(triggerDate)) preferencesRepository.resetNextMonthRosterDecision()
+        }
+        prepareNextMonthRosterIfDue()
+    }
+
+    private suspend fun prepareNextMonthRosterIfDue() {
+        val today = LocalDate.now()
+        val currentMonth = YearMonth.from(today)
+        val triggerDate = currentMonth.atEndOfMonth().minusDays(6)
+        if (today.isBefore(triggerDate)) return
+
+        val nextMonth = currentMonth.plusMonths(1)
+        val prefix = "%04d-%02d".format(nextMonth.year, nextMonth.monthValue)
+        val snapshot = flightDao.getAllOnce()
+        val alreadyGenerated = snapshot.any { it.departureDateTime.startsWith(prefix) }
+        if (!alreadyGenerated) {
+            val generated = RosterGenerator.generateForMonth(nextMonth)
+            flightDao.insertAll(generated)
+            RosterNotificationScheduler.scheduleRoster(context, snapshot + generated)
+            preferencesRepository.resetNextMonthRosterDecision()
+            preferencesRepository.setNextMonthRosterPrepared(true)
+            NotificationHelper.show(
+                context,
+                "Roster ready for review",
+                "Generated roster for ${nextMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${nextMonth.year} is ready in Calendar.",
+                2_008_000 + nextMonth.monthValue
+            )
+        } else if (!preferencesRepository.nextMonthRosterPrepared.first()) {
+            preferencesRepository.setNextMonthRosterPrepared(true)
         }
     }
 

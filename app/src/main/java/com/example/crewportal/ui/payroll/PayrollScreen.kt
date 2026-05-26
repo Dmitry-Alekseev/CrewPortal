@@ -21,6 +21,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import android.widget.Toast
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -80,7 +84,61 @@ fun PayrollScreen(
                         if (password == "Airbus1998") unlocked = true else error = true
                     }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Открыть расчётный лист" else "Unlock payroll") }
                     OutlinedButton(onClick = {
-                        Toast.makeText(context, if (ru) "Биометрия будет запрошена системой. Пока используйте пароль." else "Biometric prompt is not available in this build. Use password.", Toast.LENGTH_SHORT).show()
+                        val activity = context as? FragmentActivity
+                        if (activity == null) {
+                            Toast.makeText(
+                                context,
+                                if (ru) "Биометрия недоступна. Используйте пароль." else "Biometric authentication is unavailable. Use password.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@OutlinedButton
+                        }
+
+                        val biometricManager = BiometricManager.from(context)
+                        val canAuthenticate = biometricManager.canAuthenticate(
+                            BiometricManager.Authenticators.BIOMETRIC_STRONG
+                        )
+
+                        if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
+                            Toast.makeText(
+                                context,
+                                if (ru) "Биометрия не настроена. Используйте пароль." else "Biometrics are not set up. Use password.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@OutlinedButton
+                        }
+
+                        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                            .setTitle(if (ru) "Доступ к зарплате" else "Payroll access")
+                            .setSubtitle(if (ru) "Подтвердите личность" else "Confirm your identity")
+                            .setNegativeButtonText(if (ru) "Отмена" else "Cancel")
+                            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                            .build()
+
+                        val prompt = BiometricPrompt(
+                            activity,
+                            ContextCompat.getMainExecutor(context),
+                            object : BiometricPrompt.AuthenticationCallback() {
+                                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                                    super.onAuthenticationSucceeded(result)
+                                    unlocked = true
+                                    Toast.makeText(
+                                        context,
+                                        if (ru) "Доступ разрешён" else "Payroll unlocked",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+
+                                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                                    super.onAuthenticationError(errorCode, errString)
+                                    if (errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON && errorCode != BiometricPrompt.ERROR_USER_CANCELED) {
+                                        Toast.makeText(context, errString, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        )
+
+                        prompt.authenticate(promptInfo)
                     }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Использовать отпечаток" else "Use fingerprint") }
                 }
             }
