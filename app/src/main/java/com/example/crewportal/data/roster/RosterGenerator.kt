@@ -161,7 +161,7 @@ object RosterGenerator {
             },
             Pattern("KUL", setOf("2026-06-24"), 290) {
                 addFlight("2026-06-24", "TG415", "BKK", "KUL", "Bangkok", "Kuala Lumpur", "VTBS", "WMKK", "09:05:00", 145, "A321neo", "Airbus A321-251NX")
-                addFlight("2026-06-24", "TG416", "KUL", "BKK", "Kuala Lumpur", "Bangkok", "WMKK", "13:10:00", 145, "A321neo", "Airbus A321-251NX")
+                addFlight("2026-06-24", "TG416", "KUL", "BKK", "Kuala Lumpur", "Bangkok", "WMKK", "VTBS", "13:10:00", 145, "A321neo", "Airbus A321-251NX")
             },
             Pattern("FRA", setOf("2026-06-11", "2026-06-12", "2026-06-13"), 1365) {
                 addFlight("2026-06-11", "TG920", "BKK", "FRA", "Bangkok", "Frankfurt", "VTBS", "EDDF", "23:20:00", 690, "A350", "Airbus A350-941", "Long-haul augmented crew")
