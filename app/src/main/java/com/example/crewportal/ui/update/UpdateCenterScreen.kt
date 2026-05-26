@@ -48,8 +48,8 @@ fun UpdateCenterScreen(
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
     val ru = language == "ru"
     var updateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
-    val currentVersionCode = 205
-    val currentVersionName = "2.0.5"
+    val currentVersionCode = 207
+    val currentVersionName = "2.0.6a"
 
     if (updateInfo != null) {
         val info = updateInfo!!
@@ -81,7 +81,7 @@ fun UpdateCenterScreen(
         Text(if (ru) "Синхронизация с сетью компании" else "Company network synchronization", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         InfoCard(if (ru) "Приложение" else "Application") {
-            Text(if (ru) "Текущая версия: 2.0.5" else "Current version: 2.0.5", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (ru) "Текущая версия: 2.0.6a" else "Current version: 2.0.6a", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(if (ru) "Служба обновлений: доступна" else "Application update service: available", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Button(onClick = {
                 scope.launch {
@@ -111,7 +111,7 @@ fun UpdateCenterScreen(
             Text(if (ru) "MEL обновляется при открытии карточки конкретного борта." else "MEL data is refreshed when an aircraft MEL screen is opened.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        InfoCard(if (ru) "Журнал изменений — 2.0.5" else "Change log — 2.0.5") {
+        InfoCard(if (ru) "Журнал изменений — 2.0.6a" else "Change log — 2.0.6a") {
             listOf(
                 if (ru) "Убрана дублирующая статичная загрузка на заставке." else "Removed duplicated static splash loader.",
                 if (ru) "Погода BKK / VTBS отображается сразу и обновляется в фоне." else "BKK / VTBS weather is shown immediately and refreshed in the background.",

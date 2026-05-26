@@ -1,19 +1,15 @@
 {
-  "latestVersion": "2.0.5",
-  "versionCode": 205,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.0.5/CrewPortal-2.0.5.apk",
+  "latestVersion": "2.0.6a",
+  "versionCode": 207,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.0.6a/CrewPortal-2.0.6a.apk",
   "changelog": [
-    "Removed roster refresh button and added pull-to-refresh gesture",
-    "Notifications now open the related Crew Portal screen",
-    "Monthly roster review flow retained for generated schedules",
-    "Automatic next-month roster preparation added",
-    "Updated version to 2.0.5"
+    "Restored airport full-name lines under IATA codes in roster flight cards",
+    "Reduced airport-name text size and forced single-line display with ellipsis",
+    "Kept the 2.0.6 GitHub Actions build fix for Compose pull-to-refresh"
   ],
   "changelogRu": [
-    "Убрана кнопка обновления ростера, добавлен pull-to-refresh жест",
-    "Уведомления теперь открывают связанный экран Crew Portal",
-    "Сохранён рабочий сценарий ознакомления с новым ростером",
-    "Убрана скрытая ручная генерация, ростер следующего месяца готовится автоматически",
-    "Версия обновлена до 2.0.5"
+    "Возвращены полные названия аэропортов под IATA-кодами в карточках Roster",
+    "Текст названий аэропортов уменьшен и принудительно ограничен одной строкой с многоточием",
+    "Сохранено исправление сборки 2.0.6 для Compose pull-to-refresh"
   ]
 }

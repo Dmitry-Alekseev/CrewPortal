@@ -1,4 +1,16 @@
+# Crew Portal Changelog
+
+## 2.0.6a
+- Restored airport full-name lines under IATA codes in Roster flight cards.
+- Reduced airport-name text size and forced single-line display with ellipsis.
+- Prevented awkward wrapping like single trailing syllables/letters in airport names.
+- Kept the 2.0.6 build fix for Compose pull-to-refresh.
+
 # Crew Portal Change Log
+
+## 2.0.6
+- Fixed GitHub Actions build failure caused by missing `androidx.compose.material:material` dependency.
+- Roster pull-to-refresh now compiles with `ExperimentalMaterialApi`, `rememberPullRefreshState`, `pullRefresh`, and `PullRefreshIndicator`.
 
 ## 2.0.5
 - Fixed Roster pull-to-refresh by switching to the native Compose pull refresh indicator.

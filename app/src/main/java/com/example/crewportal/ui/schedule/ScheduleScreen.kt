@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.crewportal.R
@@ -365,8 +366,21 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(0.9f)) {
                     Text(flight.departureIata, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
-                    Text(flight.departureCity, style = MaterialTheme.typography.titleMedium)
-                    Text(flight.departureAirport, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        flight.departureCity,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        flight.departureAirport,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1.35f)) {
                     Text(scheduleTimeLine(flight, showUtc), style = if (showUtc) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false, fontSize = if (showUtc) 18.sp else MaterialTheme.typography.headlineMedium.fontSize)
@@ -376,8 +390,21 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                 }
                 Column(Modifier.weight(0.9f), horizontalAlignment = Alignment.End) {
                     Text(flight.arrivalIata, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
-                    Text(flight.arrivalCity, style = MaterialTheme.typography.titleMedium)
-                    Text(flight.arrivalAirport, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        flight.arrivalCity,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        flight.arrivalAirport,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
             Spacer(Modifier.height(14.dp))
