@@ -1,6 +1,6 @@
 # Crew Portal Change Log
 
-## 2.0.2a
+## 2.0.3
 - Expanded crew database for flight assignments.
 - Added 10 Thai line instructors.
 - Added 20 Thai captains.

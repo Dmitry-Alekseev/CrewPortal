@@ -62,6 +62,8 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val initialDestination = intent?.getStringExtra("destination")
+
         val preferencesRepository = PreferencesRepository(applicationContext)
         val authRepository = AuthRepository(preferencesRepository)
         val db = AppDatabase.get(applicationContext)
@@ -84,7 +86,7 @@ class MainActivity : FragmentActivity() {
 
                 LaunchedEffect(Unit) {
                     authRepository.signOut()
-                    flightRepository.refreshBuiltInRosterOnAppUpdate("2.0.2a")
+                    flightRepository.refreshBuiltInRosterOnAppUpdate("2.0.3")
                     flightRepository.refreshCompletedFlights()
                     delay(1800)
                     showSplash = false
@@ -99,6 +101,7 @@ class MainActivity : FragmentActivity() {
                                 flightRepository = flightRepository,
                                 preferencesRepository = preferencesRepository,
                                 weatherRepository = weatherRepository,
+                                initialRoute = initialDestination,
                                 onLogout = {
                                     authRepository.signOut()
                                     sessionAuthenticated = false

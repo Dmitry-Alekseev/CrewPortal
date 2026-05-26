@@ -1,6 +1,6 @@
 # Crew Portal
 
-Version: 2.0.2a
+Version: 2.0.3
 
 Crew Portal is a simulated airline crew operations application for Android/Kotlin. It includes roster, calendar, flight details, fleet, airport info, MEL, weather, leave management, payroll, company contacts and GitHub-based update/data synchronization.
 
@@ -14,8 +14,7 @@ Crew Portal is a simulated airline crew operations application for Android/Kotli
 - Visual refresh and improved dark theme.
 
 ## APK
-APK
 
 GitHub Actions builds:
 
-`CrewPortal-2.0.2a.apk`
+`CrewPortal-2.0.3.apk`

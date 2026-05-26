@@ -12,9 +12,9 @@ import java.time.ZoneOffset
 object RosterNotificationScheduler {
     fun scheduleRoster(context: Context, flights: List<FlightEntity>) {
         flights.filter { it.dutyType == "FLIGHT" && !it.isCompleted }.forEach { flight ->
-            scheduleFlightEvent(context, flight, "registration", flight.departureDateTime, -24 * 60, "Registration open", "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: registration window is open.")
-            scheduleFlightEvent(context, flight, "gate", flight.departureDateTime, -3 * 60, "Airport assignment", "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: gate / stand assignment is available.")
-            scheduleFlightEvent(context, flight, "report", flight.departureDateTime, -120, "Duty reminder", "${flight.flightNumber}: report time is approaching.")
+            scheduleFlightEvent(context, flight, "registration", flight.departureDateTime, -24 * 60, "Registration open", "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: registration window is open.", "details/${flight.id}")
+            scheduleFlightEvent(context, flight, "gate", flight.departureDateTime, -3 * 60, "Airport assignment", "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: gate / stand assignment is available.", "details/${flight.id}")
+            scheduleFlightEvent(context, flight, "report", flight.departureDateTime, -120, "Duty reminder", "${flight.flightNumber}: report time is approaching.", "details/${flight.id}")
         }
     }
 
@@ -25,7 +25,8 @@ object RosterNotificationScheduler {
         localDateTime: String,
         offsetMinutes: Int,
         title: String,
-        message: String
+        message: String,
+        destination: String
     ) {
         val triggerAt = airportLocalToEpochMillis(localDateTime, flight.departureIata) + offsetMinutes * 60_000L
         if (triggerAt <= System.currentTimeMillis()) return
@@ -35,6 +36,7 @@ object RosterNotificationScheduler {
             putExtra("title", title)
             putExtra("message", message)
             putExtra("notificationId", requestCode)
+            putExtra("destination", destination)
         }
         val pendingIntent = PendingIntent.getBroadcast(
             context,

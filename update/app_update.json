@@ -1,19 +1,19 @@
 {
-  "latestVersion": "2.0.2a",
-  "versionCode": 203,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.0.2a/CrewPortal-2.0.2a.apk",
+  "latestVersion": "2.0.3",
+  "versionCode": 204,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.0.3/CrewPortal-2.0.3.apk",
   "changelog": [
-    "Expanded Thai flight crew database",
-    "Added 10 Thai line instructors",
-    "Added 20 Thai captains and 20 Thai first officers",
-    "Crew assignment now uses Thai pilot names more consistently",
-    "Reduced repeated Russian/foreign names in Crew List"
+    "Removed roster refresh button and added pull-to-refresh gesture",
+    "Notifications now open the related Crew Portal screen",
+    "Removed next-month roster preview from Calendar and Roster",
+    "Kept hidden 5-tap generated roster test mode",
+    "Updated version to 2.0.3"
   ],
   "changelogRu": [
-    "Расширена база тайских пилотов",
-    "Добавлены 10 тайских инструкторов",
-    "Добавлены 20 тайских КВС и 20 вторых пилотов",
-    "Назначение экипажа теперь чаще использует тайские имена",
-    "Убрано повторение русских/иностранных имён в Crew List"
+    "Убрана кнопка обновления ростера, добавлен pull-to-refresh жест",
+    "Уведомления теперь открывают связанный экран Crew Portal",
+    "Убран показ расписания следующего месяца из Calendar и Roster",
+    "Оставлен скрытый тест генерации ростера по 5 тапам",
+    "Версия обновлена до 2.0.3"
   ]
 }

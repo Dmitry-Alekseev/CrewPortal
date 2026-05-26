@@ -9,6 +9,7 @@ class RosterAlarmReceiver : BroadcastReceiver() {
         val title = intent.getStringExtra("title") ?: "Crew Portal"
         val message = intent.getStringExtra("message") ?: "Roster event"
         val id = intent.getIntExtra("notificationId", title.hashCode())
-        NotificationHelper.show(context, title, message, id)
+        val destination = intent.getStringExtra("destination") ?: "alerts"
+        NotificationHelper.show(context, title, message, id, destination)
     }
 }

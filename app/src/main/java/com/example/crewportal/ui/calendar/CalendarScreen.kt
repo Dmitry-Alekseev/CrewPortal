@@ -49,13 +49,8 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
     val duties by flightRepository.observeFlights().collectAsState(initial = emptyList())
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
     val ru = language == "ru"
-    val nextMonthReviewed by preferencesRepository.nextMonthRosterReviewed.collectAsState(initial = false)
-    val scope = rememberCoroutineScope()
-    var showNextMonth by remember { mutableStateOf(false) }
-    var showRosterDecisionDialog by remember { mutableStateOf(false) }
     val today = LocalDate.now()
-    val targetMonth = if (showNextMonth) today.plusMonths(1) else today
-    val canPreviewNext = today.dayOfMonth >= today.lengthOfMonth() - 6
+    val targetMonth = today
     val filtered = duties.filter {
         val date = parseLocalDateTime(it.departureDateTime).toLocalDate()
         date.year == targetMonth.year && date.month == targetMonth.month
@@ -69,26 +64,6 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
     }.groupBy({ it.first }, { it.second })
     val allDates = (grouped.keys + leaveGrouped.keys).toSortedSet()
 
-    if (showRosterDecisionDialog) {
-        AlertDialog(
-            onDismissRequest = { showRosterDecisionDialog = false },
-            title = { Text(if (ru) "Ростер просмотрен?" else "Roster reviewed?") },
-            text = { Text(if (ru) "Подтвердите ознакомление. Выберите стандартную норму 80 часов или усиленный месяц до 90 часов." else "Confirm that you reviewed the next roster. Choose standard 80h target or enhanced month up to 90h.") },
-            confirmButton = {
-                Button(onClick = {
-                    scope.launch { preferencesRepository.setNextMonthRosterDecision(reviewed = true, enhancedTarget = false) }
-                    showRosterDecisionDialog = false
-                }) { Text("80h") }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    scope.launch { preferencesRepository.setNextMonthRosterDecision(reviewed = true, enhancedTarget = true) }
-                    showRosterDecisionDialog = false
-                }) { Text("90h") }
-            }
-        )
-    }
-
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -96,32 +71,8 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
         item {
             Text(if (ru) "Календарь ростера" else "Roster Calendar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text((if (ru) "Месяц: " else "Roster month: ") + displayMonth(targetMonth), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (canPreviewNext || showNextMonth) {
-                OutlinedButton(onClick = { showNextMonth = !showNextMonth }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    Text(if (showNextMonth) { if (ru) "Вернуться к текущему месяцу" else "Back to current month" } else { if (ru) "Показать следующий месяц" else "Show next month roster" })
-                }
-            }
         }
         items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty(), ru) }
-        if (showNextMonth) {
-            item {
-                if (nextMonthReviewed) {
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp)) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(if (ru) "Ростер подтверждён" else "Roster reviewed", fontWeight = FontWeight.Bold)
-                            Text(if (ru) "Следующий месяц доступен в Roster." else "The next month roster is now available in Roster.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                } else {
-                    Button(
-                        onClick = { showRosterDecisionDialog = true },
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 24.dp)
-                    ) {
-                        Text(if (ru) "Я ознакомился с ростером" else "I have reviewed this roster")
-                    }
-                }
-            }
-        }
     }
 }
 

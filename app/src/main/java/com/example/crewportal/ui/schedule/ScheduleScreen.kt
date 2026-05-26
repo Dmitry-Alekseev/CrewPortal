@@ -6,6 +6,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -96,18 +98,45 @@ fun ScheduleScreen(
     val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
     val darkTheme by preferencesRepository.darkTheme.collectAsState(initial = false)
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
-    val nextMonthReviewed by preferencesRepository.nextMonthRosterReviewed.collectAsState(initial = false)
     val ru = language == "ru"
     var showUtc by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showNextMonth by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    var pullDistance by remember { mutableStateOf(0f) }
 
     LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights() }
+
+    val refreshRoster: () -> Unit = {
+        if (!isRefreshing) {
+            scope.launch {
+                isRefreshing = true
+                val synced = withContext(Dispatchers.IO) { flightRepository.syncRosterFromGitHub() }
+                if (!synced) flightRepository.refreshCompletedFlights()
+                isRefreshing = false
+                snackbarHostState.showSnackbar(if (ru) "Ростер обновлён" else "Roster updated successfully")
+            }
+        }
+    }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .pointerInput(isRefreshing) {
+                detectVerticalDragGestures(
+                    onDragStart = { pullDistance = 0f },
+                    onVerticalDrag = { change, dragAmount ->
+                        if (dragAmount > 0) {
+                            pullDistance += dragAmount
+                        }
+                    },
+                    onDragEnd = {
+                        if (pullDistance > 180f) refreshRoster()
+                        pullDistance = 0f
+                    },
+                    onDragCancel = { pullDistance = 0f }
+                )
+            }
             .padding(horizontal = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -128,27 +157,14 @@ fun ScheduleScreen(
                 Switch(checked = showUtc, onCheckedChange = { showUtc = it })
             }
 
-            ElevatedButton(
-                onClick = {
-                    scope.launch {
-                        val synced = withContext(Dispatchers.IO) { flightRepository.syncRosterFromGitHub() }
-                        if (!synced) flightRepository.refreshCompletedFlights()
-                        snackbarHostState.showSnackbar(if (ru) "Ростер обновлён" else "Roster updated successfully")
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) { Text(if (ru) "Обновить ростер" else "Refresh roster") }
-
             Spacer(Modifier.height(8.dp))
-            MonthlyProgressCard(flights = flights, ru = ru, showNextMonth = showNextMonth)
+            MonthlyProgressCard(flights = flights, ru = ru)
             Spacer(Modifier.height(8.dp))
             TodayDutyCard(flights = flights, onDutyClick = onDutyClick, ru = ru)
         }
 
-        item { MonthSwitchControls(showNextMonth = showNextMonth, ru = ru, canShow = nextMonthReviewed, onToggle = { showNextMonth = !showNextMonth }) }
-
         val now = LocalDateTime.now()
-        val targetMonth = if (showNextMonth) YearMonth.now().plusMonths(1) else YearMonth.now()
+        val targetMonth = YearMonth.now()
         val displayItems = buildRosterItems(flights, targetMonth, now)
 
         items(displayItems, key = { item ->
@@ -218,17 +234,8 @@ private fun buildRosterItems(flights: List<FlightEntity>, month: YearMonth, now:
 }
 
 @Composable
-private fun MonthSwitchControls(showNextMonth: Boolean, ru: Boolean, canShow: Boolean, onToggle: () -> Unit) {
-    if (canShow || showNextMonth) {
-        OutlinedButton(onClick = onToggle, modifier = Modifier.fillMaxWidth()) {
-            Text(if (showNextMonth) if (ru) "Вернуться к текущему месяцу" else "Back to current month" else if (ru) "Показать утверждённый ростер" else "Show approved next roster")
-        }
-    }
-}
-
-@Composable
-private fun MonthlyProgressCard(flights: List<FlightEntity>, ru: Boolean, showNextMonth: Boolean) {
-    val monthDate = if (showNextMonth) LocalDate.now().plusMonths(1) else LocalDate.now()
+private fun MonthlyProgressCard(flights: List<FlightEntity>, ru: Boolean) {
+    val monthDate = LocalDate.now()
     val month = YearMonth.from(monthDate)
     val monthPrefix = monthDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
     val monthLabel = monthDate.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH))
