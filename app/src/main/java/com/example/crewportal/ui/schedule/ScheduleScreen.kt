@@ -266,8 +266,9 @@ private fun insertRestPeriods(items: List<RosterItem>): List<RosterItem> {
 
     items.forEach { item ->
         val currentWorkDuty = (item as? RosterItem.FlightDuty)?.flight?.takeIf { it.isOperationalDuty() }
-        if (currentWorkDuty != null && previousWorkDuty != null) {
-            val restStart = dutyEndForRest(previousWorkDuty)
+        val previousDuty = previousWorkDuty
+        if (currentWorkDuty != null && previousDuty != null) {
+            val restStart = dutyEndForRest(previousDuty)
             val restEnd = dutyStartForRest(currentWorkDuty)
             val restMinutes = ChronoUnit.MINUTES.between(restStart, restEnd)
             if (restMinutes > 0) {
@@ -315,7 +316,6 @@ private fun List<RosterItem>.countLeaveDays(start: LocalDateTime, end: LocalDate
     leaveDateTime.isAfter(start.minusMinutes(1)) && leaveDateTime.isBefore(end.plusMinutes(1))
 }
 
-@Composable
 @Composable
 private fun RestPeriodCard(rest: RosterItem.RestPeriod, ru: Boolean) {
     val minutes = ChronoUnit.MINUTES.between(rest.start, rest.end).toInt().coerceAtLeast(0)
@@ -372,6 +372,7 @@ private fun formatRestMinutes(totalMinutes: Int): String {
     }.trim()
 }
 
+@Composable
 private fun MonthlyProgressCard(flights: List<FlightEntity>, month: YearMonth, ru: Boolean) {
     val monthDate = month.atDay(1)
     val monthPrefix = monthDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
