@@ -1,6 +1,7 @@
 # Crew Portal Changelog
 
-## 2.0.6a
+## 2.0.6b
+- Fixed internal app/update metadata so 2.0.6b is detected as 2.0.6b, not 2.0.6a.
 - Kept airport-name lines under IATA codes in Roster flight cards, but removed awkward ellipsis display.
 - Airport labels now use compact clean names such as Suvarnabhumi and Sheremetyevo to avoid broken one-letter/syllable wrapping.
 - Added automatic operational roster changes: deterministic 1-5 same-day flight replacements per month.
