@@ -6,6 +6,7 @@ import com.example.crewportal.data.fleet.AircraftPool
 import com.example.crewportal.data.local.FlightDao
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.roster.RosterGenerator
+import com.example.crewportal.data.roster.RosterChangeEngine
 import com.example.crewportal.util.NotificationHelper
 import com.example.crewportal.util.RosterNotificationScheduler
 import com.example.crewportal.util.canRegister
@@ -188,7 +189,22 @@ class FlightRepository(
     }
 
     suspend fun refreshCompletedFlights() {
-        val rosterSnapshot = flightDao.getAllOnce()
+        val initialSnapshot = flightDao.getAllOnce()
+        val automaticChange = RosterChangeEngine.applyChangeIfDue(initialSnapshot)
+        val rosterSnapshot = if (automaticChange != null) {
+            flightDao.clearAll()
+            flightDao.insertAll(automaticChange.updatedRoster)
+            RosterNotificationScheduler.scheduleRoster(context, automaticChange.updatedRoster)
+            NotificationHelper.show(
+                context,
+                automaticChange.notificationTitle,
+                automaticChange.notificationBody,
+                automaticChange.notificationId
+            )
+            automaticChange.updatedRoster
+        } else {
+            initialSnapshot
+        }
         RosterNotificationScheduler.scheduleRoster(context, rosterSnapshot)
         rosterSnapshot.forEach { flight ->
             if (flight.dutyType == "FLIGHT" && shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted)) {

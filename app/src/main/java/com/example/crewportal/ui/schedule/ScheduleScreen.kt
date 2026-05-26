@@ -374,12 +374,12 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        flight.departureAirport,
+                        compactAirportName(flight.departureAirport),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         maxLines = 1,
                         softWrap = false,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Clip
                     )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1.35f)) {
@@ -398,12 +398,12 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        flight.arrivalAirport,
+                        compactAirportName(flight.arrivalAirport),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         maxLines = 1,
                         softWrap = false,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Clip
                     )
                 }
             }
@@ -500,6 +500,14 @@ private fun LeaveRosterCard(period: LeavePeriod, date: LocalDate) {
         }
     }
 }
+
+
+private fun compactAirportName(name: String): String = name
+    .replace(" International", " Intl")
+    .replace(" Intl", "")
+    .replace(" Airport", "")
+    .replace(" Main", "")
+    .trim()
 
 private fun scheduleTimeLine(flight: FlightEntity, showUtc: Boolean): String {
     val local = displayTime(flight.departureDateTime)

@@ -30,6 +30,7 @@ fun NotificationsScreen(flightRepository: FlightRepository) {
     val openFlights = flights.filter { it.dutyType == "FLIGHT" && shouldShowRegistrationButton(it.departureIata, it.durationMinutes) && canRegister(it.departureDateTime, it.isCompleted) }
     val completed = flights.filter { it.isCompleted }.takeLast(5)
     val airportAssigned = flights.filter { it.dutyType == "FLIGHT" && (it.gate != "Pending" || it.stand != "Pending") && !it.isCompleted }
+    val rosterChanges = flights.filter { it.dutyType == "FLIGHT" && it.changeNotified && !it.isCompleted }.takeLast(6)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -44,6 +45,9 @@ fun NotificationsScreen(flightRepository: FlightRepository) {
         }
         openFlights.forEach { flight ->
             item { NotificationCard("Registration window opened", "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: check-in available. Aircraft: ${if (flight.registration == "TBA") "pending assignment" else flight.registration}.") }
+        }
+        rosterChanges.forEach { flight ->
+            item { NotificationCard("Roster change published", "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata} on ${displayDate(flight.departureDateTime)}: ${flight.dutyNote}") }
         }
         airportAssigned.forEach { flight ->
             val position = when {

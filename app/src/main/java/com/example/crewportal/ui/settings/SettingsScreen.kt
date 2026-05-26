@@ -134,7 +134,7 @@ fun SettingsScreen(
                         val info = withContext(Dispatchers.IO) { updateRepository.checkForUpdate() }
                         when {
                             info == null -> Toast.makeText(context, if (ru) "Служба обновлений недоступна" else "Update service unavailable", Toast.LENGTH_SHORT).show()
-                            info.versionCode <= 207 -> Toast.makeText(context, if (ru) "Обновлений нет" else "Crew Portal is up to date", Toast.LENGTH_SHORT).show()
+                            info.versionCode <= 208 -> Toast.makeText(context, if (ru) "Обновлений нет" else "Crew Portal is up to date", Toast.LENGTH_SHORT).show()
                             else -> updateInfo = info
                         }
                     }
@@ -145,8 +145,8 @@ fun SettingsScreen(
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Change Log — 2.0.6a", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Automatic next-month roster preparation added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Payroll / Payslip module added in USD.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Clean airport names in roster cards without awkward ellipsis.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Automatic 1-5 monthly roster flight changes with notifications.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Briefing and debriefing time shown in roster.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Long-haul operating/relief captain logic prepared.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Visual refresh and dark theme polish.", color = MaterialTheme.colorScheme.onSurfaceVariant)

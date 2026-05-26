@@ -48,7 +48,7 @@ fun UpdateCenterScreen(
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
     val ru = language == "ru"
     var updateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
-    val currentVersionCode = 207
+    val currentVersionCode = 208
     val currentVersionName = "2.0.6a"
 
     if (updateInfo != null) {

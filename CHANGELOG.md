@@ -1,9 +1,11 @@
 # Crew Portal Changelog
 
 ## 2.0.6a
-- Restored airport full-name lines under IATA codes in Roster flight cards.
-- Reduced airport-name text size and forced single-line display with ellipsis.
-- Prevented awkward wrapping like single trailing syllables/letters in airport names.
+- Kept airport-name lines under IATA codes in Roster flight cards, but removed awkward ellipsis display.
+- Airport labels now use compact clean names such as Suvarnabhumi and Sheremetyevo to avoid broken one-letter/syllable wrapping.
+- Added automatic operational roster changes: deterministic 1-5 same-day flight replacements per month.
+- Roster changes reset registration, aircraft assignment, gate/stand and terminal data for affected sectors.
+- Roster changes create a Crew Portal notification and appear in the Notifications screen.
 - Kept the 2.0.6 build fix for Compose pull-to-refresh.
 
 # Crew Portal Change Log
