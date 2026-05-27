@@ -1,12 +1,15 @@
 package com.example.crewportal.ui.calendar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +21,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -44,7 +48,7 @@ import java.time.YearMonth
 import kotlinx.coroutines.launch
 
 @Composable
-fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: PreferencesRepository) {
+fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: PreferencesRepository, onDutyClick: (String) -> Unit = {}) {
     val duties by flightRepository.observeFlights().collectAsState(initial = emptyList())
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
     val nextPrepared by preferencesRepository.nextMonthRosterPrepared.collectAsState(initial = false)
@@ -54,6 +58,7 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
     val currentMonth = YearMonth.from(today)
     var showTargetDialog by remember { mutableStateOf(false) }
     var viewGeneratedMonth by remember { mutableStateOf(false) }
+    var monthGridView by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val nextMonth = currentMonth.plusMonths(1)
@@ -98,6 +103,18 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
         item {
             Text(if (ru) "Календарь ростера" else "Roster Calendar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text((if (ru) "Месяц: " else "Roster month: ") + displayMonth(targetYearMonth.atDay(1)), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (monthGridView) {
+                    OutlinedButton(onClick = { monthGridView = false }, modifier = Modifier.weight(1f)) { Text(if (ru) "Список" else "List") }
+                    Button(onClick = { }, modifier = Modifier.weight(1f)) { Text(if (ru) "Месяц" else "Month") }
+                } else {
+                    Button(onClick = { }, modifier = Modifier.weight(1f)) { Text(if (ru) "Список" else "List") }
+                    OutlinedButton(onClick = { monthGridView = true }, modifier = Modifier.weight(1f)) { Text(if (ru) "Месяц" else "Month") }
+                }
+            }
             if (nextPrepared && !nextReviewed && !viewGeneratedMonth) {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
@@ -134,12 +151,145 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
                 )
             }
         }
-        items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty(), ru) }
+        if (monthGridView) {
+            item { CalendarMonthGrid(targetYearMonth, grouped, leaveGrouped, ru, onDutyClick) }
+        } else {
+            items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty(), ru) }
+        }
         if (nextPrepared && !nextReviewed && viewGeneratedMonth) {
             item {
                 Button(onClick = { showTargetDialog = true }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (ru) "Я ознакомился с графиком" else "I have reviewed this roster")
                 }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun CalendarMonthGrid(
+    month: YearMonth,
+    dutiesByDate: Map<LocalDate, List<FlightEntity>>,
+    leavesByDate: Map<LocalDate, List<LeavePeriod>>,
+    ru: Boolean,
+    onDutyClick: (String) -> Unit
+) {
+    val firstDay = month.atDay(1)
+    val leadingBlanks = firstDay.dayOfWeek.value - 1
+    val days = buildList<LocalDate?> {
+        repeat(leadingBlanks) { add(null) }
+        for (day in 1..month.lengthOfMonth()) add(month.atDay(day))
+        while (size % 7 != 0) add(null)
+    }
+    val weekdays = if (ru) listOf("ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС") else listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                weekdays.forEach { day ->
+                    Text(
+                        text = day,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            days.chunked(7).forEach { week ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    week.forEach { date ->
+                        CalendarGridCell(
+                            date = date,
+                            duties = if (date == null) emptyList() else dutiesByDate[date].orEmpty(),
+                            leaves = if (date == null) emptyList() else leavesByDate[date].orEmpty(),
+                            ru = ru,
+                            onDutyClick = onDutyClick,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(
+                if (ru) "✈ рейс · 🏨 отдых · R резерв · L отпуск" else "✈ flight · 🏨 stay · R reserve · L leave",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarGridCell(
+    date: LocalDate?,
+    duties: List<FlightEntity>,
+    leaves: List<LeavePeriod>,
+    ru: Boolean,
+    onDutyClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (date == null) {
+        Box(modifier.height(72.dp))
+        return
+    }
+
+    val flightDuty = duties.firstOrNull { it.dutyType == "FLIGHT" }
+    val clickableDuty = flightDuty ?: duties.firstOrNull { it.dutyType != "OFF" } ?: duties.firstOrNull()
+    val hasFlight = duties.any { it.dutyType == "FLIGHT" }
+    val hasStay = duties.any { it.dutyType == "STAY" }
+    val hasReserve = duties.any { it.dutyType == "RESERVE" }
+    val hasOff = duties.any { it.dutyType == "OFF" }
+    val hasLeave = leaves.isNotEmpty()
+    val today = date == LocalDate.now()
+    val containerColor = when {
+        hasLeave -> Color(0xFF4FC3F7).copy(alpha = 0.22f)
+        hasFlight -> MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+        hasStay -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f)
+        hasReserve -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.14f)
+        hasOff -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.48f)
+        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    }
+
+    Surface(
+        modifier = modifier
+            .height(72.dp)
+            .then(if (clickableDuty != null) Modifier.clickable { onDutyClick(clickableDuty.id) } else Modifier),
+        shape = RoundedCornerShape(12.dp),
+        color = containerColor,
+        tonalElevation = if (today) 2.dp else 0.dp
+    ) {
+        Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(
+                text = date.dayOfMonth.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (today) FontWeight.Bold else FontWeight.SemiBold,
+                color = if (today) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = when {
+                    hasLeave -> "L"
+                    hasFlight -> "✈"
+                    hasStay -> "🏨"
+                    hasReserve -> "R"
+                    hasOff -> if (ru) "В" else "OFF"
+                    else -> ""
+                },
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (hasFlight && flightDuty != null) {
+                Text(
+                    text = "${flightDuty.departureIata}-${flightDuty.arrivalIata}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
             }
         }
     }

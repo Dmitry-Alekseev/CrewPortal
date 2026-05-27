@@ -1,3 +1,9 @@
+## 2.1.6
+- Added Calendar month grid view with a small List/Month toggle.
+- Month grid shows flight, stay, reserve, OFF and leave indicators.
+- Tapping a duty date opens the existing Roster/Flight details screen instead of creating a separate calendar details page.
+- Does not regenerate or modify the current local roster.
+
 ## 2.1.5
 - Cleaned airport display names across roster cards; TAS now shows Tashkent / Islam Karimov.
 - Replaced layover labels like “Stay at TAS” with city names such as “Stay in Tashkent”.

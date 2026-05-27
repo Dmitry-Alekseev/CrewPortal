@@ -1,7 +1,7 @@
 {
-  "latestVersion": "2.1.5",
-  "versionCode": 215,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.5/CrewPortal-2.1.5.apk",
+  "latestVersion": "2.1.6",
+  "versionCode": 216,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.6/CrewPortal-2.1.6.apk",
   "changelog": [
     "Cleaned airport display names across roster cards; TAS now shows Tashkent / Islam Karimov",
     "Replaced layover labels like “Stay at TAS” with city names such as “Stay in Tashkent”",
