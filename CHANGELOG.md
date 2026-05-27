@@ -1,3 +1,9 @@
+## 2.1.5
+- Cleaned airport display names across roster cards; TAS now shows Tashkent / Islam Karimov.
+- Replaced layover labels like “Stay at TAS” with city names such as “Stay in Tashkent”.
+- Removed UTC/local time toggle from Roster and removed UTC timing text from flight details.
+- Fixed monthly progress wording so Leave is displayed as “Leave: 0 days” on one line.
+
 # Crew Portal Changelog
 
 ## 2.1.4

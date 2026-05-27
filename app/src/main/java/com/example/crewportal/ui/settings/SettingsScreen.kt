@@ -158,7 +158,7 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.1.4", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Change Log — 2.1.5", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text("• JSON roster source removed; roster is local/generated.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• One-time hidden next-month roster generation from version label.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Splash version label and cleaner action styling.", color = MaterialTheme.colorScheme.onSurfaceVariant)

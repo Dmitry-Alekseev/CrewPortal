@@ -67,7 +67,7 @@ object RosterGenerator {
     private val layoverRoutes = listOf(
         LayoverRoute("IST", "LTFM", "Istanbul", "Istanbul Airport", "TG935", "TG936", "22:40:00", 605, 2, "10:15:00", 580, "A350", "Airbus A350-941", "Grand Hyatt Istanbul", "Layover, Grand Hyatt Istanbul"),
         LayoverRoute("FRA", "EDDF", "Frankfurt", "Frankfurt Main", "TG920", "TG921", "23:20:00", 690, 2, "13:45:00", 675, "A350", "Airbus A350-941", "JW Marriott Hotel Frankfurt", "Long-haul augmented crew"),
-        LayoverRoute("TAS", "UTTT", "Tashkent", "Tashkent Intl", "TG684", "TG685", "09:20:00", 395, 3, "13:45:00", 405, "A330", "Airbus A330-343", "Hyatt Regency Tashkent", "Tashkent layover"),
+        LayoverRoute("TAS", "UTTT", "Tashkent", "Islam Karimov", "TG684", "TG685", "09:20:00", 395, 3, "13:45:00", 405, "A330", "Airbus A330-343", "Hyatt Regency Tashkent", "Tashkent layover"),
         LayoverRoute("SVO", "UUEE", "Moscow", "Sheremetyevo Intl", "TG974", "TG975", "21:55:00", 605, 2, "16:20:00", 590, "A350", "Airbus A350-941", "Hyatt Regency Moscow Petrovsky Park", "Moscow layover"),
         LayoverRoute("LHR", "EGLL", "London", "Heathrow", "TG910", "TG911", "00:55:00", 760, 2, "12:30:00", 705, "A350", "Airbus A350-941", "Sofitel London Heathrow", "Long-haul augmented crew"),
         LayoverRoute("NRT", "RJAA", "Tokyo", "Narita Intl", "TG642", "TG643", "23:50:00", 360, 2, "11:45:00", 410, "A330", "Airbus A330-343", "Hilton Tokyo Narita Airport", "Tokyo layover"),
@@ -238,7 +238,7 @@ object RosterGenerator {
                 flights += FlightEntity(
                     id = "${date(stayDay)}-STAY-${route.iata}",
                     airline = "THAI",
-                    flightNumber = "STAY AT ${route.iata}",
+                    flightNumber = "Stay in ${route.city}",
                     aircraftLabel = "STAY",
                     aircraftFullName = "Layover stay",
                     registration = "—",
@@ -357,7 +357,7 @@ object RosterGenerator {
         "DEL" -> "Indira Gandhi Intl"
         "FRA" -> "Frankfurt Main"
         "IST" -> "Istanbul Airport"
-        "TAS" -> "Tashkent Intl"
+        "TAS" -> "Islam Karimov"
         "SVO" -> "Sheremetyevo Intl"
         "LHR" -> "Heathrow"
         "NRT" -> "Narita Intl"

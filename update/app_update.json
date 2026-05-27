@@ -1,23 +1,19 @@
 {
-  "latestVersion": "2.1.4",
-  "versionCode": 214,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.4/CrewPortal-2.1.4.apk",
+  "latestVersion": "2.1.5",
+  "versionCode": 215,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.5/CrewPortal-2.1.5.apk",
   "changelog": [
-    "Reordered Leave screen: calendar first, personal leave confirmation below",
-    "Reworked Leave action buttons to avoid default purple styling",
-    "Fixed flight card date format: year removed, weekday kept readable",
-    "Fixed route maps so each flight uses its actual departure and arrival airports",
-    "Bonus is now hidden until the monthly payslip is available",
-    "Removed Leave block from Profile because Leave has its own section",
+    "Cleaned airport display names across roster cards; TAS now shows Tashkent / Islam Karimov",
+    "Replaced layover labels like “Stay at TAS” with city names such as “Stay in Tashkent”",
+    "Removed the UTC/local time toggle from Roster and cleaned UTC timing text from flight details",
+    "Fixed monthly progress wording so Leave is displayed as “Leave: 0 days” on one line",
     "Kept existing generated roster data unchanged"
   ],
   "changelogRu": [
-    "Перестроен экран отпуска: сначала календарь, ниже подтверждение personal leave",
-    "Кнопки в Leave переделаны без дефолтного фиолетового стиля",
-    "Исправлен формат даты в карточке рейса: год убран, день недели читаемый",
-    "Исправлены карты маршрутов: каждый рейс берёт свои аэропорты вылета и прилёта",
-    "Премия теперь скрыта до готовности расчётного листка",
-    "Блок Leave убран из Profile, потому что отпуск вынесен в отдельный раздел",
+    "Исправлены названия аэропортов в карточках ростера; TAS теперь показывает Tashkent / Islam Karimov",
+    "Надписи layover вроде “Stay at TAS” заменены на города, например “Stay in Tashkent”",
+    "Переключатель UTC/local убран из Roster, UTC-текст убран из деталей рейса",
+    "В шкале месячной нормы Leave теперь отображается одной строкой: “Leave: 0 days”",
     "Уже сгенерированный ростер не пересоздаётся"
   ]
 }

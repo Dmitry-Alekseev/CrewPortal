@@ -106,10 +106,10 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                 Text("${item.departureCity} → ${item.arrivalCity}", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 if (item.dutyType != "FLIGHT") {
-                    InfoCard(if (item.dutyType == "OFF") "Day Off" else "${item.dutyType} Details") {
+                    InfoCard(when (item.dutyType) { "OFF" -> "Day Off"; "STAY" -> "Stay in ${item.departureCity}"; else -> "${item.dutyType} Details" }) {
                         DetailRow("Date", displayDate(item.departureDateTime), displayDaySafe(item.departureDateTime))
                         DetailRow("Time", "${displayTime(item.departureDateTime)}-${displayTime(item.arrivalDateTime)}", "Local time")
-                        DetailRow("Location", if (item.dutyType == "RESERVE") item.departureAirport else "Not applicable", item.departureCity)
+                        DetailRow("Location", when (item.dutyType) { "RESERVE", "STAY" -> item.departureAirport; else -> "Not applicable" }, item.departureCity)
                         DetailRow("Note", item.dutyNote.ifBlank { if (item.dutyType == "OFF") "No assigned duty" else "Hotel reserve at airport crew hotel" }, "Company roster item")
                     }
                     return@Column
@@ -119,11 +119,11 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                 StatusTimelineCard(item)
 
                 InfoCard("Flight Information") {
-                    DetailRow("Departure", "${item.departureIata} / ${item.departureAirport}", "${displayDate(item.departureDateTime)}, ${displayTime(item.departureDateTime)} • ${AirportDatabase.utcText(item.departureDateTime, item.departureIata)}")
-                    DetailRow("Arrival", "${item.arrivalIata} / ${item.arrivalAirport}", "${displayDate(item.arrivalDateTime)}, ${displayTime(item.arrivalDateTime)} • ${AirportDatabase.utcText(item.arrivalDateTime, item.arrivalIata)}")
+                    DetailRow("Departure", "${item.departureIata} / ${AirportDatabase.shortAirportName(item.departureIata, item.departureAirport)}", "${displayDate(item.departureDateTime)}, ${displayTime(item.departureDateTime)} local")
+                    DetailRow("Arrival", "${item.arrivalIata} / ${AirportDatabase.shortAirportName(item.arrivalIata, item.arrivalAirport)}", "${displayDate(item.arrivalDateTime)}, ${displayTime(item.arrivalDateTime)} local")
                     DetailRow("Aircraft", item.aircraftFullName, item.aircraftLabel)
                     DetailRow("Registration", if (item.registration == "TBA") "Assigned 24h prior" else item.registration, "Released with crew registration window")
-                    DetailRow("Block Time", formatMinutes(item.durationMinutes), "Local/UTC toggle data available")
+                    DetailRow("Block Time", formatMinutes(item.durationMinutes), "Scheduled block time")
                     DetailRow("Status", if (item.isCompleted) "Completed" else if (item.isRegistered) "Registered" else "Scheduled", "Company portal synchronized")
                 }
 

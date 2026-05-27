@@ -174,7 +174,7 @@ private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves:
             }
             val visibleDuties = if (leaves.isNotEmpty()) emptyList() else duties
             visibleDuties.forEach { duty ->
-                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") { if (ru) "ВЫХОДНОЙ" else "OFF" } else if (duty.dutyType == "RESERVE") { if (ru) "РЕЗЕРВ" else "RESERVE" } else if (duty.dutyType == "STAY") duty.flightNumber else duty.dutyType
+                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") { if (ru) "ВЫХОДНОЙ" else "OFF" } else if (duty.dutyType == "RESERVE") { if (ru) "РЕЗЕРВ" else "RESERVE" } else if (duty.dutyType == "STAY") { if (ru) "ОТДЫХ В ${duty.departureCity.uppercase()}" else "Stay in ${duty.departureCity}" } else duty.dutyType
                 val chipColor = when (duty.dutyType) {
                     "FLIGHT" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                     "RESERVE" -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)

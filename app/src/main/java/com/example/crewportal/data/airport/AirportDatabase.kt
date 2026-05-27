@@ -96,7 +96,7 @@ object AirportDatabase {
         AirportInfo("AMS", "EHAM", "Amsterdam Schiphol", "Amsterdam", "Netherlands", 120, -11, "04/22, 06/24, 09/27, 18L/36R, 18C/36C, 18R/36L", "Europe station.", "Large multi-runway airport; future network use."),
 
 
-        AirportInfo("TAS", "UTTT", "Tashkent Intl", "Tashkent", "Uzbekistan", 300, 1417, "08L/26R, 08R/26L", "Central Asia station.", "Medium-haul station; layover handling by local station."),
+        AirportInfo("TAS", "UTTT", "Islam Karimov", "Tashkent", "Uzbekistan", 300, 1417, "08L/26R, 08R/26L", "Central Asia station.", "Medium-haul station; layover handling by local station."),
         AirportInfo("LED", "ULLI", "Pulkovo", "Saint Petersburg", "Russia", 180, 78, "10L/28R, 10R/28L", "Russia station.", "Long-haul seasonal/special network station; winter operations briefing required."),
         AirportInfo("SVO", "UUEE", "Sheremetyevo", "Moscow", "Russia", 180, 622, "06L/24R, 06C/24C, 06R/24L", "Russia station.", "Long-haul station; winter operations and de-icing planning where applicable."),
         AirportInfo("OVB", "UNNT", "Tolmachevo", "Novosibirsk", "Russia", 420, 365, "07/25, 16/34", "Russia station.", "Siberia station; cold weather briefing required in winter season."),
@@ -133,6 +133,42 @@ object AirportDatabase {
     }
 
     fun all(): List<AirportInfo> = airportList.sortedBy { it.iata }
+
+
+    fun shortAirportName(iata: String, fallbackName: String = ""): String {
+        val code = iata.uppercase(Locale.ENGLISH)
+        return when (code) {
+            "BKK" -> "Suvarnabhumi"
+            "KUL" -> "KLIA"
+            "TAS" -> "Islam Karimov"
+            "SVO" -> "Sheremetyevo"
+            "IST" -> "Istanbul Airport"
+            "FRA" -> "Frankfurt Main"
+            "LHR" -> "Heathrow"
+            "HKT" -> "Phuket"
+            "CNX" -> "Chiang Mai"
+            "KBV" -> "Krabi"
+            "SIN" -> "Changi"
+            "DEL" -> "Indira Gandhi"
+            "NRT" -> "Narita"
+            "ICN" -> "Incheon"
+            "DPS" -> "Ngurah Rai"
+            "SGN" -> "Tan Son Nhat"
+            "HAN" -> "Noi Bai"
+            "REP" -> "Siem Reap Angkor"
+            "DAC" -> "Hazrat Shahjalal"
+            "MNL" -> "Ninoy Aquino"
+            else -> cleanAirportName(fallbackName.ifBlank { byIata(code)?.name.orEmpty() })
+        }
+    }
+
+    private fun cleanAirportName(name: String): String = name
+        .replace(" International Airport", "")
+        .replace(" International", "")
+        .replace(" Intl", "")
+        .replace(" Airport", "")
+        .replace(" Main", "")
+        .trim()
 
     fun utcText(localDateTime: String, iata: String): String {
         val airport = byIata(iata) ?: return "UTC time unavailable"

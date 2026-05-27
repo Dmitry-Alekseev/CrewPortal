@@ -55,7 +55,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.crewportal.R
-import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.leave.LeavePeriod
 import com.example.crewportal.data.local.FlightEntity
@@ -117,7 +116,6 @@ fun ScheduleScreen(
     val nextReviewed by preferencesRepository.nextMonthRosterReviewed.collectAsState(initial = false)
     val enhancedTarget by preferencesRepository.enhancedRosterTarget.collectAsState(initial = false)
     val ru = language == "ru"
-    var showUtc by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val now = LocalDateTime.now()
@@ -162,12 +160,6 @@ fun ScheduleScreen(
                 Text(if (ru) "Тёмная тема" else "Dark theme", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                 Switch(checked = darkTheme, onCheckedChange = { value -> scope.launch { preferencesRepository.setDarkTheme(value) } })
             }
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-                Text(if (showUtc) "Local time with UTC reference" else "Local time", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                Text("UTC", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 10.dp))
-                Switch(checked = showUtc, onCheckedChange = { showUtc = it })
-            }
-
             Spacer(Modifier.height(8.dp))
             MonthlyProgressCard(flights = flights, month = targetMonth, ru = ru)
             Spacer(Modifier.height(8.dp))
@@ -191,7 +183,6 @@ fun ScheduleScreen(
                             flight = duty,
                             onClick = { onDutyClick(duty.id) },
                             flightRepository = flightRepository,
-                            showUtc = showUtc,
                             ru = ru
                         )
                     } else {
@@ -391,7 +382,8 @@ private fun MonthlyProgressCard(flights: List<FlightEntity>, month: YearMonth, r
                 MetricBlock("Completed", formatMinutes(completed), Modifier.weight(1f))
             }
             LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
-            Text("Adjusted target ${formatMinutes(adjustedTarget)} • Limit ${formatMinutes(limit)} • Leave ${LeaveDatabase.leaveDaysInMonth(month)} days", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Adjusted target ${formatMinutes(adjustedTarget)} • Limit ${formatMinutes(limit)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Leave: ${LeaveDatabase.leaveDaysInMonth(month)} days", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -452,7 +444,7 @@ private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> 
 }
 
 @Composable
-fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: FlightRepository, showUtc: Boolean, ru: Boolean) {
+fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: FlightRepository, ru: Boolean) {
     val scope = rememberCoroutineScope()
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
@@ -485,7 +477,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                         softWrap = false
                     )
                     Text(
-                        compactAirportName(flight.departureAirport),
+                        airportShortName(flight.departureIata, flight.departureAirport),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp,
                         maxLines = 1,
@@ -494,7 +486,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                     )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1.1f)) {
-                    Text(scheduleTimeLine(flight, showUtc), style = if (showUtc) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false, fontSize = if (showUtc) 18.sp else MaterialTheme.typography.headlineMedium.fontSize)
+                    Text(scheduleTimeLine(flight), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                     Text("${displayDate(flight.departureDateTime)} • ${displayDay(flight.departureDateTime)}", color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false)
                     Text("✈", color = ThaiPurple, style = MaterialTheme.typography.headlineMedium)
                     Text(formatMinutes(flight.durationMinutes), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -509,7 +501,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                         softWrap = false
                     )
                     Text(
-                        compactAirportName(flight.arrivalAirport),
+                        airportShortName(flight.arrivalIata, flight.arrivalAirport),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp,
                         maxLines = 1,
@@ -581,7 +573,7 @@ fun DutyCard(flight: FlightEntity, onClick: (() -> Unit)?) {
     val isStay = flight.dutyType == "STAY"
     val title = when {
         isOff -> "OFF"
-        isStay -> flight.flightNumber
+        isStay -> "Stay in ${flight.departureCity}"
         else -> flight.dutyType
     }
     Card(modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable { onClick() } else Modifier), shape = RoundedCornerShape(18.dp), elevation = CardDefaults.cardElevation(2.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -593,7 +585,7 @@ fun DutyCard(flight: FlightEntity, onClick: (() -> Unit)?) {
             }
             Text("${displayDate(flight.departureDateTime)} • ${displayTime(flight.departureDateTime)}-${displayTime(flight.arrivalDateTime)}")
             Text(flight.dutyNote.ifBlank { if (isOff) "Day off" else if (isStay) "Layover stay" else "Hotel standby duty" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (!isOff) Text("Location: ${flight.departureAirport}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!isOff) Text("Location: ${if (isStay) flight.departureAirport else airportShortName(flight.departureIata, flight.departureAirport)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -618,20 +610,9 @@ private fun compactCityName(name: String): String = when (name) {
     else -> name
 }
 
-private fun compactAirportName(name: String): String = when {
-    name.contains("Kuala Lumpur", ignoreCase = true) -> "KLIA"
-    else -> name
-        .replace(" International", " Intl")
-        .replace(" Intl", "")
-        .replace(" Airport", "")
-        .replace(" Main", "")
-        .trim()
-}
+private fun airportShortName(iata: String, name: String): String = com.example.crewportal.data.airport.AirportDatabase.shortAirportName(iata, name)
 
-private fun scheduleTimeLine(flight: FlightEntity, showUtc: Boolean): String {
-    val local = displayTime(flight.departureDateTime)
-    return if (showUtc) "$local • ${AirportDatabase.utcClockText(flight.departureDateTime, flight.departureIata)} UTC" else local
-}
+private fun scheduleTimeLine(flight: FlightEntity): String = displayTime(flight.departureDateTime)
 
 private fun airportAssignmentLine(flight: FlightEntity): String {
     if (!shouldShowAirportAssignment(flight)) return ""
