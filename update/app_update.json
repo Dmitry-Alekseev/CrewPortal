@@ -1,21 +1,23 @@
 {
-  "latestVersion": "2.1.2",
-  "versionCode": 212,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.2/CrewPortal-2.1.2.apk",
+  "latestVersion": "2.1.3",
+  "versionCode": 213,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.3/CrewPortal-2.1.3.apk",
   "changelog": [
-    "Reworked roster generation: no fixed June template; next month is generated from route pools",
-    "Generator now targets about 78-82 block hours and mixes turnarounds, layovers, reserve and OFF days",
-    "Fixed rest card logic so connected turnaround sectors do not show 5-minute crew rest",
-    "Removed FO/Capt. prefixes from displayed crew names",
-    "Kept JSON roster removed as an active schedule source",
-    "Updated release metadata to 2.1.2"
+    "Reordered Leave screen: calendar first, personal leave confirmation below",
+    "Reworked Leave action buttons to avoid default purple styling",
+    "Fixed flight card date format: year removed, weekday kept readable",
+    "Fixed route maps so each flight uses its actual departure and arrival airports",
+    "Bonus is now hidden until the monthly payslip is available",
+    "Removed Leave block from Profile because Leave has its own section",
+    "Kept existing generated roster data unchanged"
   ],
   "changelogRu": [
-    "Переработана генерация ростера: больше нет фиксированного шаблона июня, месяц собирается из пула маршрутов",
-    "Генератор целится примерно в 78–82 block hours и смешивает рейсы, layover, reserve и OFF",
-    "Исправлена плашка отдыха: между связанными turnaround-секторами больше не показывается 5 минут rest",
-    "Убраны префиксы FO/Capt. перед именами экипажа",
-    "JSON-ростер остаётся удалённым как активный источник расписания",
-    "Метаданные релиза обновлены до 2.1.2"
+    "Перестроен экран отпуска: сначала календарь, ниже подтверждение personal leave",
+    "Кнопки в Leave переделаны без дефолтного фиолетового стиля",
+    "Исправлен формат даты в карточке рейса: год убран, день недели читаемый",
+    "Исправлены карты маршрутов: каждый рейс берёт свои аэропорты вылета и прилёта",
+    "Премия теперь скрыта до готовности расчётного листка",
+    "Блок Leave убран из Profile, потому что отпуск вынесен в отдельный раздел",
+    "Уже сгенерированный ростер не пересоздаётся"
   ]
 }

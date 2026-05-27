@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private val isoFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-private val cardDateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
+private val cardDateFormatter = DateTimeFormatter.ofPattern("dd MMM", Locale.ENGLISH)
 private val shortDateFormatter = DateTimeFormatter.ofPattern("dd MMM", Locale.ENGLISH)
 private val dayFormatter = DateTimeFormatter.ofPattern("EEE", Locale.ENGLISH)
 private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH)

@@ -1,16 +1,15 @@
 # Crew Portal
 
-Version: 2.1.2
+Version: 2.1.3
 
-Crew Portal Kotlin/Jetpack Compose Android project.
+Crew Portal is a Kotlin / Jetpack Compose Android application for roster, duty, MEL, payroll, leave and operational crew information.
 
-## Version 2.1.2 highlights
-- Local/generated roster logic, no active JSON roster source.
-- One-time hidden roster generation from Settings version label.
-- Splash version label.
-- Corporate UI polish for action cards/buttons.
-- Dynamic MEL / Technical Remarks per aircraft type and registration.
-- Payroll monthly closing flow.
-- Rest-period cards between operational duties in Roster.
+## Version 2.1.3 highlights
+- Leave screen: calendar above personal leave request confirmation.
+- Leave action buttons updated away from default purple styling.
+- Flight date labels now use a compact `13 JUN • SAT` style.
+- Route maps use the actual flight route instead of fallback/hardcoded points.
+- Bonus waits for payslip calculation.
+- Profile no longer duplicates the Leave block.
 
-APK artifact name: `CrewPortal-2.1.2.apk`
+APK artifact name: `CrewPortal-2.1.3.apk`

@@ -38,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -258,70 +259,81 @@ private fun DutyLimitMonitorCard(flight: FlightEntity) {
 @Composable
 private fun RouteMapCard(flight: FlightEntity) {
     val context = LocalContext.current
-    val departurePoint = routeMapPoint(flight.departureIata) ?: MapPoint(13.69f, 100.75f)
-    val arrivalPoint = routeMapPoint(flight.arrivalIata) ?: MapPoint(11.99f, 109.22f)
-    val departureGeo = departurePoint.toGeoPoint()
-    val arrivalGeo = arrivalPoint.toGeoPoint()
-    val centerGeo = GeoPoint(
-        (departurePoint.latitude + arrivalPoint.latitude) / 2.0,
-        (departurePoint.longitude + arrivalPoint.longitude) / 2.0
-    )
+    val departurePoint = routeMapPoint(flight.departureIata)
+    val arrivalPoint = routeMapPoint(flight.arrivalIata)
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(flight.id) {
         Configuration.getInstance().userAgentValue = context.packageName
     }
 
     InfoCard("Route Map") {
-        AndroidView(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(280.dp),
-            factory = { androidContext ->
-                Configuration.getInstance().userAgentValue = androidContext.packageName
-                MapView(androidContext).apply {
-                    setTileSource(TileSourceFactory.MAPNIK)
-                    setMultiTouchControls(true)
-                    zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
-                    minZoomLevel = 2.0
-                    maxZoomLevel = 12.0
-                    controller.setZoom(routeMapZoom(flight.durationMinutes))
-                    controller.setCenter(centerGeo)
-                }
-            },
-            update = { mapView ->
-                mapView.overlays.clear()
+        if (departurePoint == null || arrivalPoint == null) {
+            Text(
+                "Route map unavailable for ${flight.departureIata}-${flight.arrivalIata}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            return@InfoCard
+        }
 
-                val route = Polyline().apply {
-                    setPoints(listOf(departureGeo, arrivalGeo))
-                    color = android.graphics.Color.rgb(91, 0, 130)
-                    width = 7f
-                    title = "${flight.departureIata}-${flight.arrivalIata}"
-                }
-
-                val departureMarker = Marker(mapView).apply {
-                    position = departureGeo
-                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                    icon = letterMarkerDrawable(mapView.context, "A")
-                    title = "A • ${flight.departureIata}"
-                    snippet = flight.departureCity
-                }
-
-                val arrivalMarker = Marker(mapView).apply {
-                    position = arrivalGeo
-                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                    icon = letterMarkerDrawable(mapView.context, "B")
-                    title = "B • ${flight.arrivalIata}"
-                    snippet = flight.arrivalCity
-                }
-
-                mapView.controller.setZoom(routeMapZoom(flight.durationMinutes))
-                mapView.controller.setCenter(centerGeo)
-                mapView.overlays.add(route)
-                mapView.overlays.add(departureMarker)
-                mapView.overlays.add(arrivalMarker)
-                mapView.invalidate()
-            }
+        val departureGeo = departurePoint.toGeoPoint()
+        val arrivalGeo = arrivalPoint.toGeoPoint()
+        val centerGeo = GeoPoint(
+            (departurePoint.latitude + arrivalPoint.latitude) / 2.0,
+            (departurePoint.longitude + arrivalPoint.longitude) / 2.0
         )
+
+        key("${flight.id}-${flight.departureIata}-${flight.arrivalIata}") {
+            AndroidView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp),
+                factory = { androidContext ->
+                    Configuration.getInstance().userAgentValue = androidContext.packageName
+                    MapView(androidContext).apply {
+                        setTileSource(TileSourceFactory.MAPNIK)
+                        setMultiTouchControls(true)
+                        zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+                        minZoomLevel = 2.0
+                        maxZoomLevel = 12.0
+                        controller.setZoom(routeMapZoom(flight.durationMinutes))
+                        controller.setCenter(centerGeo)
+                    }
+                },
+                update = { mapView ->
+                    mapView.overlays.clear()
+
+                    val route = Polyline().apply {
+                        setPoints(listOf(departureGeo, arrivalGeo))
+                        color = android.graphics.Color.rgb(91, 0, 130)
+                        width = 7f
+                        title = "${flight.departureIata}-${flight.arrivalIata}"
+                    }
+
+                    val departureMarker = Marker(mapView).apply {
+                        position = departureGeo
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                        icon = letterMarkerDrawable(mapView.context, "A")
+                        title = "A • ${flight.departureIata}"
+                        snippet = flight.departureCity
+                    }
+
+                    val arrivalMarker = Marker(mapView).apply {
+                        position = arrivalGeo
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                        icon = letterMarkerDrawable(mapView.context, "B")
+                        title = "B • ${flight.arrivalIata}"
+                        snippet = flight.arrivalCity
+                    }
+
+                    mapView.controller.setZoom(routeMapZoom(flight.durationMinutes))
+                    mapView.controller.setCenter(centerGeo)
+                    mapView.overlays.add(route)
+                    mapView.overlays.add(departureMarker)
+                    mapView.overlays.add(arrivalMarker)
+                    mapView.invalidate()
+                }
+            )
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -395,7 +407,7 @@ private fun routeMapZoom(durationMinutes: Int): Double {
 }
 
 private fun routeMapPoint(iata: String): MapPoint? {
-    return when (iata.uppercase()) {
+    return when (iata.trim().uppercase()) {
         "BKK" -> MapPoint(13.69f, 100.75f)
         "HKT" -> MapPoint(8.11f, 98.31f)
         "CXR" -> MapPoint(11.99f, 109.22f)
@@ -410,6 +422,17 @@ private fun routeMapPoint(iata: String): MapPoint? {
         "DEL" -> MapPoint(28.56f, 77.10f)
         "CNX" -> MapPoint(18.77f, 98.96f)
         "SYD" -> MapPoint(-33.94f, 151.18f)
+        "KBV" -> MapPoint(8.10f, 98.99f)
+        "SGN" -> MapPoint(10.82f, 106.66f)
+        "HAN" -> MapPoint(21.22f, 105.81f)
+        "REP" -> MapPoint(13.41f, 103.81f)
+        "DAC" -> MapPoint(23.84f, 90.40f)
+        "MNL" -> MapPoint(14.51f, 121.02f)
+        "TAS" -> MapPoint(41.26f, 69.28f)
+        "SVO" -> MapPoint(55.97f, 37.41f)
+        "LHR" -> MapPoint(51.47f, -0.45f)
+        "ICN" -> MapPoint(37.46f, 126.44f)
+        "DPS" -> MapPoint(-8.75f, 115.17f)
         else -> null
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -94,72 +95,6 @@ fun LeaveManagementScreen() {
         }
 
         item {
-            InfoCard("Sick Leave") {
-                Text(
-                    if (sickOpen) "Sick leave currently open from ${formatDate(sickStart ?: LocalDate.now())}" else "No active sick leave",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
-                        onClick = {
-                            sickOpen = true
-                            sickStart = LocalDate.now()
-                            scope.launch { snackbar.showSnackbar("Sick leave opened") }
-                        },
-                        enabled = !sickOpen,
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Open") }
-                    OutlinedButton(
-                        onClick = {
-                            val start = sickStart ?: LocalDate.now()
-                            val daysCount = java.time.temporal.ChronoUnit.DAYS.between(start, LocalDate.now()).toInt() + 1
-                            sickOpen = false
-                            sickStart = null
-                            scope.launch { snackbar.showSnackbar("Sick leave closed: $daysCount day(s)") }
-                        },
-                        enabled = sickOpen,
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Close") }
-                }
-            }
-        }
-
-        item {
-            InfoCard("Personal Leave Request") {
-                Text("Select at least 2 days. Requests must be submitted 7 days before the start date.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("Selected: ${selectedText(selectedStart, selectedEnd)}", fontWeight = FontWeight.SemiBold)
-                Button(
-                    onClick = {
-                        val start = selectedStart
-                        val end = selectedEnd
-                        if (start == null || end == null || end.isBefore(start.plusDays(1))) {
-                            scope.launch { snackbar.showSnackbar("Select at least 2 days") }
-                        } else if (start.isBefore(LocalDate.now().plusDays(7))) {
-                            scope.launch { snackbar.showSnackbar("Leave must be requested at least 7 days before start") }
-                        } else {
-                            scope.launch {
-                                snackbar.showSnackbar("Leave request submitted")
-                                delay(1200)
-                                simulatedRequest = LeavePeriod(
-                                    id = "personal-${start}",
-                                    type = "PERSONAL_LEAVE",
-                                    title = "Personal Leave",
-                                    start = start,
-                                    end = end,
-                                    status = "APPROVED",
-                                    note = "Approved by crew planning"
-                                )
-                                snackbar.showSnackbar("Leave request approved")
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("Submit request") }
-                simulatedRequest?.let { LeaveRow(it) }
-            }
-        }
-
-        item {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { month = month.minusMonths(1) }) { Icon(Icons.Default.ChevronLeft, contentDescription = "Previous month") }
                 Text(month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
@@ -218,6 +153,84 @@ fun LeaveManagementScreen() {
                 }
             }
         }
+
+        item {
+            InfoCard("Personal Leave Request") {
+                Text("Select at least 2 days. Requests must be submitted 7 days before the start date.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Selected: ${selectedText(selectedStart, selectedEnd)}", fontWeight = FontWeight.SemiBold)
+                Button(
+                    onClick = {
+                        val start = selectedStart
+                        val end = selectedEnd
+                        if (start == null || end == null || end.isBefore(start.plusDays(1))) {
+                            scope.launch { snackbar.showSnackbar("Select at least 2 days") }
+                        } else if (start.isBefore(LocalDate.now().plusDays(7))) {
+                            scope.launch { snackbar.showSnackbar("Leave must be requested at least 7 days before start") }
+                        } else {
+                            scope.launch {
+                                snackbar.showSnackbar("Leave request submitted")
+                                delay(1200)
+                                simulatedRequest = LeavePeriod(
+                                    id = "personal-${start}",
+                                    type = "PERSONAL_LEAVE",
+                                    title = "Personal Leave",
+                                    start = start,
+                                    end = end,
+                                    status = "APPROVED",
+                                    note = "Approved by crew planning"
+                                )
+                                snackbar.showSnackbar("Leave request approved")
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                ) { Text("Submit request") }
+                simulatedRequest?.let { LeaveRow(it) }
+            }
+        }
+        item {
+            InfoCard("Sick Leave") {
+                Text(
+                    if (sickOpen) "Sick leave currently open from ${formatDate(sickStart ?: LocalDate.now())}" else "No active sick leave",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        onClick = {
+                            sickOpen = true
+                            sickStart = LocalDate.now()
+                            scope.launch { snackbar.showSnackbar("Sick leave opened") }
+                        },
+                        enabled = !sickOpen,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    ) { Text("Open") }
+                    OutlinedButton(
+                        onClick = {
+                            val start = sickStart ?: LocalDate.now()
+                            val daysCount = java.time.temporal.ChronoUnit.DAYS.between(start, LocalDate.now()).toInt() + 1
+                            sickOpen = false
+                            sickStart = null
+                            scope.launch { snackbar.showSnackbar("Sick leave closed: $daysCount day(s)") }
+                        },
+                        enabled = sickOpen,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
+                    ) { Text("Close") }
+                }
+            }
+        }
+
+
+
+
     }
 }
 

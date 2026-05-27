@@ -318,14 +318,30 @@ private fun isHoliday(date: String): Boolean = date.endsWith("01-01") || date.en
 
 @Composable
 private fun BonusTab(flights: List<FlightEntity>, ru: Boolean) {
-    val amount = 950 + ((flights.size * 37) % 420)
+    val today = LocalDate.now()
+    val availableMonths = generateSequence(YearMonth.of(2026, 5)) { it.plusMonths(1) }
+        .takeWhile { it.isBefore(YearMonth.from(today)) || (it == YearMonth.from(today) && today.dayOfMonth >= 5) }
+        .filter { month -> today >= month.plusMonths(1).atDay(5) }
+        .toList()
+        .sortedDescending()
+
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(if (ru) "Премия" else "Bonus", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text(if (ru) "Премия за месяц: 100%" else "Monthly bonus: 100%", fontWeight = FontWeight.SemiBold)
-            LinearProgressIndicator(progress = 1f, modifier = Modifier.fillMaxWidth())
-            AmountRow(if (ru) "Сумма премии" else "Bonus Amount", amount, bold = true)
-            Text(if (ru) "Safety, performance and training compliance: 100%" else "Safety, performance and training compliance: 100%", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (availableMonths.isEmpty()) {
+                Text(
+                    if (ru) "Премия за месяц ещё не рассчитана. Она появится вместе с расчётным листком."
+                    else "Monthly bonus has not been calculated yet. It will be available together with the payslip.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                val month = availableMonths.first()
+                val amount = 950 + ((flights.count { it.departureDateTime.startsWith("%04d-%02d".format(month.year, month.monthValue)) } * 37) % 420)
+                Text("${month.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${month.year} • 100%", fontWeight = FontWeight.SemiBold)
+                LinearProgressIndicator(progress = 1f, modifier = Modifier.fillMaxWidth())
+                AmountRow(if (ru) "Сумма премии" else "Bonus Amount", amount, bold = true)
+                Text(if (ru) "Safety, performance and training compliance: 100%" else "Safety, performance and training compliance: 100%", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }

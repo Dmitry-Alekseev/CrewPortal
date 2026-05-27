@@ -99,12 +99,6 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
             QualificationRow("Line Check", "Completed: 06 May 2026", "Next: 06 August 2026", "VALID")
         }
 
-        InfoCard("Leave & Availability") {
-            ProfileRow("Annual leave", "50 / 80 days assigned")
-            ProfileRow("Personal leave", "0 / 40 days used")
-            ProfileRow("Sick leave", "No records")
-            Text("Open Leave Management from More to request personal leave or manage sick leave.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
 
         InfoCard("Expiry Dashboard") {
             ProfileRow("Medical certificate", "Due Aug 2026")
