@@ -53,9 +53,11 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
     val today = LocalDate.now()
     val currentMonth = YearMonth.from(today)
     var showTargetDialog by remember { mutableStateOf(false) }
+    var viewGeneratedMonth by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    val targetYearMonth = if (nextPrepared && !nextReviewed) currentMonth.plusMonths(1) else currentMonth
+    val nextMonth = currentMonth.plusMonths(1)
+    val targetYearMonth = if (nextPrepared && (viewGeneratedMonth || nextReviewed)) nextMonth else currentMonth
     val filtered = duties.filter {
         val date = parseLocalDateTime(it.departureDateTime).toLocalDate()
         YearMonth.from(date) == targetYearMonth
@@ -96,9 +98,36 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
         item {
             Text(if (ru) "Календарь ростера" else "Roster Calendar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text((if (ru) "Месяц: " else "Roster month: ") + displayMonth(targetYearMonth.atDay(1)), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (nextPrepared && !nextReviewed) {
+            if (nextPrepared && !nextReviewed && !viewGeneratedMonth) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                ) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            if (ru) "Расписание на ${displayMonth(nextMonth.atDay(1))} готово" else "${displayMonth(nextMonth.atDay(1))} roster is ready",
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            if (ru) "Откройте календарь следующего месяца, проверьте график и подтвердите ознакомление." else "Open the next month calendar, review the roster and confirm it.",
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Button(onClick = { viewGeneratedMonth = true }, modifier = Modifier.fillMaxWidth()) {
+                            Text(if (ru) "Открыть расписание" else "Open roster")
+                        }
+                    }
+                }
+            } else if (nextPrepared && !nextReviewed && viewGeneratedMonth) {
                 Text(
-                    if (ru) "Новый ростер готов к ознакомлению" else "New roster is ready for review",
+                    if (ru) "Новый ростер открыт для ознакомления" else "New roster is open for review",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 10.dp)
+                )
+            } else if (nextPrepared && nextReviewed && targetYearMonth == nextMonth) {
+                Text(
+                    if (ru) "Ростер подтверждён" else "Roster reviewed and confirmed",
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(top = 10.dp)
@@ -106,7 +135,7 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
             }
         }
         items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty(), ru) }
-        if (nextPrepared && !nextReviewed) {
+        if (nextPrepared && !nextReviewed && viewGeneratedMonth) {
             item {
                 Button(onClick = { showTargetDialog = true }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (ru) "Я ознакомился с графиком" else "I have reviewed this roster")

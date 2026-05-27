@@ -1,7 +1,7 @@
 {
   "latestVersion": "2.1.0",
   "versionCode": 210,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.0/CrewPortal-2.1.0.apk",
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.1.0/CrewPortal-2.1.0.apk",
   "changelog": [
     "Removed JSON roster as an active schedule source",
     "Added one-time hidden next-month roster generation from Settings version label",

@@ -121,7 +121,8 @@ fun ScheduleScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val now = LocalDateTime.now()
-    val targetMonth = if (nextPrepared && nextReviewed) YearMonth.now().plusMonths(1) else YearMonth.now()
+    val currentMonth = YearMonth.now()
+    val targetMonth = if (nextPrepared && nextReviewed) currentMonth.plusMonths(1) else currentMonth
     var isRefreshing by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights() }
@@ -171,17 +172,6 @@ fun ScheduleScreen(
             MonthlyProgressCard(flights = flights, month = targetMonth, ru = ru)
             Spacer(Modifier.height(8.dp))
             TodayDutyCard(flights = flights, onDutyClick = onDutyClick, ru = ru)
-            if (nextPrepared && nextReviewed) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    if (enhancedTarget) {
-                        if (ru) "Следующий ростер подтверждён: 90 часов" else "Next roster confirmed: 90h target"
-                    } else {
-                        if (ru) "Следующий ростер подтверждён: 80 часов" else "Next roster confirmed: 80h target"
-                    },
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
 
         val displayItems = buildRosterItems(flights, targetMonth, now)
@@ -468,8 +458,8 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                 Text("  ${flight.flightNumber}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Text(
                     text = " ${flight.aircraftLabel} ",
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(start = 10.dp).background(ThaiPurple, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 2.dp),
+                    color = Color.White,
+                    modifier = Modifier.padding(start = 10.dp).background(ThaiPurple.copy(alpha = 0.92f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.labelLarge
                 )
                 Spacer(Modifier.weight(1f))
@@ -482,7 +472,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                     Text(
                         compactCityName(flight.departureCity),
                         style = MaterialTheme.typography.titleMedium,
-                        fontSize = 14.sp,
+                        fontSize = if (flight.departureCity == "Kuala Lumpur") 12.sp else 14.sp,
                         maxLines = 1,
                         softWrap = false
                     )
@@ -506,7 +496,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                     Text(
                         compactCityName(flight.arrivalCity),
                         style = MaterialTheme.typography.titleMedium,
-                        fontSize = 14.sp,
+                        fontSize = if (flight.arrivalCity == "Kuala Lumpur") 12.sp else 14.sp,
                         maxLines = 1,
                         softWrap = false
                     )
