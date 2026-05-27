@@ -39,16 +39,26 @@ class FlightRepository(
     suspend fun refreshBuiltInRosterOnAppUpdate(versionName: String) {
         val installedVersion = preferencesRepository.installedAppVersion.first()
         if (installedVersion != versionName) {
-            // From 2.0.5 onward app updates must not overwrite the active roster.
-            // Roster changes come from company sync or the automatic roster generator.
+            // App updates must never overwrite or hide the active local/generated roster.
+            // Keep the review/accept state; only refresh the installed version marker and reopen
+            // the one-time generator test for the new build.
             preferencesRepository.setInstalledAppVersion(versionName)
-            val today = LocalDate.now()
-            val triggerDate = YearMonth.from(today).atEndOfMonth().minusDays(6)
-            preferencesRepository.resetNextMonthRosterDecision()
             preferencesRepository.setSecretRosterGeneratorUsed(false)
         }
-        // Crew Portal 2.1.x: do not auto-prepare the next roster on app start/update.
-        // The hidden 5-tap flow is the only manual test trigger.
+
+        restoreGeneratedRosterStateIfNeeded()
+        // Crew Portal 2.1.x: do not auto-generate the next roster on app start/update.
+        // The hidden 5-tap flow remains the only manual test trigger.
+    }
+
+    private suspend fun restoreGeneratedRosterStateIfNeeded() {
+        val nextMonth = YearMonth.from(LocalDate.now()).plusMonths(1)
+        val prefix = "%04d-%02d".format(nextMonth.year, nextMonth.monthValue)
+        val hasGeneratedNextMonth = flightDao.getAllOnce().any { it.departureDateTime.startsWith(prefix) }
+
+        if (hasGeneratedNextMonth && !preferencesRepository.nextMonthRosterPrepared.first()) {
+            preferencesRepository.setNextMonthRosterPrepared(true)
+        }
     }
 
     private suspend fun prepareNextMonthRosterIfDue() {

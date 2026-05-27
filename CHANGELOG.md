@@ -1,6 +1,6 @@
 # Crew Portal Changelog
 
-## 2.1.3
+## 2.1.4
 - Reordered Leave screen: calendar first, personal leave confirmation below.
 - Reworked Leave action buttons to avoid default purple styling.
 - Fixed flight card date format: year removed, weekday kept readable.
