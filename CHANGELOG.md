@@ -1,3 +1,13 @@
+# Crew Portal Changelog
+
+## 2.1.2
+- Reworked roster generation: June/next-month roster is now produced from randomized route pools instead of a fixed June template.
+- Generator targets a realistic ~78-82 block-hour month, mixes turnarounds, layovers, reserve and OFF days, and avoids long fixed OFF chains.
+- Replaced existing generated next-month roster when the hidden 5-tap generator is used again after update.
+- Fixed rest indicator: no more tiny rest cards between connected turnaround sectors such as BKK-SIN and SIN-BKK.
+- Removed FO/Capt. prefixes from crew names; roles remain shown by row labels.
+- Updated release metadata to 2.1.2.
+
 # Changelog
 
 ## 2.1.1

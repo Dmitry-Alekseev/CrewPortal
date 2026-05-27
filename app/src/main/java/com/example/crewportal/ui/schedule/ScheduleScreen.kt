@@ -261,7 +261,8 @@ private fun insertRestPeriods(items: List<RosterItem>): List<RosterItem> {
             val restStart = dutyEndForRest(previousDuty)
             val restEnd = dutyStartForRest(currentWorkDuty)
             val restMinutes = ChronoUnit.MINUTES.between(restStart, restEnd)
-            if (restMinutes > 0) {
+            val connectedSameDuty = previousDuty.isConnectedTurnaroundSector(currentWorkDuty)
+            if (!connectedSameDuty && restMinutes >= 8 * 60) {
                 result += RosterItem.RestPeriod(
                     start = restStart,
                     end = restEnd,
@@ -283,6 +284,13 @@ private fun FlightEntity.isOperationalDuty(): Boolean = dutyType != "OFF" && dut
 private fun FlightEntity.restLabel(): String = when (dutyType) {
     "FLIGHT" -> "$flightNumber $departureIata-$arrivalIata"
     else -> flightNumber.ifBlank { dutyType }
+}
+
+private fun FlightEntity.isConnectedTurnaroundSector(next: FlightEntity): Boolean {
+    if (dutyType != "FLIGHT" || next.dutyType != "FLIGHT") return false
+    val thisDepartureDate = parseLocalDateTime(departureDateTime).toLocalDate()
+    val nextDepartureDate = parseLocalDateTime(next.departureDateTime).toLocalDate()
+    return thisDepartureDate == nextDepartureDate && arrivalIata == next.departureIata
 }
 
 private fun dutyStartForRest(flight: FlightEntity): LocalDateTime {

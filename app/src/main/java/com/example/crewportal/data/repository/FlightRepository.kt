@@ -47,7 +47,7 @@ class FlightRepository(
             preferencesRepository.resetNextMonthRosterDecision()
             preferencesRepository.setSecretRosterGeneratorUsed(false)
         }
-        // Crew Portal 2.1.1: do not auto-prepare the next roster on app start/update.
+        // Crew Portal 2.1.2: do not auto-prepare the next roster on app start/update.
         // The hidden 5-tap flow is the only manual test trigger.
     }
 

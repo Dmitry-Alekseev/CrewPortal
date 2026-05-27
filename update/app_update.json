@@ -1,25 +1,21 @@
 {
-  "latestVersion": "2.1.1",
-  "versionCode": 211,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.1/CrewPortal-2.1.1.apk",
+  "latestVersion": "2.1.2",
+  "versionCode": 212,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.2/CrewPortal-2.1.2.apk",
   "changelog": [
-    "Removed JSON roster as an active schedule source",
-    "Added one-time hidden next-month roster generation from Settings version label",
-    "Added app version label to splash screen",
-    "Reworked default purple action buttons into cleaner corporate cards/actions",
-    "Expanded MEL / Technical Remarks with dynamic aircraft-type based deferred items",
-    "Payroll now waits until monthly closing and shows payslip cards by month",
-    "Fixed roster review flow: no automatic next-month preparation before 5-tap generation",
-    "Balanced generated monthly roster closer to 80h and removed long OFF blocks"
+    "Reworked roster generation: no fixed June template; next month is generated from route pools",
+    "Generator now targets about 78-82 block hours and mixes turnarounds, layovers, reserve and OFF days",
+    "Fixed rest card logic so connected turnaround sectors do not show 5-minute crew rest",
+    "Removed FO/Capt. prefixes from displayed crew names",
+    "Kept JSON roster removed as an active schedule source",
+    "Updated release metadata to 2.1.2"
   ],
   "changelogRu": [
-    "JSON-ростер удалён как активный источник расписания",
-    "Добавлена одноразовая скрытая генерация следующего месяца через версию в Settings",
-    "Добавлена версия приложения на splash screen",
-    "Фиолетовые action-кнопки переработаны в более аккуратный корпоративный стиль",
-    "Расширена MEL / Technical Remarks база с динамическими замечаниями по типам ВС",
-    "Payroll теперь ждёт закрытия месяца и показывает карточки расчётных листов",
-    "Исправлен flow ознакомления с ростером: следующий месяц не готовится автоматически до 5 тапов",
-    "Генератор ростера сбалансирован ближе к 80 часам без длинных цепочек OFF"
+    "Переработана генерация ростера: больше нет фиксированного шаблона июня, месяц собирается из пула маршрутов",
+    "Генератор целится примерно в 78–82 block hours и смешивает рейсы, layover, reserve и OFF",
+    "Исправлена плашка отдыха: между связанными turnaround-секторами больше не показывается 5 минут rest",
+    "Убраны префиксы FO/Capt. перед именами экипажа",
+    "JSON-ростер остаётся удалённым как активный источник расписания",
+    "Метаданные релиза обновлены до 2.1.2"
   ]
 }

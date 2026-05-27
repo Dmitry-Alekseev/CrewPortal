@@ -1,10 +1,10 @@
 # Crew Portal
 
-Version: 2.1.1
+Version: 2.1.2
 
 Crew Portal Kotlin/Jetpack Compose Android project.
 
-## Version 2.1.1 highlights
+## Version 2.1.2 highlights
 - Local/generated roster logic, no active JSON roster source.
 - One-time hidden roster generation from Settings version label.
 - Splash version label.
@@ -13,4 +13,4 @@ Crew Portal Kotlin/Jetpack Compose Android project.
 - Payroll monthly closing flow.
 - Rest-period cards between operational duties in Roster.
 
-APK artifact name: `CrewPortal-2.1.1.apk`
+APK artifact name: `CrewPortal-2.1.2.apk`
