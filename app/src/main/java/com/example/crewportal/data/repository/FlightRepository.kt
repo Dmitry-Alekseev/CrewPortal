@@ -44,9 +44,11 @@ class FlightRepository(
             preferencesRepository.setInstalledAppVersion(versionName)
             val today = LocalDate.now()
             val triggerDate = YearMonth.from(today).atEndOfMonth().minusDays(6)
-            if (today.isBefore(triggerDate)) preferencesRepository.resetNextMonthRosterDecision()
+            preferencesRepository.resetNextMonthRosterDecision()
+            preferencesRepository.setSecretRosterGeneratorUsed(false)
         }
-        prepareNextMonthRosterIfDue()
+        // Crew Portal 2.1.1: do not auto-prepare the next roster on app start/update.
+        // The hidden 5-tap flow is the only manual test trigger.
     }
 
     private suspend fun prepareNextMonthRosterIfDue() {

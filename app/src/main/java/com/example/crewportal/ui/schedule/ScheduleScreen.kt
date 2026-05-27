@@ -241,12 +241,12 @@ private fun buildRosterItems(flights: List<FlightEntity>, month: YearMonth, now:
         val departure = parseLocalDateTime(duty.departureDateTime)
         val arrival = parseLocalDateTime(duty.arrivalDateTime)
         val date = departure.toLocalDate()
-        if (YearMonth.from(date) != month || !arrival.isAfter(now)) return@mapNotNull null
+        if (YearMonth.from(date) != month) return@mapNotNull null
         if (leaveByDate.containsKey(date)) return@mapNotNull null
         RosterItem.FlightDuty(duty)
     }
     val leaveItems = leaveByDate.map { (date, leave) -> RosterItem.LeaveDuty(leave, date) }
-        .filter { !it.date.atTime(23, 59).isBefore(now) }
+        .filter { YearMonth.from(it.date) == month }
     return insertRestPeriods((flightItems + leaveItems).sortedBy { it.sortDateTime })
 }
 

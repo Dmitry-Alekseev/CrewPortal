@@ -1,3 +1,12 @@
+# Changelog
+
+## 2.1.1
+- Fixed roster review flow: Calendar/Roster stay on the current month until hidden generation is triggered.
+- Disabled automatic next-month roster preparation on app start/update.
+- Balanced generated roster close to 80 block hours and removed long OFF blocks.
+- Roster list now shows the whole selected month, including past/current/future duties.
+- Kept 2.1.0 UI, MEL and Payroll updates.
+
 # Crew Portal Changelog
 
 ## 2.1.0

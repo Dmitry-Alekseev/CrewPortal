@@ -1,14 +1,16 @@
 {
-  "latestVersion": "2.1.0",
-  "versionCode": 210,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/v2.1.0/CrewPortal-2.1.0.apk",
+  "latestVersion": "2.1.1",
+  "versionCode": 211,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.1/CrewPortal-2.1.1.apk",
   "changelog": [
     "Removed JSON roster as an active schedule source",
     "Added one-time hidden next-month roster generation from Settings version label",
     "Added app version label to splash screen",
     "Reworked default purple action buttons into cleaner corporate cards/actions",
     "Expanded MEL / Technical Remarks with dynamic aircraft-type based deferred items",
-    "Payroll now waits until monthly closing and shows payslip cards by month"
+    "Payroll now waits until monthly closing and shows payslip cards by month",
+    "Fixed roster review flow: no automatic next-month preparation before 5-tap generation",
+    "Balanced generated monthly roster closer to 80h and removed long OFF blocks"
   ],
   "changelogRu": [
     "JSON-ростер удалён как активный источник расписания",
@@ -16,6 +18,8 @@
     "Добавлена версия приложения на splash screen",
     "Фиолетовые action-кнопки переработаны в более аккуратный корпоративный стиль",
     "Расширена MEL / Technical Remarks база с динамическими замечаниями по типам ВС",
-    "Payroll теперь ждёт закрытия месяца и показывает карточки расчётных листов"
+    "Payroll теперь ждёт закрытия месяца и показывает карточки расчётных листов",
+    "Исправлен flow ознакомления с ростером: следующий месяц не готовится автоматически до 5 тапов",
+    "Генератор ростера сбалансирован ближе к 80 часам без длинных цепочек OFF"
   ]
 }
