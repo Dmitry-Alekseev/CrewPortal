@@ -22,9 +22,7 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedButtonDefaults
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -107,14 +105,6 @@ fun LoginScreen(
                         label = { Text("Corporate ID") },
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedIndicatorColor = accent,
-                            unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedLabelColor = accent,
-                            cursorColor = accent
-                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(Modifier.height(12.dp))
@@ -125,14 +115,6 @@ fun LoginScreen(
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedIndicatorColor = accent,
-                            unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedLabelColor = accent,
-                            cursorColor = accent
-                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
                     Row(
@@ -195,7 +177,6 @@ fun LoginScreen(
                             prompt.authenticate(info)
                         },
                         shape = RoundedCornerShape(18.dp),
-                        colors = OutlinedButtonDefaults.outlinedButtonColors(contentColor = accentDark),
                         modifier = Modifier.fillMaxWidth().height(52.dp)
                     ) {
                         Icon(Icons.Default.Fingerprint, contentDescription = null)
