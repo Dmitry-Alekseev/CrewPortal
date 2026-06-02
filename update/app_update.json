@@ -1,7 +1,7 @@
 {
-  "latestVersion": "2.1.7",
-  "versionCode": 217,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.7/CrewPortal-2.1.7.apk",
+  "latestVersion": "2.1.8",
+  "versionCode": 218,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.8/CrewPortal-2.1.8.apk",
   "changelog": [
     "Fixed active month selection so June roster/monthly stats do not switch to empty July after confirmation",
     "Roster and Calendar keep showing the active published month during In flight/current duty states",

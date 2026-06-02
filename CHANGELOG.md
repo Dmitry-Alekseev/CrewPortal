@@ -1,3 +1,10 @@
+# Crew Portal Changelog
+
+## 2.1.8
+- Hide completed flight duties from the active Roster list after completion.
+- Completed flights remain stored and continue to count toward monthly completed flight time/logbook data.
+- Bumped update metadata to CrewPortal-2.1.8.apk.
+
 
 ## 2.1.7
 - Fixed active month selection after month boundary: confirmed June roster no longer jumps to empty July.

@@ -236,6 +236,9 @@ private fun buildRosterItems(flights: List<FlightEntity>, month: YearMonth, now:
         val date = departure.toLocalDate()
         if (YearMonth.from(date) != month) return@mapNotNull null
         if (leaveByDate.containsKey(date)) return@mapNotNull null
+        // Completed flight duties stay in the database for monthly totals/logbook,
+        // but they should no longer remain in the active Roster list.
+        if (duty.dutyType == "FLIGHT" && duty.isCompleted) return@mapNotNull null
         RosterItem.FlightDuty(duty)
     }
     val leaveItems = leaveByDate.map { (date, leave) -> RosterItem.LeaveDuty(leave, date) }
