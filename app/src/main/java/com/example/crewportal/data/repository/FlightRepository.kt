@@ -102,7 +102,7 @@ class FlightRepository(
     suspend fun syncRosterFromGitHub(): Boolean {
         // Crew Portal 2.1: roster JSON is no longer an active source.
         // Manual refresh only updates local completion/registration/assignment state.
-        refreshCompletedFlights()
+        refreshCompletedFlights(showNotifications = true)
         return true
     }
 
@@ -182,7 +182,8 @@ class FlightRepository(
     suspend fun registerFlight(id: String) {
         val flight = flightDao.getAllOnce().firstOrNull { it.id == id } ?: return
         assignAircraftIfNeeded(flight)
-        if (canAssignAirportPosition(flight)) assignAirportPositionIfNeeded(flight)
+        val all = flightDao.getAllOnce()
+        if (canAssignAirportPosition(flight, all)) assignAirportPositionIfNeeded(flight)
         flightDao.markRegistered(id)
         NotificationHelper.show(
             context,
@@ -192,58 +193,66 @@ class FlightRepository(
         )
     }
 
-    suspend fun refreshCompletedFlights() {
+    suspend fun refreshCompletedFlights(showNotifications: Boolean = false) {
         val initialSnapshot = flightDao.getAllOnce()
         val automaticChange = RosterChangeEngine.applyChangeIfDue(initialSnapshot)
         val rosterSnapshot = if (automaticChange != null) {
             flightDao.clearAll()
             flightDao.insertAll(automaticChange.updatedRoster)
             RosterNotificationScheduler.scheduleRoster(context, automaticChange.updatedRoster)
-            NotificationHelper.show(
-                context,
-                automaticChange.notificationTitle,
-                automaticChange.notificationBody,
-                automaticChange.notificationId
-            )
+            if (showNotifications) {
+                NotificationHelper.show(
+                    context,
+                    automaticChange.notificationTitle,
+                    automaticChange.notificationBody,
+                    automaticChange.notificationId
+                )
+            }
             automaticChange.updatedRoster
         } else {
             initialSnapshot
         }
         RosterNotificationScheduler.scheduleRoster(context, rosterSnapshot)
         rosterSnapshot.forEach { flight ->
-            if (flight.dutyType == "FLIGHT" && shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted)) {
+            if (flight.dutyType == "FLIGHT" && shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted, flight.departureIata)) {
                 assignAircraftIfNeeded(flight)
                 if (!flight.registrationNotified) {
                     flightDao.markRegistrationNotified(flight.id)
-                    NotificationHelper.show(
-                        context,
-                        "Registration is open",
-                        "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: aircraft assigned, check-in is now available.",
-                        flight.id.hashCode()
-                    )
+                    if (showNotifications) {
+                        NotificationHelper.show(
+                            context,
+                            "Registration is open",
+                            "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: aircraft assigned, check-in is now available.",
+                            flight.id.hashCode()
+                        )
+                    }
                 }
             }
-            if (flight.dutyType == "FLIGHT" && canAssignAirportPosition(flight)) {
+            if (flight.dutyType == "FLIGHT" && canAssignAirportPosition(flight, rosterSnapshot)) {
                 val assignment = assignAirportPositionIfNeeded(flight)
                 if (!flight.airportAssignmentNotified) {
                     flightDao.markAirportAssignmentNotified(flight.id)
-                    NotificationHelper.show(
-                        context,
-                        "Airport assignment updated",
-                        "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: ${assignment.displayValue}.",
-                        flight.id.hashCode() + 30_000
-                    )
+                    if (showNotifications) {
+                        NotificationHelper.show(
+                            context,
+                            "Airport assignment updated",
+                            "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: ${assignment.displayValue}.",
+                            flight.id.hashCode() + 30_000
+                        )
+                    }
                 }
             }
             if (flight.dutyType == "FLIGHT" && !flight.isFlightTimeAdded && hasArrived(flight.arrivalDateTime)) {
                 flightDao.markCompletedAndAdded(flight.id)
                 preferencesRepository.addFlightTime(flight.durationMinutes, flight.aircraftLabel)
-                NotificationHelper.show(
-                    context,
-                    "Flight completed",
-                    "${flight.flightNumber} completed. ${flight.durationMinutes / 60}h ${flight.durationMinutes % 60}m added to your flight time.",
-                    flight.id.hashCode() + 10_000
-                )
+                if (showNotifications) {
+                    NotificationHelper.show(
+                        context,
+                        "Flight completed",
+                        "${flight.flightNumber} completed. ${flight.durationMinutes / 60}h ${flight.durationMinutes % 60}m added to your flight time.",
+                        flight.id.hashCode() + 10_000
+                    )
+                }
             }
         }
     }
@@ -281,11 +290,30 @@ class FlightRepository(
     }
 
 
-    private fun canAssignAirportPosition(flight: FlightEntity): Boolean {
+    private fun canAssignAirportPosition(flight: FlightEntity, roster: List<FlightEntity>): Boolean {
         if (flight.dutyType != "FLIGHT" || flight.isCompleted) return false
+        if (!shouldHaveAirportAssignment(flight, roster)) return false
         val departure = parseLocalDateTime(flight.departureDateTime)
         val now = LocalDateTime.now()
         return !now.isBefore(departure.minusHours(3))
+    }
+
+    private fun shouldHaveAirportAssignment(flight: FlightEntity, roster: List<FlightEntity>): Boolean {
+        if (flight.departureIata == "BKK") return true
+        val departure = parseLocalDateTime(flight.departureDateTime)
+        val sameDutyInbound = roster.any { other ->
+            other.id != flight.id &&
+                other.dutyType == "FLIGHT" &&
+                parseLocalDateTime(other.departureDateTime).toLocalDate() == departure.toLocalDate() &&
+                parseLocalDateTime(other.departureDateTime).isBefore(departure) &&
+                other.arrivalIata == flight.departureIata &&
+                other.departureIata == flight.arrivalIata &&
+                other.aircraftLabel == flight.aircraftLabel
+        }
+        if (sameDutyInbound) return false
+
+        // Long-haul departures after a real layover/night stop still receive airport assignment.
+        return flight.durationMinutes >= 360
     }
 
     private suspend fun assignAirportPositionIfNeeded(flight: FlightEntity): com.example.crewportal.data.airport.AirportAssignment {

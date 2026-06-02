@@ -137,7 +137,7 @@ fun SettingsScreen(
                 Text(if (ru) "Локальное обновление статусов ростера" else "Local roster status refresh", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedButton(onClick = {
                     scope.launch {
-                        withContext(Dispatchers.IO) { flightRepository.refreshCompletedFlights() }
+                        withContext(Dispatchers.IO) { flightRepository.refreshCompletedFlights(showNotifications = true) }
                         snackbarHostState.showSnackbar(if (ru) "Локальный ростер обновлён" else "Local roster refreshed")
                     }
                 }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Обновить статусы" else "Refresh status") }

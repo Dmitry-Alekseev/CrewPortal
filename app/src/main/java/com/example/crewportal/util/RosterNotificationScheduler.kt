@@ -13,8 +13,43 @@ object RosterNotificationScheduler {
     fun scheduleRoster(context: Context, flights: List<FlightEntity>) {
         flights.filter { it.dutyType == "FLIGHT" && !it.isCompleted }.forEach { flight ->
             scheduleFlightEvent(context, flight, "registration", flight.departureDateTime, -24 * 60, "Registration open", "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: registration window is open.", "details/${flight.id}")
-            scheduleFlightEvent(context, flight, "gate", flight.departureDateTime, -3 * 60, "Airport assignment", "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: gate / stand assignment is available.", "details/${flight.id}")
+            if (shouldScheduleAirportAssignment(flight, flights)) {
+                scheduleFlightEvent(context, flight, "gate", flight.departureDateTime, -3 * 60, "Airport assignment", "${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}: gate / stand assignment is available.", "details/${flight.id}")
+            } else {
+                cancelFlightEvent(context, flight, "gate")
+            }
             scheduleFlightEvent(context, flight, "report", flight.departureDateTime, -120, "Duty reminder", "${flight.flightNumber}: report time is approaching.", "details/${flight.id}")
+        }
+    }
+
+    private fun shouldScheduleAirportAssignment(flight: FlightEntity, roster: List<FlightEntity>): Boolean {
+        if (flight.departureIata == "BKK") return true
+        val departure = LocalDateTime.parse(flight.departureDateTime)
+        val sameDutyReturn = roster.any { other ->
+            other.id != flight.id &&
+                other.dutyType == "FLIGHT" &&
+                LocalDateTime.parse(other.departureDateTime).toLocalDate() == departure.toLocalDate() &&
+                LocalDateTime.parse(other.departureDateTime).isBefore(departure) &&
+                other.arrivalIata == flight.departureIata &&
+                other.departureIata == flight.arrivalIata &&
+                other.aircraftLabel == flight.aircraftLabel
+        }
+        if (sameDutyReturn) return false
+        return flight.durationMinutes >= 360
+    }
+
+    private fun cancelFlightEvent(context: Context, flight: FlightEntity, suffix: String) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val requestCode = (flight.id + suffix).hashCode()
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            Intent(context, RosterAlarmReceiver::class.java),
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        if (pendingIntent != null) {
+            alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
         }
     }
 

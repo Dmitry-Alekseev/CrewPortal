@@ -34,7 +34,7 @@ import java.io.File
 fun LogbookScreen(flightRepository: FlightRepository) {
     val flights by flightRepository.observeCompleted().collectAsState(initial = emptyList())
     val context = LocalContext.current
-    LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights() }
+    LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights(showNotifications = false) }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Logbook", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)

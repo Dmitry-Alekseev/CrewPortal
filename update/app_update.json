@@ -1,19 +1,25 @@
 {
-  "latestVersion": "2.1.6",
-  "versionCode": 216,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.6/CrewPortal-2.1.6.apk",
+  "latestVersion": "2.1.7",
+  "versionCode": 217,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.7/CrewPortal-2.1.7.apk",
   "changelog": [
-    "Cleaned airport display names across roster cards; TAS now shows Tashkent / Islam Karimov",
-    "Replaced layover labels like “Stay at TAS” with city names such as “Stay in Tashkent”",
-    "Removed the UTC/local time toggle from Roster and cleaned UTC timing text from flight details",
-    "Fixed monthly progress wording so Leave is displayed as “Leave: 0 days” on one line",
-    "Kept existing generated roster data unchanged"
+    "Fixed active month selection so June roster/monthly stats do not switch to empty July after confirmation",
+    "Roster and Calendar keep showing the active published month during In flight/current duty states",
+    "Stopped old due notifications from being shown again on normal app startup refresh",
+    "Improved notification timing by checking registration windows in the departure airport timezone",
+    "Prevented gate/stand assignment and gate notifications for same-duty turnaround return sectors",
+    "Replaced Calendar List/Month purple buttons with a compact blue/graphite segmented control",
+    "Moved TAS/Tashkent out of the normal layover pool and added future special Thursday/Sunday rules",
+    "Refreshed login screen styling with a cleaner corporate aviation look"
   ],
   "changelogRu": [
-    "Исправлены названия аэропортов в карточках ростера; TAS теперь показывает Tashkent / Islam Karimov",
-    "Надписи layover вроде “Stay at TAS” заменены на города, например “Stay in Tashkent”",
-    "Переключатель UTC/local убран из Roster, UTC-текст убран из деталей рейса",
-    "В шкале месячной нормы Leave теперь отображается одной строкой: “Leave: 0 days”",
-    "Уже сгенерированный ростер не пересоздаётся"
+    "Исправлен выбор активного месяца: июньский ростер и месячная статистика не переключаются на пустой июль после подтверждения",
+    "Roster и Calendar продолжают показывать опубликованный активный месяц во время статуса In flight/current duty",
+    "Старые due-уведомления больше не должны повторно появляться при обычном входе в приложение",
+    "Уточнена логика времени регистрации: проверка идёт в часовом поясе аэропорта вылета",
+    "Gate/stand и уведомления по стоянке не создаются для обратного сектора same-duty turnaround",
+    "Фиолетовые кнопки Calendar List/Month заменены на компактный blue/graphite segmented control",
+    "TAS/Tashkent убран из обычного layover pool и переведён на специальные правила Thursday/Sunday для будущей генерации",
+    "Обновлён стиль экрана логина в более аккуратном corporate aviation виде"
   ]
 }

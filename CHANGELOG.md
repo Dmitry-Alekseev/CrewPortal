@@ -1,3 +1,14 @@
+
+## 2.1.7
+- Fixed active month selection after month boundary: confirmed June roster no longer jumps to empty July.
+- Kept active roster/calendar visible while Today’s Duty is In flight.
+- Made startup roster refresh silent so old due notifications are not replayed on app launch.
+- Added departure-airport timezone checks for registration window logic.
+- Suppressed gate/stand assignment and notifications on same-duty turnaround return sectors.
+- Replaced Calendar List/Month default purple controls with a compact blue/graphite segmented control.
+- Moved TAS/Tashkent out of normal random layovers and added future Thursday/Sunday special handling.
+- Refreshed login screen styling.
+
 ## 2.1.6
 - Added Calendar month grid view with a small List/Month toggle.
 - Month grid shows flight, stay, reserve, OFF and leave indicators.

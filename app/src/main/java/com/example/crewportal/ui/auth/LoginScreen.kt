@@ -2,6 +2,7 @@ package com.example.crewportal.ui.auth
 
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,12 +12,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedButtonDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -55,99 +65,144 @@ fun LoginScreen(
     var rememberMe by remember(remembered) { mutableStateOf(remembered) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
-        Column(
+    val accent = Color(0xFF52627A)
+    val accentDark = Color(0xFF334155)
+    val softBackground = Color(0xFFF5F6F8)
+
+    Surface(modifier = Modifier.fillMaxSize(), color = softBackground) {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(22.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "Crew Portal",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "Airline operations access",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(32.dp))
-            OutlinedTextField(
-                value = login,
-                onValueChange = { login = it },
-                label = { Text("Corporate ID") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Row(
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Checkbox(checked = rememberMe, onCheckedChange = { rememberMe = it })
-                Text("Remember me")
-            }
-            error?.let {
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-            Button(
-                onClick = {
-                    if (authRepository.validate(login, password)) {
-                        scope.launch { authRepository.signIn(login, rememberMe); onAuthenticated() }
-                    } else {
-                        error = "Invalid corporate ID or password"
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Sign In")
-            }
-            Spacer(Modifier.height(10.dp))
-            OutlinedButton(
-                onClick = {
-                    val executor = ContextCompat.getMainExecutor(context)
-                    val prompt = BiometricPrompt(
-                        activity,
-                        executor,
-                        object : BiometricPrompt.AuthenticationCallback() {
-                            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                                super.onAuthenticationSucceeded(result)
-                                scope.launch { authRepository.signIn(login.ifBlank { "CPD9842" }, rememberMe = true); onAuthenticated() }
-                            }
-
-                            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                                super.onAuthenticationError(errorCode, errString)
-                                error = errString.toString()
-                            }
-                        }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 22.dp, vertical = 26.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Crew Portal",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = accentDark
                     )
-                    val info = BiometricPrompt.PromptInfo.Builder()
-                        .setTitle("Biometric login")
-                        .setSubtitle("Use your fingerprint to access Crew Portal")
-                        .setNegativeButtonText("Cancel")
-                        .build()
-                    prompt.authenticate(info)
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Fingerprint, contentDescription = null)
-                Spacer(Modifier.padding(4.dp))
-                Text("Use biometric login")
+                    Text(
+                        text = "Airline operations access",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(28.dp))
+                    OutlinedTextField(
+                        value = login,
+                        onValueChange = { login = it },
+                        label = { Text("Corporate ID") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedIndicatorColor = accent,
+                            unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedLabelColor = accent,
+                            cursorColor = accent
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Password") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedIndicatorColor = accent,
+                            unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedLabelColor = accent,
+                            cursorColor = accent
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = rememberMe,
+                            onCheckedChange = { rememberMe = it },
+                            colors = CheckboxDefaults.colors(checkedColor = accent)
+                        )
+                        Text("Remember me", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    error?.let {
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            if (authRepository.validate(login, password)) {
+                                scope.launch { authRepository.signIn(login, rememberMe); onAuthenticated() }
+                            } else {
+                                error = "Invalid corporate ID or password"
+                            }
+                        },
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = accentDark),
+                        modifier = Modifier.fillMaxWidth().height(54.dp)
+                    ) {
+                        Text("Sign In", fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = {
+                            val executor = ContextCompat.getMainExecutor(context)
+                            val prompt = BiometricPrompt(
+                                activity,
+                                executor,
+                                object : BiometricPrompt.AuthenticationCallback() {
+                                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                                        super.onAuthenticationSucceeded(result)
+                                        scope.launch { authRepository.signIn(login.ifBlank { "CPD9842" }, rememberMe = true); onAuthenticated() }
+                                    }
+
+                                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                                        super.onAuthenticationError(errorCode, errString)
+                                        error = errString.toString()
+                                    }
+                                }
+                            )
+                            val info = BiometricPrompt.PromptInfo.Builder()
+                                .setTitle("Biometric login")
+                                .setSubtitle("Use your fingerprint to access Crew Portal")
+                                .setNegativeButtonText("Cancel")
+                                .build()
+                            prompt.authenticate(info)
+                        },
+                        shape = RoundedCornerShape(18.dp),
+                        colors = OutlinedButtonDefaults.outlinedButtonColors(contentColor = accentDark),
+                        modifier = Modifier.fillMaxWidth().height(52.dp)
+                    ) {
+                        Icon(Icons.Default.Fingerprint, contentDescription = null)
+                        Spacer(Modifier.padding(4.dp))
+                        Text("Use biometric login", fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
     }

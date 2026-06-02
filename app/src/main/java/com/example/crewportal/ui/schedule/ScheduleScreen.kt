@@ -120,16 +120,18 @@ fun ScheduleScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val now = LocalDateTime.now()
     val currentMonth = YearMonth.now()
-    val targetMonth = if (nextPrepared && nextReviewed) currentMonth.plusMonths(1) else currentMonth
+    val nextMonth = currentMonth.plusMonths(1)
+    val nextMonthHasRoster = flights.any { YearMonth.from(parseLocalDateTime(it.departureDateTime).toLocalDate()) == nextMonth }
+    val targetMonth = if (nextPrepared && nextReviewed && nextMonthHasRoster) nextMonth else currentMonth
     var isRefreshing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights() }
+    LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights(showNotifications = false) }
 
     val refreshRoster: () -> Unit = {
         if (!isRefreshing) {
             scope.launch {
                 isRefreshing = true
-                withContext(Dispatchers.IO) { flightRepository.refreshCompletedFlights() }
+                withContext(Dispatchers.IO) { flightRepository.refreshCompletedFlights(showNotifications = false) }
                 isRefreshing = false
                 snackbarHostState.showSnackbar(if (ru) "Ростер обновлён" else "Roster updated successfully")
             }
@@ -528,7 +530,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
             if (flight.isRegistered) {
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(onClick = {}, enabled = true, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Зарегистрирован" else "Registered") }
-            } else if (shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted)) {
+            } else if (shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted, flight.departureIata)) {
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(onClick = { scope.launch { flightRepository.registerFlight(flight.id) } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Регистрация" else "Register") }
             }

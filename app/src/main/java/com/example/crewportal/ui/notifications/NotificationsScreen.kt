@@ -27,7 +27,7 @@ import com.example.crewportal.util.displayDate
 @Composable
 fun NotificationsScreen(flightRepository: FlightRepository) {
     val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
-    val openFlights = flights.filter { it.dutyType == "FLIGHT" && shouldShowRegistrationButton(it.departureIata, it.durationMinutes) && canRegister(it.departureDateTime, it.isCompleted) }
+    val openFlights = flights.filter { it.dutyType == "FLIGHT" && shouldShowRegistrationButton(it.departureIata, it.durationMinutes) && canRegister(it.departureDateTime, it.isCompleted, it.departureIata) }
     val completed = flights.filter { it.isCompleted }.takeLast(5)
     val airportAssigned = flights.filter { it.dutyType == "FLIGHT" && (it.gate != "Pending" || it.stand != "Pending") && !it.isCompleted }
     val rosterChanges = flights.filter { it.dutyType == "FLIGHT" && it.changeNotified && !it.isCompleted }.takeLast(6)

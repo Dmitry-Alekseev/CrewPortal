@@ -84,7 +84,7 @@ import java.time.format.DateTimeFormatter
 fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, onBack: () -> Unit, onMelClick: (String) -> Unit) {
     val flight by flightRepository.observeFlight(flightId).collectAsState(initial = null)
     val scope = rememberCoroutineScope()
-    LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights() }
+    LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights(showNotifications = false) }
 
     Scaffold(
         topBar = {
@@ -203,7 +203,7 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                 if (item.isRegistered) {
                     Button(onClick = {}, enabled = true, colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen), modifier = Modifier.fillMaxWidth()) { Text("Registered") }
                     Text("Registration completed successfully", color = SuccessGreen)
-                } else if (shouldShowRegistrationButton(item.departureIata, item.durationMinutes) && canRegister(item.departureDateTime, item.isCompleted)) {
+                } else if (shouldShowRegistrationButton(item.departureIata, item.durationMinutes) && canRegister(item.departureDateTime, item.isCompleted, item.departureIata)) {
                     OutlinedButton(onClick = { scope.launch { flightRepository.registerFlight(item.id) } }, modifier = Modifier.fillMaxWidth()) { Text("Register") }
                 } else if (!item.isCompleted) {
                     Text("Registration and aircraft tail assignment open 24 hours before departure", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -464,7 +464,7 @@ private fun StatusTimelineCard(flight: FlightEntity) {
     val stages = listOf(
         "Roster Published" to true,
         "Aircraft Assigned" to (flight.registration != "TBA"),
-        "Registration Open" to (shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted)),
+        "Registration Open" to (shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted, flight.departureIata)),
         "Gate / Stand Assigned" to (flight.gate != "Pending" || flight.stand != "Pending"),
         "Registered" to flight.isRegistered,
         "Report Time" to false,

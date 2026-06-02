@@ -1,8 +1,11 @@
 package com.example.crewportal.util
 
 import java.time.Duration
+import com.example.crewportal.data.airport.AirportDatabase
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -29,9 +32,18 @@ fun shouldShowRegistrationButton(departureIata: String, durationMinutes: Int): B
     return departureIata == "BKK" || durationMinutes >= 240
 }
 
-fun canRegister(departureDateTime: String, completed: Boolean): Boolean {
+fun canRegister(departureDateTime: String, completed: Boolean): Boolean = canRegister(departureDateTime, completed, null)
+
+fun canRegister(departureDateTime: String, completed: Boolean, departureIata: String?): Boolean {
     if (completed) return false
-    val now = LocalDateTime.now()
+    val offsetMinutes = departureIata?.let { AirportDatabase.byIata(it)?.utcOffsetMinutes }
+    val now = if (offsetMinutes != null) {
+        OffsetDateTime.now(ZoneOffset.UTC)
+            .withOffsetSameInstant(ZoneOffset.ofTotalSeconds(offsetMinutes * 60))
+            .toLocalDateTime()
+    } else {
+        LocalDateTime.now()
+    }
     val departure = parseLocalDateTime(departureDateTime)
     val minutesToDeparture = Duration.between(now, departure).toMinutes()
     return minutesToDeparture in 0..(24 * 60)

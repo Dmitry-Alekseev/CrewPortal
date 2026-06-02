@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -62,7 +63,12 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
     val scope = rememberCoroutineScope()
 
     val nextMonth = currentMonth.plusMonths(1)
-    val targetYearMonth = if (nextPrepared && (viewGeneratedMonth || nextReviewed)) nextMonth else currentMonth
+    val nextMonthHasRoster = duties.any { YearMonth.from(parseLocalDateTime(it.departureDateTime).toLocalDate()) == nextMonth }
+    val targetYearMonth = when {
+        nextPrepared && !nextReviewed && viewGeneratedMonth -> nextMonth
+        nextPrepared && nextReviewed && nextMonthHasRoster -> nextMonth
+        else -> currentMonth
+    }
     val filtered = duties.filter {
         val date = parseLocalDateTime(it.departureDateTime).toLocalDate()
         YearMonth.from(date) == targetYearMonth
@@ -103,18 +109,13 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
         item {
             Text(if (ru) "Календарь ростера" else "Roster Calendar", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text((if (ru) "Месяц: " else "Roster month: ") + displayMonth(targetYearMonth.atDay(1)), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (monthGridView) {
-                    OutlinedButton(onClick = { monthGridView = false }, modifier = Modifier.weight(1f)) { Text(if (ru) "Список" else "List") }
-                    Button(onClick = { }, modifier = Modifier.weight(1f)) { Text(if (ru) "Месяц" else "Month") }
-                } else {
-                    Button(onClick = { }, modifier = Modifier.weight(1f)) { Text(if (ru) "Список" else "List") }
-                    OutlinedButton(onClick = { monthGridView = true }, modifier = Modifier.weight(1f)) { Text(if (ru) "Месяц" else "Month") }
-                }
-            }
+            CalendarViewSegmentedControl(
+                monthGridView = monthGridView,
+                ru = ru,
+                onList = { monthGridView = false },
+                onMonth = { monthGridView = true },
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
+            )
             if (nextPrepared && !nextReviewed && !viewGeneratedMonth) {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
@@ -166,6 +167,59 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
     }
 }
 
+@Composable
+private fun CalendarViewSegmentedControl(
+    monthGridView: Boolean,
+    ru: Boolean,
+    onList: () -> Unit,
+    onMonth: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(18.dp)
+    Row(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f), shape)
+            .padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        CalendarSegment(
+            text = if (ru) "Список" else "List",
+            selected = !monthGridView,
+            onClick = onList,
+            modifier = Modifier.weight(1f)
+        )
+        CalendarSegment(
+            text = if (ru) "Месяц" else "Month",
+            selected = monthGridView,
+            onClick = onMonth,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun CalendarSegment(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(15.dp)
+    val color = if (selected) Color(0xFF52627A) else Color.Transparent
+    val contentColor = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    Surface(
+        modifier = modifier
+            .height(36.dp)
+            .clickable(onClick = onClick),
+        shape = shape,
+        color = color,
+        tonalElevation = if (selected) 1.dp else 0.dp
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(text, color = contentColor, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
 
 @Composable
 private fun CalendarMonthGrid(
