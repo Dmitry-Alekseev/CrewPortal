@@ -236,13 +236,14 @@ private fun buildRosterItems(flights: List<FlightEntity>, month: YearMonth, now:
         val date = departure.toLocalDate()
         if (YearMonth.from(date) != month) return@mapNotNull null
         if (leaveByDate.containsKey(date)) return@mapNotNull null
-        // Completed flight duties stay in the database for monthly totals/logbook,
-        // but they should no longer remain in the active Roster list.
-        if (duty.dutyType == "FLIGHT" && duty.isCompleted) return@mapNotNull null
+        // Keep historical roster records in the database, but remove anything that is
+        // already over from the active Roster list. This applies to flights and also
+        // non-flight entries such as OFF, RESERVE and STAY.
+        if (duty.isCompleted || !arrival.isAfter(now)) return@mapNotNull null
         RosterItem.FlightDuty(duty)
     }
     val leaveItems = leaveByDate.map { (date, leave) -> RosterItem.LeaveDuty(leave, date) }
-        .filter { YearMonth.from(it.date) == month }
+        .filter { YearMonth.from(it.date) == month && it.date.plusDays(1).atStartOfDay().isAfter(now) }
     return insertRestPeriods((flightItems + leaveItems).sortedBy { it.sortDateTime })
 }
 
@@ -532,7 +533,11 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
             Text((if (ru) "Время duty: " else "Duty time: ") + formatMinutes(dutyMinutes(flight.departureDateTime, flight.arrivalDateTime, flight.durationMinutes)), color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (flight.isRegistered) {
                 Spacer(Modifier.height(12.dp))
-                OutlinedButton(onClick = {}, enabled = true, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Зарегистрирован" else "Registered") }
+                Button(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen, contentColor = Color.White)
+                ) { Text(if (ru) "Зарегистрирован" else "Registered") }
             } else if (shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted, flight.departureIata)) {
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(onClick = { scope.launch { flightRepository.registerFlight(flight.id) } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Регистрация" else "Register") }

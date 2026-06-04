@@ -1,3 +1,13 @@
+# Changelog
+
+## 2.1.9
+
+- Hide past non-flight roster items from active Roster after their end time, including OFF, RESERVE, STAY and leave.
+- Keep historical roster records in the local database for monthly totals, logbook and payroll.
+- Show registered flight action button in green after successful registration.
+- Propagate aircraft registration across same-duty turnaround legs, so return sectors immediately show the same aircraft registration as the outbound sector.
+- Bumped app metadata, update metadata, workflows and APK naming to CrewPortal-2.1.9.apk.
+
 # Crew Portal Changelog
 
 ## 2.1.8

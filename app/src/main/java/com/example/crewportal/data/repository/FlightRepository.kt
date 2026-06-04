@@ -182,8 +182,10 @@ class FlightRepository(
     suspend fun registerFlight(id: String) {
         val flight = flightDao.getAllOnce().firstOrNull { it.id == id } ?: return
         assignAircraftIfNeeded(flight)
+        val updatedFlight = flightDao.getAllOnce().firstOrNull { it.id == id } ?: flight
+        propagateSameDutyAircraftRegistration(updatedFlight)
         val all = flightDao.getAllOnce()
-        if (canAssignAirportPosition(flight, all)) assignAirportPositionIfNeeded(flight)
+        if (canAssignAirportPosition(updatedFlight, all)) assignAirportPositionIfNeeded(updatedFlight)
         flightDao.markRegistered(id)
         NotificationHelper.show(
             context,
@@ -213,6 +215,7 @@ class FlightRepository(
             initialSnapshot
         }
         RosterNotificationScheduler.scheduleRoster(context, rosterSnapshot)
+        normalizeSameDutyAircraftRegistrations(rosterSnapshot)
         rosterSnapshot.forEach { flight ->
             if (flight.dutyType == "FLIGHT" && shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted, flight.departureIata)) {
                 assignAircraftIfNeeded(flight)
@@ -352,5 +355,35 @@ class FlightRepository(
         }
         val assigned = AircraftPool.assignFor(flight.aircraftLabel, routeClass, flight.id)
         flightDao.assignRegistration(flight.id, assigned.registration)
+    }
+
+    private suspend fun normalizeSameDutyAircraftRegistrations(roster: List<FlightEntity>) {
+        roster.filter { it.dutyType == "FLIGHT" && it.registration != "TBA" }
+            .forEach { assigned -> propagateSameDutyAircraftRegistration(assigned) }
+    }
+
+    private suspend fun propagateSameDutyAircraftRegistration(source: FlightEntity) {
+        if (source.dutyType != "FLIGHT" || source.registration == "TBA") return
+        val all = flightDao.getAllOnce()
+        val sourceDeparture = parseLocalDateTime(source.departureDateTime)
+        all.filter { candidate ->
+            candidate.id != source.id &&
+                candidate.dutyType == "FLIGHT" &&
+                candidate.registration == "TBA" &&
+                candidate.aircraftLabel == source.aircraftLabel &&
+                parseLocalDateTime(candidate.departureDateTime).toLocalDate() == sourceDeparture.toLocalDate() &&
+                isSameDutyTurnaroundPair(source, candidate)
+        }.forEach { paired ->
+            flightDao.assignRegistration(paired.id, source.registration)
+        }
+    }
+
+    private fun isSameDutyTurnaroundPair(first: FlightEntity, second: FlightEntity): Boolean {
+        val firstDeparture = parseLocalDateTime(first.departureDateTime)
+        val secondDeparture = parseLocalDateTime(second.departureDateTime)
+        val minutesBetween = java.time.temporal.ChronoUnit.MINUTES.between(firstDeparture, secondDeparture).let { kotlin.math.abs(it) }
+        return minutesBetween <= 12 * 60 &&
+            ((first.arrivalIata == second.departureIata && first.departureIata == second.arrivalIata) ||
+                (second.arrivalIata == first.departureIata && second.departureIata == first.arrivalIata))
     }
 }

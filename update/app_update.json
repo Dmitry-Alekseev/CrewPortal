@@ -1,25 +1,17 @@
 {
-  "latestVersion": "2.1.8",
-  "versionCode": 218,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.8/CrewPortal-2.1.8.apk",
+  "latestVersion": "2.1.9",
+  "versionCode": 219,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.9/CrewPortal-2.1.9.apk",
   "changelog": [
-    "Fixed active month selection so June roster/monthly stats do not switch to empty July after confirmation",
-    "Roster and Calendar keep showing the active published month during In flight/current duty states",
-    "Stopped old due notifications from being shown again on normal app startup refresh",
-    "Improved notification timing by checking registration windows in the departure airport timezone",
-    "Prevented gate/stand assignment and gate notifications for same-duty turnaround return sectors",
-    "Replaced Calendar List/Month purple buttons with a compact blue/graphite segmented control",
-    "Moved TAS/Tashkent out of the normal layover pool and added future special Thursday/Sunday rules",
-    "Refreshed login screen styling with a cleaner corporate aviation look"
+    "Hidden past OFF, RESERVE, STAY and leave entries from the active Roster list after their end time",
+    "Registered flight action button now turns green after successful crew registration",
+    "Same-duty turnaround return sectors now inherit the outbound aircraft registration immediately",
+    "Kept historical roster records in the local database for monthly totals, logbook and payroll calculations"
   ],
   "changelogRu": [
-    "Исправлен выбор активного месяца: июньский ростер и месячная статистика не переключаются на пустой июль после подтверждения",
-    "Roster и Calendar продолжают показывать опубликованный активный месяц во время статуса In flight/current duty",
-    "Старые due-уведомления больше не должны повторно появляться при обычном входе в приложение",
-    "Уточнена логика времени регистрации: проверка идёт в часовом поясе аэропорта вылета",
-    "Gate/stand и уведомления по стоянке не создаются для обратного сектора same-duty turnaround",
-    "Фиолетовые кнопки Calendar List/Month заменены на компактный blue/graphite segmented control",
-    "TAS/Tashkent убран из обычного layover pool и переведён на специальные правила Thursday/Sunday для будущей генерации",
-    "Обновлён стиль экрана логина в более аккуратном corporate aviation виде"
+    "Прошедшие OFF, RESERVE, STAY и leave больше не остаются в активном списке Roster после времени окончания",
+    "Кнопка Registered теперь становится зелёной после успешной регистрации экипажа",
+    "Обратные сектора same-duty turnaround сразу наследуют борт от outbound-сектора",
+    "Исторические записи остаются в локальной базе для месячной статистики, logbook и будущего payroll"
   ]
 }
