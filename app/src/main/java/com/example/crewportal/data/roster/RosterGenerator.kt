@@ -123,7 +123,8 @@ object RosterGenerator {
         fun addReserve(day: Int) {
             val d = date(day)
             val nightReserve = random.nextBoolean() && day < month.lengthOfMonth()
-            val startTime = if (nightReserve) "20:00:00" else listOf("06:00:00", "08:00:00", "10:00:00").random(random)
+            val reserveStartOptions = listOf("06:00:00", "08:00:00", "10:00:00")
+            val startTime = if (nightReserve) "20:00:00" else reserveStartOptions[random.nextInt(reserveStartOptions.size)]
             val endDateTime = if (nightReserve) dt(day, startTime).plusHours(12) else when (startTime) {
                 "06:00:00" -> dt(day, "18:00:00")
                 "10:00:00" -> dt(day, "22:00:00")
