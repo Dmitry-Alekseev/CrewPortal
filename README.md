@@ -1,14 +1,15 @@
 # Crew Portal
 
-Version: 2.1.9
+Version: 2.1.10
 
-Crew Portal is a Kotlin / Jetpack Compose Android app for airline crew roster, calendar, MEL, weather, fleet and payroll simulation.
+Android crew operations portal built with Kotlin and Jetpack Compose.
 
-## Version 2.1.9 highlights
+## Version 2.1.10 highlights
+- Reserve duty support in Today’s Duty with variable day/night standby windows.
+- Flight Details cleanup: corporate Open MEL button, no Pre-flight Checklist, cleaner status timeline.
+- Weather invalid ICAO input now shows user-friendly snackbar feedback.
+- Bottom navigation now uses Messages instead of Fleet; Fleet moved into More.
+- Monthly Flight Time shows selected 80h/90h target instead of the fixed 90h limit.
+- GitHub Actions release workflow can build and publish APK releases automatically.
 
-- Past OFF / RESERVE / STAY / leave entries are hidden from the active Roster list after they end.
-- Registered button turns green after successful crew registration.
-- Same-duty turnaround return sectors inherit the outbound aircraft registration immediately.
-- Local roster data is preserved; hidden past entries are not deleted from the database.
-
-APK artifact name: `CrewPortal-2.1.9.apk`
+APK artifact name: `CrewPortal-2.1.10.apk`

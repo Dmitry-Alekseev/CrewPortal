@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.crewportal"
         minSdk = 26
         targetSdk = 35
-        versionCode = 219
-        versionName = "2.1.9"
+        versionCode = 2110
+        versionName = "2.1.10"
     }
 
     signingConfigs {

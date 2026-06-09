@@ -158,12 +158,12 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.1.9", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• JSON roster source removed; roster is local/generated.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• One-time hidden next-month roster generation from version label.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Splash version label and cleaner action styling.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Expanded aircraft MEL / technical remarks logic.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Payroll now waits until monthly closing date.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 2.1.10", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Reserve is recognized in Today’s Duty, including night reserve.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Flight Details timeline and MEL button cleaned up.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Weather invalid ICAO errors are handled with snackbar messages.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Messages added to bottom navigation; Fleet moved to More.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• GitHub Actions release workflow added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

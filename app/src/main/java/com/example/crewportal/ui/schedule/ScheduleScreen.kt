@@ -163,7 +163,7 @@ fun ScheduleScreen(
                 Switch(checked = darkTheme, onCheckedChange = { value -> scope.launch { preferencesRepository.setDarkTheme(value) } })
             }
             Spacer(Modifier.height(8.dp))
-            MonthlyProgressCard(flights = flights, month = targetMonth, ru = ru)
+            MonthlyProgressCard(flights = flights, month = targetMonth, selected90 = enhancedTarget, ru = ru)
             Spacer(Modifier.height(8.dp))
             TodayDutyCard(flights = flights, onDutyClick = onDutyClick, ru = ru)
         }
@@ -368,7 +368,7 @@ private fun formatRestMinutes(totalMinutes: Int): String {
 }
 
 @Composable
-private fun MonthlyProgressCard(flights: List<FlightEntity>, month: YearMonth, ru: Boolean) {
+private fun MonthlyProgressCard(flights: List<FlightEntity>, month: YearMonth, selected90: Boolean, ru: Boolean) {
     val monthDate = month.atDay(1)
     val monthPrefix = monthDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
     val monthLabel = monthDate.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH))
@@ -376,7 +376,7 @@ private fun MonthlyProgressCard(flights: List<FlightEntity>, month: YearMonth, r
     val planned = monthFlights.sumOf { it.durationMinutes }
     val completed = monthFlights.filter { it.isCompleted }.sumOf { it.durationMinutes }
     val adjustedTarget = LeaveDatabase.adjustedMonthlyTargetMinutes(month)
-    val limit = 90 * 60
+    val selectedTarget = if (selected90) 90 * 60 else 80 * 60
     val progress = (completed.toFloat() / adjustedTarget.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
 
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
@@ -388,7 +388,7 @@ private fun MonthlyProgressCard(flights: List<FlightEntity>, month: YearMonth, r
                 MetricBlock("Completed", formatMinutes(completed), Modifier.weight(1f))
             }
             LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
-            Text("Adjusted target ${formatMinutes(adjustedTarget)} • Limit ${formatMinutes(limit)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Adjusted target ${formatMinutes(adjustedTarget)} • Selected ${formatMinutes(selectedTarget)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("Leave: ${LeaveDatabase.leaveDaysInMonth(month)} days", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -408,6 +408,15 @@ private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> 
     val today = now.toLocalDate()
     val leave = LeaveDatabase.leaveFor(today)
     val todayFlights = flights.filter { it.dutyType == "FLIGHT" && parseLocalDateTime(it.departureDateTime).toLocalDate() == today }.sortedBy { it.departureDateTime }
+    val reserveDuty = flights.filter { it.dutyType == "RESERVE" }
+        .firstOrNull { duty ->
+            val start = parseLocalDateTime(duty.departureDateTime)
+            val end = parseLocalDateTime(duty.arrivalDateTime)
+            !now.isBefore(start) && now.isBefore(end)
+        }
+        ?: flights.filter { it.dutyType == "RESERVE" && parseLocalDateTime(it.departureDateTime).toLocalDate() == today }
+            .filter { parseLocalDateTime(it.arrivalDateTime).isAfter(now) }
+            .minByOrNull { it.departureDateTime }
     val currentOrNext = todayFlights.firstOrNull { parseLocalDateTime(it.arrivalDateTime).isAfter(now) }
     val previous = todayFlights.lastOrNull { parseLocalDateTime(it.arrivalDateTime).isBefore(now) }
 
@@ -418,6 +427,16 @@ private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> 
                 leave != null -> {
                     Text(leave.title, color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Text("${formatDate(leave.start)} — ${formatDate(leave.end)} • Day ${java.time.temporal.ChronoUnit.DAYS.between(leave.start, today).toInt() + 1} of ${leave.days}", color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.86f))
+                }
+                reserveDuty != null -> {
+                    val start = parseLocalDateTime(reserveDuty.departureDateTime)
+                    val end = parseLocalDateTime(reserveDuty.arrivalDateTime)
+                    val active = !now.isBefore(start) && now.isBefore(end)
+                    Column(Modifier.clickable { onDutyClick(reserveDuty.id) }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(if (active) "Reserve active" else "Reserve today", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text("${displayTime(reserveDuty.departureDateTime)}-${displayTime(reserveDuty.arrivalDateTime)} • ${reserveDuty.departureAirport}", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(reserveDuty.dutyNote.ifBlank { "Standby duty" }, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.88f))
+                    }
                 }
                 currentOrNext == null -> {
                     Text(if (ru) "Сегодня duty нет" else "No duty today", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)

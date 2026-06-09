@@ -122,12 +122,20 @@ object RosterGenerator {
 
         fun addReserve(day: Int) {
             val d = date(day)
+            val nightReserve = random.nextBoolean() && day < month.lengthOfMonth()
+            val startTime = if (nightReserve) "20:00:00" else listOf("06:00:00", "08:00:00", "10:00:00").random(random)
+            val endDateTime = if (nightReserve) dt(day, startTime).plusHours(12) else when (startTime) {
+                "06:00:00" -> dt(day, "18:00:00")
+                "10:00:00" -> dt(day, "22:00:00")
+                else -> dt(day, "20:00:00")
+            }
+            val reserveLabel = if (nightReserve) "NIGHT RESERVE" else "HOTEL RESERVE"
             flights += FlightEntity(
-                id = "$d-HOTEL-RESERVE",
+                id = "$d-${reserveLabel.replace(" ", "-")}",
                 airline = "THAI",
-                flightNumber = "HOTEL RESERVE",
+                flightNumber = reserveLabel,
                 aircraftLabel = "RES",
-                aircraftFullName = "Hotel Reserve",
+                aircraftFullName = if (nightReserve) "Night Reserve" else "Hotel Reserve",
                 registration = "—",
                 status = "RESERVE",
                 departureIata = "BKK",
@@ -138,11 +146,11 @@ object RosterGenerator {
                 arrivalIcao = "VTBS",
                 arrivalCity = "Bangkok",
                 arrivalAirport = "Hyatt Regency Bangkok Suvarnabhumi Airport",
-                departureDateTime = dtString(day, "08:00:00"),
-                arrivalDateTime = dtString(day, "20:00:00"),
+                departureDateTime = dt(day, startTime).format(formatter),
+                arrivalDateTime = endDateTime.format(formatter),
                 durationMinutes = 0,
                 dutyType = "RESERVE",
-                dutyNote = "Hotel reserve, Hyatt Regency Bangkok Suvarnabhumi Airport"
+                dutyNote = if (nightReserve) "Night standby reserve, Hyatt Regency Bangkok Suvarnabhumi Airport" else "Hotel reserve, Hyatt Regency Bangkok Suvarnabhumi Airport"
             )
             mark(day, 1)
         }
@@ -474,7 +482,7 @@ object RosterGenerator {
         val openDays = (1..month.lengthOfMonth()).filter { !occupied[it] }
         val topUpDays = openDays.filter { !hasNeighbourDuty(it) }.shuffled(random) + openDays.filter { hasNeighbourDuty(it) }.shuffled(random)
         for (candidateDay in topUpDays) {
-            if (plannedBlock >= 76 * 60) break
+            if (plannedBlock >= 78 * 60) break
             if (!canPlaceDuty(candidateDay, 1)) continue
             val routeCandidates = turnaroundRoutes
                 .filter { it.blockMinutes <= (82 * 60 - plannedBlock) }

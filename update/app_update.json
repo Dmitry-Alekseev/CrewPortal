@@ -1,17 +1,21 @@
 {
-  "latestVersion": "2.1.9",
-  "versionCode": 219,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.9/CrewPortal-2.1.9.apk",
+  "latestVersion": "2.1.10",
+  "versionCode": 2110,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.10/CrewPortal-2.1.10.apk",
   "changelog": [
-    "Hidden past OFF, RESERVE, STAY and leave entries from the active Roster list after their end time",
-    "Registered flight action button now turns green after successful crew registration",
-    "Same-duty turnaround return sectors now inherit the outbound aircraft registration immediately",
-    "Kept historical roster records in the local database for monthly totals, logbook and payroll calculations"
+    "Reserve duties are now recognized in Today’s Duty, including variable day/night standby windows",
+    "Flight Details timeline reordered, Roster Published removed, Open MEL restyled, Pre-flight Checklist removed",
+    "Weather invalid ICAO handling now shows a short user-friendly message instead of raw API errors",
+    "Bottom navigation now uses Messages; Fleet moved to More and Alerts removed from More",
+    "Monthly Flight Time now shows Selected 80h/90h instead of the fixed 90h limit",
+    "Added GitHub Actions release workflow to build and publish APK releases automatically"
   ],
   "changelogRu": [
-    "Прошедшие OFF, RESERVE, STAY и leave больше не остаются в активном списке Roster после времени окончания",
-    "Кнопка Registered теперь становится зелёной после успешной регистрации экипажа",
-    "Обратные сектора same-duty turnaround сразу наследуют борт от outbound-сектора",
-    "Исторические записи остаются в локальной базе для месячной статистики, logbook и будущего payroll"
+    "Reserve теперь отображается в Today’s Duty, включая дневные и ночные standby-окна",
+    "В Flight Details исправлен timeline, убран Roster Published, Open MEL приведён к общему стилю, Pre-flight Checklist удалён",
+    "При неверном ICAO в Weather показывается короткое понятное сообщение вместо сырой ошибки API",
+    "В нижней навигации теперь Messages; Fleet перенесён в More, Alerts убран из More",
+    "Monthly Flight Time показывает Selected 80h/90h вместо постоянного Limit 90h",
+    "Добавлен GitHub Actions workflow для автоматической сборки и публикации APK в Releases"
   ]
 }

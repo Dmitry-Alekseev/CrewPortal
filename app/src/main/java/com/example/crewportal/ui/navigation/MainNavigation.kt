@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -53,6 +54,7 @@ import com.example.crewportal.data.repository.PreferencesRepository
 import com.example.crewportal.ui.calendar.CalendarScreen
 import com.example.crewportal.ui.fleet.FleetScreen
 import com.example.crewportal.ui.notifications.NotificationsScreen
+import com.example.crewportal.ui.messages.MessagesScreen
 import com.example.crewportal.ui.profile.ProfileScreen
 import com.example.crewportal.ui.schedule.FlightDetailsScreen
 import com.example.crewportal.ui.schedule.ScheduleScreen
@@ -72,6 +74,7 @@ sealed class Screen(val route: String, val label: String) {
     data object Calendar : Screen("calendar", "Calendar")
     data object Weather : Screen("weather", "Weather")
     data object Fleet : Screen("fleet", "Fleet")
+    data object Messages : Screen("messages", "Messages")
     data object More : Screen("more", "More")
     data object Alerts : Screen("alerts", "Alerts")
     data object Profile : Screen("profile", "Profile")
@@ -106,7 +109,7 @@ fun MainNavigation(
         Screen.Schedule,
         Screen.Calendar,
         Screen.Weather,
-        Screen.Fleet,
+        Screen.Messages,
         Screen.More
     )
 
@@ -116,6 +119,7 @@ fun MainNavigation(
     val ru = language == "ru"
     val showBackButton = currentRoute in listOf(
         Screen.Alerts.route,
+        Screen.Fleet.route,
         Screen.Profile.route,
         Screen.Contacts.route,
         Screen.UpdateCenter.route,
@@ -181,6 +185,7 @@ fun MainNavigation(
 
             composable(Screen.Calendar.route) { CalendarScreen(flightRepository, preferencesRepository, onDutyClick = { navController.navigate("details/$it") }) }
             composable(Screen.Weather.route) { WeatherScreen(weatherRepository, preferencesRepository) }
+            composable(Screen.Messages.route) { MessagesScreen(preferencesRepository, ru = ru) }
             composable(Screen.Fleet.route) { FleetScreen() }
             composable(Screen.Alerts.route) { NotificationsScreen(flightRepository) }
             composable(Screen.Profile.route) { ProfileScreen(preferencesRepository) }
@@ -210,6 +215,7 @@ private fun titleForRoute(route: String?, ru: Boolean): String {
         Screen.Calendar.route -> if (ru) "Календарь" else "Calendar"
         Screen.Weather.route -> if (ru) "Погода" else "Weather"
         Screen.Fleet.route -> if (ru) "Флот" else "Fleet"
+        Screen.Messages.route -> if (ru) "Сообщения" else "Messages"
         Screen.More.route -> if (ru) "Ещё" else "More"
         Screen.Alerts.route -> if (ru) "Уведомления" else "Alerts"
         Screen.Profile.route -> if (ru) "Профиль" else "Profile"
@@ -243,6 +249,7 @@ private fun BottomBar(
                 Screen.Calendar -> Icons.Default.DateRange
                 Screen.Weather -> Icons.Default.Cloud
                 Screen.Fleet -> Icons.Default.AirplanemodeActive
+                Screen.Messages -> Icons.Default.Email
                 Screen.More -> Icons.Default.Menu
                 Screen.Alerts -> Icons.Default.Notifications
                 Screen.Profile -> Icons.Default.Person
@@ -261,6 +268,7 @@ private fun BottomBar(
                 currentRoute in listOf(
                     Screen.More.route,
                     Screen.Alerts.route,
+                    Screen.Fleet.route,
                     Screen.Profile.route,
                     Screen.Settings.route,
                     Screen.Contacts.route,
@@ -311,6 +319,7 @@ private fun bottomLabel(screen: Screen, ru: Boolean): String {
         Screen.Calendar -> if (ru) "Кален." else "Calendar"
         Screen.Weather -> if (ru) "Метео" else "Weather"
         Screen.Fleet -> if (ru) "Флот" else "Fleet"
+        Screen.Messages -> if (ru) "Сообщ." else "Messages"
         Screen.More -> if (ru) "Ещё" else "More"
         Screen.Alerts -> if (ru) "Алерты" else "Alerts"
         Screen.Profile -> if (ru) "Профиль" else "Profile"
@@ -360,12 +369,6 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
         )
 
         MoreMenuCard(
-            title = if (ru) "Уведомления" else "Alerts",
-            subtitle = if (ru) "Сообщения экипажа и компании" else "Crew notifications and company messages",
-            onClick = { navController.navigate(Screen.Alerts.route) }
-        )
-
-        MoreMenuCard(
             title = if (ru) "Контакты компании" else "Company Contacts",
             subtitle = if (ru) "Оперативные службы и контакты BKK" else "Operations, flight planning and BKK ATC contacts",
             onClick = { navController.navigate(Screen.Contacts.route) }
@@ -375,6 +378,12 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
             title = if (ru) "Маршрутная сеть" else "Company Routes",
             subtitle = if (ru) "Маршруты Thai Airways" else "Thai Airways route network",
             onClick = { navController.navigate(Screen.CompanyRoutes.route) }
+        )
+
+        MoreMenuCard(
+            title = if (ru) "Флот" else "Fleet",
+            subtitle = if (ru) "Справочник воздушных судов" else "Aircraft fleet reference",
+            onClick = { navController.navigate(Screen.Fleet.route) }
         )
 
         MoreMenuCard(

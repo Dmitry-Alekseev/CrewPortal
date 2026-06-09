@@ -1,0 +1,58 @@
+name: Release APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example 2.1.10"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+
+      - name: Build debug APK
+        run: gradle assembleDebug --warning-mode all
+
+      - name: Prepare release files
+        run: |
+          VERSION="${{ inputs.version }}"
+          mkdir -p release
+          cp app/build/outputs/apk/debug/*.apk "release/CrewPortal-${VERSION}.apk"
+          if [ -f update/app_update.json ]; then
+            cp update/app_update.json release/app_update.json
+          fi
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: Crew Portal ${{ inputs.version }}
+          body_path: CHANGELOG.md
+          files: |
+            release/CrewPortal-${{ inputs.version }}.apk
+            release/app_update.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

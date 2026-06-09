@@ -175,7 +175,6 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                     DetailRow("Company Summary", notamSummary(item.arrivalIata), "Official NOTAM briefing required before departure")
                 }
 
-                ChecklistCard(longHaul = longHaul)
 
                 CrewRestPlanCard(item, longHaul)
                 DutyLimitMonitorCard(item)
@@ -223,7 +222,14 @@ private fun AircraftTechnicalStatusCard(flight: FlightEntity, onMelClick: (Strin
         DetailRow("Last maintenance", "BKK Line Maintenance", "Latest station technical status synchronized")
         DetailRow("Next planned check", if (flight.durationMinutes >= 360) "After long-haul rotation" else "Next BKK night stop", "Maintenance planning data")
         if (flight.registration != "TBA") {
-            Button(onClick = { onMelClick(flight.registration) }, modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { onMelClick(flight.registration) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            ) {
                 Text("Open MEL")
             }
         }
@@ -461,13 +467,15 @@ private fun layoverHotelFor(iata: String): String {
 
 @Composable
 private fun StatusTimelineCard(flight: FlightEntity) {
+    val registrationOpen = flight.isRegistered || (shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted, flight.departureIata))
+    val gateStandAvailable = flight.gate != "Pending" || flight.stand != "Pending"
+    val reportPassed = !java.time.LocalDateTime.now().isBefore(reportDateTime(flight.departureDateTime, flight.durationMinutes))
     val stages = listOf(
-        "Roster Published" to true,
+        "Registration Open" to registrationOpen,
         "Aircraft Assigned" to (flight.registration != "TBA"),
-        "Registration Open" to (shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted, flight.departureIata)),
-        "Gate / Stand Assigned" to (flight.gate != "Pending" || flight.stand != "Pending"),
         "Registered" to flight.isRegistered,
-        "Report Time" to false,
+        "Gate / Stand Assigned" to gateStandAvailable,
+        "Report Time" to reportPassed,
         "Arrived" to hasArrived(flight.arrivalDateTime),
         "Flight Time Added" to flight.isFlightTimeAdded
     )

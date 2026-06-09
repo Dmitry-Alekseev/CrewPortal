@@ -19,6 +19,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,22 +51,29 @@ fun WeatherScreen(weatherRepository: WeatherRepository, preferencesRepository: P
     var loading by remember { mutableStateOf(false) }
     var metar by remember { mutableStateOf(DEFAULT_BKK_METAR) }
     var taf by remember { mutableStateOf(DEFAULT_BKK_TAF) }
-    var error by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     fun loadWeather(code: String) {
         scope.launch {
+            val clean = code.trim().uppercase().take(4)
+            if (clean.length != 4 || clean.any { !it.isLetter() }) {
+                snackbarHostState.showSnackbar(if (ru) "Проверь ICAO-код" else "Check ICAO code")
+                return@launch
+            }
             loading = true
-            error = null
             try {
-                val clean = code.uppercase().take(4)
                 val report = weatherRepository.getReport(clean)
+                if (report.first.contains("No METAR found", ignoreCase = true) && report.second.contains("No TAF found", ignoreCase = true)) {
+                    snackbarHostState.showSnackbar(if (ru) "Аэропорт не найден" else "Airport not found")
+                    return@launch
+                }
                 searchedIcao = clean
                 metar = report.first
                 taf = report.second
             } catch (_: IOException) {
-                error = "No internet connection"
-            } catch (e: Exception) {
-                error = e.message ?: "Unable to load weather data"
+                snackbarHostState.showSnackbar(if (ru) "Нет подключения" else "No internet connection")
+            } catch (_: Exception) {
+                snackbarHostState.showSnackbar(if (ru) "Аэропорт не найден" else "Airport not found")
             } finally {
                 loading = false
             }
@@ -74,9 +84,11 @@ fun WeatherScreen(weatherRepository: WeatherRepository, preferencesRepository: P
         loadWeather("VTBS")
     }
 
+    Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { paddingValues ->
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(paddingValues)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -104,12 +116,12 @@ fun WeatherScreen(weatherRepository: WeatherRepository, preferencesRepository: P
             modifier = Modifier.fillMaxWidth()
         ) { Text(if (metar.isBlank() && taf.isBlank()) { if (ru) "Поиск" else "Search" } else { if (ru) "Обновить" else "Refresh" }) }
 
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (metar.isNotBlank()) {
             WeatherCard(if (ru) "Фактический METAR • $searchedIcao" else "Current METAR • $searchedIcao", metar)
             WeatherInterpretationCard(metar = metar, taf = taf, ru = ru)
         }
         if (taf.isNotBlank()) WeatherCard("TAF • $searchedIcao", taf)
+    }
     }
 }
 
