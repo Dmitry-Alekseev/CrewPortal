@@ -162,7 +162,7 @@ object RosterGenerator {
         }
         fun hasMinimumRest(start: LocalDateTime, end: LocalDateTime): Boolean {
             return flights
-                .filter { it.dutyType == "FLIGHT" || it.dutyType == "RESERVE" || it.dutyType == "DEADHEAD" }
+                .filter { it.dutyType !in setOf("OFF", "STAY") }
                 .all { existing ->
                     val existingStart = parseDateTime(existing.departureDateTime)
                     val existingEnd = parseDateTime(existing.arrivalDateTime)
@@ -235,6 +235,63 @@ object RosterGenerator {
                 dutyNote = if (nightReserve) "Night standby reserve, Hyatt Regency Bangkok Suvarnabhumi Airport" else "Hotel reserve, Hyatt Regency Bangkok Suvarnabhumi Airport"
             )
             mark(day, 1)
+        }
+
+        fun addGroundDuty(
+            day: Int,
+            dutyType: String,
+            title: String,
+            startTime: String,
+            endTime: String,
+            note: String,
+            countsTowardNorm: Boolean
+        ) {
+            if (!canUse(day, 1)) return
+            val start = dt(day, startTime)
+            val end = dt(day, endTime)
+            if (!hasMinimumRest(start, end)) return
+            val minutes = ChronoUnit.MINUTES.between(start, end).toInt()
+            flights += FlightEntity(
+                id = "${date(day)}-${dutyType}-${title.replace(" ", "-")}",
+                airline = "THAI",
+                flightNumber = title,
+                aircraftLabel = dutyType,
+                aircraftFullName = title,
+                registration = "—",
+                status = dutyType,
+                departureIata = "BKK",
+                departureIcao = "VTBS",
+                departureCity = "Bangkok",
+                departureAirport = "Thai Airways Training Center",
+                arrivalIata = "BKK",
+                arrivalIcao = "VTBS",
+                arrivalCity = "Bangkok",
+                arrivalAirport = "Thai Airways Training Center",
+                departureDateTime = start.format(formatter),
+                arrivalDateTime = end.format(formatter),
+                durationMinutes = if (countsTowardNorm) minutes else 0,
+                dutyType = dutyType,
+                dutyNote = note
+            )
+            if (countsTowardNorm) plannedBlock += minutes
+            mark(day, 1)
+        }
+
+        fun addMandatoryQualificationEvents() {
+            // These dates mirror Profile → Documents & Qualifications.
+            // They are inserted before random flying, so the roster generator plans around them.
+            if (month == YearMonth.of(2026, 7)) {
+                addGroundDuty(16, "SIMULATOR", "Simulator Training", "10:00:00", "16:00:00", "Simulator recurrent day 1: training session", countsTowardNorm = true)
+                addGroundDuty(17, "SIMULATOR", "Simulator Pre-check", "10:00:00", "16:00:00", "Simulator recurrent day 2: pre-exam preparation", countsTowardNorm = true)
+                addGroundDuty(18, "SIMULATOR", "Simulator Check", "10:00:00", "16:00:00", "Simulator recurrent day 3: exam/check", countsTowardNorm = true)
+            }
+            if (month == YearMonth.of(2026, 8)) {
+                addGroundDuty(10, "MEDICAL", "Medical Commission", "09:00:00", "18:00:00", "Class 1 medical commission. Paid ground duty, not counted into flight norm.", countsTowardNorm = false)
+            }
+            if (month == YearMonth.of(2026, 10)) {
+                addGroundDuty(6, "SAFETY", "SEP Land", "10:00:00", "16:00:00", "Safety & Emergency Procedures — Land. Paid ground duty, not counted into flight norm.", countsTowardNorm = false)
+                addGroundDuty(8, "SAFETY", "SEP Water", "10:00:00", "16:00:00", "Safety & Emergency Procedures — Water. Paid ground duty, not counted into flight norm.", countsTowardNorm = false)
+            }
         }
 
         fun addTurnaround(day: Int, route: TurnaroundRoute, outboundTime: String = route.outboundTime) {
@@ -514,6 +571,8 @@ object RosterGenerator {
             mark(day, 1)
         }
 
+        addMandatoryQualificationEvents()
+
         var day = 1 + random.nextInt(2)
         var guard = 0
         while (day <= month.lengthOfMonth() && plannedBlock < targetBlock && guard < 80) {
@@ -595,7 +654,20 @@ object RosterGenerator {
         reserveDays.forEach { addReserve(it) }
 
         (1..month.lengthOfMonth()).forEach { if (!occupied[it]) addOff(it) }
-        return flights.sortedBy { it.departureDateTime }
+        return applyLineCheckIfDue(flights, month).sortedBy { it.departureDateTime }
+    }
+
+    private fun applyLineCheckIfDue(flights: List<FlightEntity>, month: YearMonth): List<FlightEntity> {
+        if (month != YearMonth.of(2026, 8)) return flights
+        val candidate = flights
+            .filter { it.dutyType == "FLIGHT" && it.departureIata == "BKK" }
+            .minByOrNull { kotlin.math.abs(ChronoUnit.DAYS.between(LocalDateTime.parse(it.departureDateTime, formatter).toLocalDate(), month.atDay(6))) }
+            ?: return flights
+        return flights.map { flight ->
+            if (flight.id == candidate.id) {
+                flight.copy(dutyNote = listOf(flight.dutyNote, "Line Check").filter { it.isNotBlank() }.joinToString(" • "))
+            } else flight
+        }
     }
 
     private fun parseDateTime(value: String): LocalDateTime = LocalDateTime.parse(value, formatter)

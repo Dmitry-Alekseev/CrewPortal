@@ -11,10 +11,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +40,10 @@ import com.example.crewportal.data.update.UpdateRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private val CorporateBlue = Color(0xFF1F3A5F)
+private val CorporateAccent = Color(0xFF2F5F88)
+private val NeutralButton = Color(0xFFE9E5DF)
 
 @Composable
 fun SettingsScreen(
@@ -69,10 +74,13 @@ fun SettingsScreen(
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    updateRepository.openDownload(info.apkUrl)
-                    updateInfo = null
-                }) { Text(if (ru) "Скачать APK" else "Download APK") }
+                Button(
+                    onClick = {
+                        updateRepository.openDownload(info.apkUrl)
+                        updateInfo = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = CorporateAccent, contentColor = Color.White)
+                ) { Text(if (ru) "Скачать APK" else "Download APK") }
             },
             dismissButton = { TextButton(onClick = { updateInfo = null }) { Text(if (ru) "Позже" else "Later") } }
         )
@@ -96,11 +104,23 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (language == "en") Button(onClick = { scope.launch { preferencesRepository.setAppLanguage("en") } }) { Text("English") }
-                    else OutlinedButton(onClick = { scope.launch { preferencesRepository.setAppLanguage("en") } }) { Text("English") }
+                    Button(
+                        onClick = { scope.launch { preferencesRepository.setAppLanguage("en") } },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (language == "en") CorporateBlue else NeutralButton,
+                            contentColor = if (language == "en") Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        modifier = Modifier.weight(1f)
+                    ) { Text("English") }
 
-                    if (language == "ru") Button(onClick = { scope.launch { preferencesRepository.setAppLanguage("ru") } }) { Text("Русский") }
-                    else OutlinedButton(onClick = { scope.launch { preferencesRepository.setAppLanguage("ru") } }) { Text("Русский") }
+                    Button(
+                        onClick = { scope.launch { preferencesRepository.setAppLanguage("ru") } },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (language == "ru") CorporateBlue else NeutralButton,
+                            contentColor = if (language == "ru") Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Русский") }
                 }
             }
         }
@@ -139,12 +159,16 @@ fun SettingsScreen(
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ru) "Синхронизация" else "Synchronization", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(if (ru) "Локальное обновление статусов ростера" else "Local roster status refresh", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedButton(onClick = {
-                    scope.launch {
-                        withContext(Dispatchers.IO) { flightRepository.refreshCompletedFlights(showNotifications = true) }
-                        snackbarHostState.showSnackbar(if (ru) "Локальный ростер обновлён" else "Local roster refreshed")
-                    }
-                }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Обновить статусы" else "Refresh status") }
+                Button(
+                    onClick = {
+                        scope.launch {
+                            withContext(Dispatchers.IO) { flightRepository.refreshCompletedFlights(showNotifications = true) }
+                            snackbarHostState.showSnackbar(if (ru) "Локальный ростер обновлён" else "Local roster refreshed")
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = NeutralButton, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(if (ru) "Обновить статусы" else "Refresh status") }
 
                 Button(onClick = {
                     scope.launch {
@@ -156,22 +180,30 @@ fun SettingsScreen(
                             else -> updateInfo = info
                         }
                     }
-                }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Проверить обновления приложения" else "Check app updates") }
+                }, colors = ButtonDefaults.buttonColors(containerColor = CorporateAccent, contentColor = Color.White), modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Проверить обновления приложения" else "Check app updates") }
             }
         }
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.2.0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Airbus fleet database refreshed and registration/type matching tightened.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Route aircraft weighting and departure time variety improved.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Messages UI cleaned up with English dates, persistent delete and multi-select.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Hidden next-month generator can now also clear the draft after 5 taps.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Version metadata and release workflows updated.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 2.2.1", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Gate/stand timing now uses airport-local availability consistently.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Roster generator now accounts for simulator, medical, SEP and line check validity items.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Augmented crew is limited to flights longer than 10 hours.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Messages Inbox scrolling fixed.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• METAR and Settings buttons cleaned up; Update Center moved into Settings only.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
-        OutlinedButton(onClick = { scope.launch { flightRepository.simulateRosterChange() } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Имитировать изменение ростера" else "Simulate Roster Change") }
-        OutlinedButton(onClick = { scope.launch { onLogout() } }, modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Выйти" else "Sign Out") }
+        Button(
+            onClick = { scope.launch { flightRepository.simulateRosterChange() } },
+            colors = ButtonDefaults.buttonColors(containerColor = NeutralButton, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+            modifier = Modifier.fillMaxWidth()
+        ) { Text(if (ru) "Имитировать изменение ростера" else "Simulate Roster Change") }
+        Button(
+            onClick = { scope.launch { onLogout() } },
+            colors = ButtonDefaults.buttonColors(containerColor = NeutralButton, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+            modifier = Modifier.fillMaxWidth()
+        ) { Text(if (ru) "Выйти" else "Sign Out") }
     }
 }

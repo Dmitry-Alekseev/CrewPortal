@@ -1,21 +1,21 @@
 {
-  "latestVersion": "2.2.0",
-  "versionCode": 2200,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.2.0/CrewPortal-2.2.0.apk",
+  "latestVersion": "2.2.1",
+  "versionCode": 2201,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.2.1/CrewPortal-2.2.1.apk",
   "changelog": [
-    "Airbus fleet database updated for A320, A321neo, A330-300 and A350-900",
-    "Aircraft registration assignment now stays inside the correct aircraft family",
-    "Route aircraft weighting added for Phuket, Thai domestic routes, Kuala Lumpur, Singapore, India and long-haul flights",
-    "Turnaround departure times are more varied while preserving at least 12h rest between separate duties",
-    "Messages UI updated with corporate buttons, English dates, multi-select deletion and persistent deleted state",
-    "Hidden 5-tap next-month test flow can now generate and clear the next-month draft"
+    "Gate/stand availability now uses airport-local timing consistently in UI and notifications",
+    "Roster generator now accounts for simulator recurrent, medical commission, SEP Land/Water and line checks",
+    "Augmented/double crew is limited to flights longer than 10 hours",
+    "Messages Inbox scrolling fixed",
+    "METAR Refresh and Settings buttons restyled, Update Center removed from More",
+    "Payroll now includes paid ground qualification days while simulator days count toward monthly norm"
   ],
   "changelogRu": [
-    "Обновлена база Airbus: A320, A321neo, A330-300 и A350-900",
-    "Назначение регистрации теперь жёстко остаётся внутри правильного типа ВС",
-    "Добавлены веса типов ВС по маршрутам: Phuket, внутренние рейсы, Kuala Lumpur, Singapore, India и long-haul",
-    "У turnaround duty стало больше вариантов времени вылета с сохранением минимум 12h отдыха между отдельными duty",
-    "Messages обновлены: общий стиль кнопок, английские даты, multi-select удаление и сохранение удалённого состояния",
-    "Скрытый 5-tap тест следующего месяца теперь умеет генерировать и очищать draft"
+    "Gate/stand теперь считает доступность по времени аэропорта одинаково в UI и уведомлениях",
+    "Генератор учитывает тренажёр, медкомиссию, ASP земля/вода и line check",
+    "Усиленный/double crew назначается только на рейсы дольше 10 часов",
+    "Исправлен скролл Inbox в Messages",
+    "Кнопки METAR Refresh и Settings приведены к общему стилю, Update Center убран из More",
+    "Payroll учитывает оплачиваемые ground qualification days, а тренажёр входит в месячную норму"
   ]
 }

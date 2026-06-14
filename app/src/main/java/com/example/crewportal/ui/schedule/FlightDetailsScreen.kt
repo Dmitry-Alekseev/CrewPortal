@@ -67,6 +67,7 @@ import com.example.crewportal.util.etopsText
 import com.example.crewportal.util.formatMinutes
 import com.example.crewportal.util.hasArrived
 import com.example.crewportal.util.notamSummary
+import com.example.crewportal.util.nowAtAirport
 import com.example.crewportal.util.reportDateTime
 import com.example.crewportal.util.shouldShowRegistrationButton
 import kotlinx.coroutines.launch
@@ -96,7 +97,8 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
             Text("Flight not found", modifier = Modifier.padding(padding).padding(24.dp))
         } else {
             val longHaul = item.durationMinutes >= 360
-            val crew = CrewPool.forFlight(item.id, longHaul)
+            val augmentedCrew = item.durationMinutes > 10 * 60
+            val crew = CrewPool.forFlight(item.id, augmentedCrew)
             val fuel = estimatedFuel(item.durationMinutes, item.aircraftLabel)
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -176,7 +178,7 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                 }
 
 
-                CrewRestPlanCard(item, longHaul)
+                CrewRestPlanCard(item, augmentedCrew)
                 DutyLimitMonitorCard(item)
 
                 InfoCard("Crew List") {
@@ -184,6 +186,7 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                     DetailRow("First Officer", crew.firstOfficer, "Operating pilot")
                     if (crew.reliefCaptain != null) DetailRow("Relief Captain", crew.reliefCaptain, "Augmented crew")
                     if (crew.reliefFirstOfficer != null) DetailRow("Relief First Officer", crew.reliefFirstOfficer, "Augmented crew")
+                    if (item.dutyNote.contains("Line Check", ignoreCase = true)) DetailRow("Line Instructor", CrewPool.lineInstructorForFlight(item.id), "Line check supervision")
                     DetailRow("Cabin Manager", crew.cabinManager, "Thai cabin crew database")
                     DetailRow("Cabin Crew", "${crew.cabinCrewCount} crew members", "Assigned by cabin crew roster module")
                 }
@@ -469,14 +472,14 @@ private fun layoverHotelFor(iata: String): String {
 private fun StatusTimelineCard(flight: FlightEntity) {
     val registrationOpen = flight.isRegistered || (shouldShowRegistrationButton(flight.departureIata, flight.durationMinutes) && canRegister(flight.departureDateTime, flight.isCompleted, flight.departureIata))
     val gateStandAvailable = flight.gate != "Pending" || flight.stand != "Pending"
-    val reportPassed = !java.time.LocalDateTime.now().isBefore(reportDateTime(flight.departureDateTime, flight.durationMinutes))
+    val reportPassed = !nowAtAirport(flight.departureIata).isBefore(reportDateTime(flight.departureDateTime, flight.durationMinutes))
     val stages = listOf(
         "Registration Open" to registrationOpen,
         "Aircraft Assigned" to (flight.registration != "TBA"),
         "Registered" to flight.isRegistered,
         "Gate / Stand Assigned" to gateStandAvailable,
         "Report Time" to reportPassed,
-        "Arrived" to hasArrived(flight.arrivalDateTime),
+        "Arrived" to hasArrived(flight.arrivalDateTime, flight.arrivalIata),
         "Flight Time Added" to flight.isFlightTimeAdded
     )
     InfoCard("Flight Status Timeline") {

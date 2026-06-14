@@ -32,25 +32,35 @@ fun shouldShowRegistrationButton(departureIata: String, durationMinutes: Int): B
     return departureIata == "BKK" || durationMinutes >= 240
 }
 
-fun canRegister(departureDateTime: String, completed: Boolean): Boolean = canRegister(departureDateTime, completed, null)
-
-fun canRegister(departureDateTime: String, completed: Boolean, departureIata: String?): Boolean {
-    if (completed) return false
-    val offsetMinutes = departureIata?.let { AirportDatabase.byIata(it)?.utcOffsetMinutes }
-    val now = if (offsetMinutes != null) {
+fun nowAtAirport(iata: String?): LocalDateTime {
+    val offsetMinutes = iata?.let { AirportDatabase.byIata(it)?.utcOffsetMinutes }
+    return if (offsetMinutes != null) {
         OffsetDateTime.now(ZoneOffset.UTC)
             .withOffsetSameInstant(ZoneOffset.ofTotalSeconds(offsetMinutes * 60))
             .toLocalDateTime()
     } else {
         LocalDateTime.now()
     }
+}
+
+fun canRegister(departureDateTime: String, completed: Boolean): Boolean = canRegister(departureDateTime, completed, null)
+
+fun canRegister(departureDateTime: String, completed: Boolean, departureIata: String?): Boolean {
+    if (completed) return false
+    val now = nowAtAirport(departureIata)
     val departure = parseLocalDateTime(departureDateTime)
     val minutesToDeparture = Duration.between(now, departure).toMinutes()
     return minutesToDeparture in 0..(24 * 60)
 }
 
-fun hasArrived(arrivalDateTime: String): Boolean {
-    return !LocalDateTime.now().isBefore(parseLocalDateTime(arrivalDateTime))
+fun hasArrived(arrivalDateTime: String): Boolean = hasArrived(arrivalDateTime, null)
+
+fun hasArrived(arrivalDateTime: String, arrivalIata: String?): Boolean {
+    return !nowAtAirport(arrivalIata).isBefore(parseLocalDateTime(arrivalDateTime))
+}
+
+fun isAirportLocalNowAtOrAfter(dateTime: String, iata: String?): Boolean {
+    return !nowAtAirport(iata).isBefore(parseLocalDateTime(dateTime))
 }
 
 fun reportDateTime(departureDateTime: String, durationMinutes: Int): LocalDateTime {

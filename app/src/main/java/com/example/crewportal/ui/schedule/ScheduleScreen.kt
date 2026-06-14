@@ -69,6 +69,7 @@ import com.example.crewportal.util.displayTime
 import com.example.crewportal.util.dutyMinutes
 import com.example.crewportal.util.formatMinutes
 import com.example.crewportal.util.parseLocalDateTime
+import com.example.crewportal.util.nowAtAirport
 import com.example.crewportal.util.reportDateTime
 import com.example.crewportal.util.shouldShowRegistrationButton
 import kotlinx.coroutines.Dispatchers
@@ -118,8 +119,8 @@ fun ScheduleScreen(
     val ru = language == "ru"
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val now = LocalDateTime.now()
-    val currentMonth = YearMonth.now()
+    val now = nowAtAirport("BKK")
+    val currentMonth = YearMonth.from(now)
     val nextMonth = currentMonth.plusMonths(1)
     val nextMonthHasRoster = flights.any { YearMonth.from(parseLocalDateTime(it.departureDateTime).toLocalDate()) == nextMonth }
     val targetMonth = if (nextPrepared && nextReviewed && nextMonthHasRoster) nextMonth else currentMonth
@@ -372,7 +373,7 @@ private fun MonthlyProgressCard(flights: List<FlightEntity>, month: YearMonth, s
     val monthDate = month.atDay(1)
     val monthPrefix = monthDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
     val monthLabel = monthDate.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH))
-    val monthFlights = flights.filter { it.dutyType == "FLIGHT" && it.departureDateTime.startsWith(monthPrefix) && LeaveDatabase.leaveFor(parseLocalDateTime(it.departureDateTime).toLocalDate()) == null }
+    val monthFlights = flights.filter { (it.dutyType == "FLIGHT" || it.dutyType == "SIMULATOR") && it.departureDateTime.startsWith(monthPrefix) && LeaveDatabase.leaveFor(parseLocalDateTime(it.departureDateTime).toLocalDate()) == null }
     val planned = monthFlights.sumOf { it.durationMinutes }
     val completed = monthFlights.filter { it.isCompleted }.sumOf { it.durationMinutes }
     val adjustedTarget = LeaveDatabase.adjustedMonthlyTargetMinutes(month)
@@ -404,7 +405,7 @@ private fun MetricBlock(label: String, value: String, modifier: Modifier = Modif
 
 @Composable
 private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> Unit, ru: Boolean) {
-    val now = LocalDateTime.now()
+    val now = nowAtAirport("BKK")
     val today = now.toLocalDate()
     val leave = LeaveDatabase.leaveFor(today)
     val todayFlights = flights.filter { it.dutyType == "FLIGHT" && parseLocalDateTime(it.departureDateTime).toLocalDate() == today }.sortedBy { it.departureDateTime }
@@ -645,9 +646,12 @@ private fun scheduleTimeLine(flight: FlightEntity): String = displayTime(flight.
 
 private fun airportAssignmentLine(flight: FlightEntity): String {
     if (!shouldShowAirportAssignment(flight)) return ""
+    val now = nowAtAirport(flight.departureIata)
+    val due = !now.isBefore(parseLocalDateTime(flight.departureDateTime).minusHours(3))
     return when {
         flight.gate != "Pending" && flight.gate != "—" -> "Gate: ${flight.gate} • Terminal: ${flight.terminal}"
         flight.stand != "Pending" && flight.stand != "—" -> "Stand: ${flight.stand} • Terminal: ${flight.terminal}"
+        due -> "Gate / Stand: synchronizing"
         else -> "Gate / Stand: assigned 3h prior"
     }
 }

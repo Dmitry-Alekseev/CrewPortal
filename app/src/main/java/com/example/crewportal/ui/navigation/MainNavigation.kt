@@ -62,7 +62,6 @@ import com.example.crewportal.ui.settings.SettingsScreen
 import com.example.crewportal.ui.mel.MelScreen
 import com.example.crewportal.ui.weather.WeatherScreen
 import com.example.crewportal.ui.contacts.CompanyContactsScreen
-import com.example.crewportal.ui.update.UpdateCenterScreen
 import com.example.crewportal.ui.airport.AirportInfoScreen
 import com.example.crewportal.ui.history.RosterChangeHistoryScreen
 import com.example.crewportal.ui.leave.LeaveManagementScreen
@@ -122,7 +121,6 @@ fun MainNavigation(
         Screen.Fleet.route,
         Screen.Profile.route,
         Screen.Contacts.route,
-        Screen.UpdateCenter.route,
         Screen.AirportInfo.route,
         Screen.RosterHistory.route,
         Screen.Leave.route,
@@ -190,7 +188,6 @@ fun MainNavigation(
             composable(Screen.Alerts.route) { NotificationsScreen(flightRepository) }
             composable(Screen.Profile.route) { ProfileScreen(preferencesRepository) }
             composable(Screen.Contacts.route) { CompanyContactsScreen() }
-            composable(Screen.UpdateCenter.route) { UpdateCenterScreen(flightRepository, preferencesRepository) }
             composable(Screen.AirportInfo.route) { AirportInfoScreen() }
             composable(Screen.RosterHistory.route) { RosterChangeHistoryScreen(flightRepository) }
             composable(Screen.Leave.route) { LeaveManagementScreen() }
@@ -272,8 +269,7 @@ private fun BottomBar(
                     Screen.Profile.route,
                     Screen.Settings.route,
                     Screen.Contacts.route,
-                    Screen.UpdateCenter.route,
-                    Screen.AirportInfo.route,
+                                Screen.AirportInfo.route,
                     Screen.RosterHistory.route,
                     Screen.Leave.route,
                     Screen.Payroll.route,
@@ -384,12 +380,6 @@ private fun MoreScreen(navController: NavHostController, ru: Boolean) {
             title = if (ru) "Флот" else "Fleet",
             subtitle = if (ru) "Справочник воздушных судов" else "Aircraft fleet reference",
             onClick = { navController.navigate(Screen.Fleet.route) }
-        )
-
-        MoreMenuCard(
-            title = if (ru) "Центр обновлений" else "Update Center",
-            subtitle = if (ru) "Версия приложения, синхронизация и журнал изменений" else "App version, synchronization and change log",
-            onClick = { navController.navigate(Screen.UpdateCenter.route) }
         )
 
         MoreMenuCard(

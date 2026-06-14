@@ -276,9 +276,14 @@ private fun calculatePayslip(month: YearMonth, flights: List<FlightEntity>): Pay
     val leaveDays = LeaveDatabase.leaveDaysInMonth(month)
     val longHaulMinutes = sourceFlights.filter { it.durationMinutes >= 540 }.sumOf { it.durationMinutes }
     val layoverDays = monthDuties.count { it.dutyType == "STAY" }
+    val paidGroundMinutes = monthDuties.filter { it.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY") }
+        .sumOf {
+            if (it.durationMinutes > 0) it.durationMinutes
+            else java.time.Duration.between(java.time.LocalDateTime.parse(it.departureDateTime), java.time.LocalDateTime.parse(it.arrivalDateTime)).toMinutes().toInt()
+        }
 
     val flightPay = ((blockMinutes / 60.0) * 95).roundToInt()
-    val dutyPay = ((dutyMinutes / 60.0) * 24).roundToInt()
+    val dutyPay = (((dutyMinutes + paidGroundMinutes) / 60.0) * 24).roundToInt()
     val reservePay = reserveDays * 120
     val deadheadPay = monthDuties.count { it.dutyType == "DEADHEAD" } * 180
     val nightPremium = ((sourceFlights.sumOf { nightMinutes(it) } / 60.0) * 95).roundToInt()

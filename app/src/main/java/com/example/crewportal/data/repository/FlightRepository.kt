@@ -11,6 +11,7 @@ import com.example.crewportal.util.NotificationHelper
 import com.example.crewportal.util.RosterNotificationScheduler
 import com.example.crewportal.util.canRegister
 import com.example.crewportal.util.hasArrived
+import com.example.crewportal.util.nowAtAirport
 import com.example.crewportal.util.parseLocalDateTime
 import com.example.crewportal.util.shouldShowRegistrationButton
 import kotlinx.coroutines.flow.Flow
@@ -245,7 +246,7 @@ class FlightRepository(
                     }
                 }
             }
-            if (flight.dutyType == "FLIGHT" && !flight.isFlightTimeAdded && hasArrived(flight.arrivalDateTime)) {
+            if (flight.dutyType == "FLIGHT" && !flight.isFlightTimeAdded && hasArrived(flight.arrivalDateTime, flight.arrivalIata)) {
                 flightDao.markCompletedAndAdded(flight.id)
                 preferencesRepository.addFlightTime(flight.durationMinutes, flight.aircraftLabel)
                 if (showNotifications) {
@@ -317,7 +318,7 @@ class FlightRepository(
         if (flight.dutyType != "FLIGHT" || flight.isCompleted) return false
         if (!shouldHaveAirportAssignment(flight, roster)) return false
         val departure = parseLocalDateTime(flight.departureDateTime)
-        val now = LocalDateTime.now()
+        val now = nowAtAirport(flight.departureIata)
         return !now.isBefore(departure.minusHours(3))
     }
 
