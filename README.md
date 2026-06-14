@@ -1,15 +1,14 @@
 # Crew Portal
 
-Version: 2.1.10
+Version: 2.2.0
 
 Android crew operations portal built with Kotlin and Jetpack Compose.
 
-## Version 2.1.10 highlights
-- Reserve duty support in Today’s Duty with variable day/night standby windows.
-- Flight Details cleanup: corporate Open MEL button, no Pre-flight Checklist, cleaner status timeline.
-- Weather invalid ICAO input now shows user-friendly snackbar feedback.
-- Bottom navigation now uses Messages instead of Fleet; Fleet moved into More.
-- Monthly Flight Time shows selected 80h/90h target instead of the fixed 90h limit.
-- GitHub Actions release workflow can build and publish APK releases automatically.
+## Version 2.2.0 highlights
+- Airbus fleet database refresh for A320, A321neo, A330-300 and A350-900.
+- Safer aircraft registration assignment: registrations stay within the correct aircraft family.
+- More realistic route aircraft weighting and turnaround departure time variety.
+- Messages UI cleanup: corporate buttons, English dates, multi-select deletion and persistent deleted state.
+- Hidden 5-tap next-month test flow can generate and clear next-month draft rosters.
 
-APK artifact name: `CrewPortal-2.1.10.apk`
+APK artifact name: `CrewPortal-2.2.0.apk`

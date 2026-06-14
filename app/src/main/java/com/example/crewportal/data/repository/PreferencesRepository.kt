@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -28,6 +29,8 @@ class PreferencesRepository(private val context: Context) {
         val NEXT_MONTH_ROSTER_REVIEWED = booleanPreferencesKey("next_month_roster_reviewed")
         val ENHANCED_ROSTER_TARGET = booleanPreferencesKey("enhanced_roster_target")
         val SECRET_ROSTER_GENERATOR_USED = booleanPreferencesKey("secret_roster_generator_used")
+        val READ_COMPANY_MESSAGES = stringSetPreferencesKey("read_company_messages")
+        val DELETED_COMPANY_MESSAGES = stringSetPreferencesKey("deleted_company_messages")
     }
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { it[Keys.IS_LOGGED_IN] ?: false }
@@ -45,6 +48,8 @@ class PreferencesRepository(private val context: Context) {
     val nextMonthRosterReviewed: Flow<Boolean> = context.dataStore.data.map { it[Keys.NEXT_MONTH_ROSTER_REVIEWED] ?: false }
     val enhancedRosterTarget: Flow<Boolean> = context.dataStore.data.map { it[Keys.ENHANCED_ROSTER_TARGET] ?: false }
     val secretRosterGeneratorUsed: Flow<Boolean> = context.dataStore.data.map { it[Keys.SECRET_ROSTER_GENERATOR_USED] ?: false }
+    val readCompanyMessageIds: Flow<Set<String>> = context.dataStore.data.map { it[Keys.READ_COMPANY_MESSAGES] ?: emptySet() }
+    val deletedCompanyMessageIds: Flow<Set<String>> = context.dataStore.data.map { it[Keys.DELETED_COMPANY_MESSAGES] ?: emptySet() }
 
     suspend fun setLoginState(loggedIn: Boolean, remember: Boolean, login: String) {
         context.dataStore.edit { preferences ->
@@ -78,6 +83,20 @@ class PreferencesRepository(private val context: Context) {
 
     suspend fun setSecretRosterGeneratorUsed(used: Boolean) {
         context.dataStore.edit { preferences -> preferences[Keys.SECRET_ROSTER_GENERATOR_USED] = used }
+    }
+
+    suspend fun markCompanyMessageRead(id: String) {
+        context.dataStore.edit { preferences ->
+            val current = preferences[Keys.READ_COMPANY_MESSAGES] ?: emptySet()
+            preferences[Keys.READ_COMPANY_MESSAGES] = current + id
+        }
+    }
+
+    suspend fun deleteCompanyMessages(ids: Collection<String>) {
+        context.dataStore.edit { preferences ->
+            val deleted = preferences[Keys.DELETED_COMPANY_MESSAGES] ?: emptySet()
+            preferences[Keys.DELETED_COMPANY_MESSAGES] = deleted + ids
+        }
     }
 
     suspend fun resetNextMonthRosterDecision() {

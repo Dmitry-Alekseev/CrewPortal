@@ -4,8 +4,8 @@ import com.example.crewportal.data.local.FlightEntity
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Random
-import kotlin.math.abs
 
 object RosterGenerator {
     private val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
@@ -50,6 +50,74 @@ object RosterGenerator {
         val blockMinutes: Int get() = outboundMinutes + inboundMinutes
     }
 
+    private data class AircraftChoice(
+        val label: String,
+        val fullName: String,
+        val weight: Int
+    )
+
+    private fun weightedChoice(random: Random, choices: List<AircraftChoice>): AircraftChoice {
+        val totalWeight = choices.sumOf { it.weight }.coerceAtLeast(1)
+        var roll = random.nextInt(totalWeight)
+        choices.forEach { choice ->
+            roll -= choice.weight
+            if (roll < 0) return choice
+        }
+        return choices.last()
+    }
+
+    private fun narrowbodyChoices(): List<AircraftChoice> = listOf(
+        AircraftChoice("A320", "Airbus A320-214", 80),
+        AircraftChoice("A321neo", "Airbus A321-251NX", 20)
+    )
+
+    private fun widebodyChoices(): List<AircraftChoice> = listOf(
+        AircraftChoice("A330", "Airbus A330-343", 45),
+        AircraftChoice("A350", "Airbus A350-941", 55)
+    )
+
+    private fun anyAirbusChoices(): List<AircraftChoice> = listOf(
+        AircraftChoice("A320", "Airbus A320-214", 30),
+        AircraftChoice("A321neo", "Airbus A321-251NX", 20),
+        AircraftChoice("A330", "Airbus A330-343", 25),
+        AircraftChoice("A350", "Airbus A350-941", 25)
+    )
+
+    private fun routeAircraftChoice(route: TurnaroundRoute, random: Random): AircraftChoice = when (route.iata) {
+        // Phuket and domestic/regional Thai "villages" stay narrow-body only.
+        "HKT", "CNX", "KBV" -> weightedChoice(random, narrowbodyChoices())
+
+        // KUL/SIN alternate between narrow-body and wide-body in real operations.
+        "KUL", "SIN" -> if (random.nextBoolean()) weightedChoice(random, narrowbodyChoices()) else weightedChoice(random, widebodyChoices())
+
+        // India may receive any Airbus type in the app scope.
+        "DEL" -> weightedChoice(random, anyAirbusChoices())
+
+        // Smaller regional routes stay close to narrow-body operations.
+        "SGN", "HAN", "REP", "DAC" -> weightedChoice(random, narrowbodyChoices())
+
+        // Keep existing route intent for other routes.
+        else -> AircraftChoice(route.aircraftLabel, route.aircraftFullName, 1)
+    }
+
+    private fun routeTimeChoice(route: TurnaroundRoute, random: Random): String {
+        val options = when (route.iata) {
+            "SIN" -> listOf("08:00:00" to 35, "12:40:00" to 25, "16:40:00" to 30, "19:20:00" to 10)
+            "KUL" -> listOf("09:05:00" to 35, "13:20:00" to 25, "16:10:00" to 25, "20:15:00" to 15)
+            "HKT" -> listOf("07:45:00" to 40, "11:30:00" to 25, "15:45:00" to 25, "19:10:00" to 10)
+            "CNX", "KBV" -> listOf("07:55:00" to 45, "10:15:00" to 25, "14:35:00" to 20, "18:20:00" to 10)
+            "DEL", "MNL" -> listOf(route.outboundTime to 45, "12:30:00" to 20, "17:10:00" to 20, "21:30:00" to 15)
+            else -> listOf(route.outboundTime to 55, "10:40:00" to 20, "14:20:00" to 15, "18:30:00" to 10)
+        }
+        val total = options.sumOf { it.second }
+        var roll = random.nextInt(total)
+        options.forEach { option ->
+            roll -= option.second
+            if (roll < 0) return option.first
+        }
+        return route.outboundTime
+    }
+
     private val turnaroundRoutes = listOf(
         TurnaroundRoute("HKT", "VTSP", "Phuket", "Phuket Intl", "TG201", "TG202", "07:45:00", 85, 70, 90, "A320", "Airbus A320-214"),
         TurnaroundRoute("SIN", "WSSS", "Singapore", "Changi Intl", "TG403", "TG404", "08:00:00", 150, 125, 150, "A321neo", "Airbus A321-251NX"),
@@ -91,6 +159,19 @@ object RosterGenerator {
             val beforeTwo = day > 2 && occupied[day - 1] && occupied[day - 2]
             val afterTwo = day + span + 1 <= month.lengthOfMonth() && occupied[day + span] && occupied[day + span + 1]
             return !beforeTwo && !afterTwo
+        }
+        fun hasMinimumRest(start: LocalDateTime, end: LocalDateTime): Boolean {
+            return flights
+                .filter { it.dutyType == "FLIGHT" || it.dutyType == "RESERVE" || it.dutyType == "DEADHEAD" }
+                .all { existing ->
+                    val existingStart = parseDateTime(existing.departureDateTime)
+                    val existingEnd = parseDateTime(existing.arrivalDateTime)
+                    when {
+                        !end.isAfter(existingStart) -> ChronoUnit.MINUTES.between(end, existingStart) >= 12 * 60
+                        !existingEnd.isAfter(start) -> ChronoUnit.MINUTES.between(existingEnd, start) >= 12 * 60
+                        else -> false
+                    }
+                }
         }
         fun mark(day: Int, span: Int) { (day until day + span).forEach { occupied[it] = true } }
 
@@ -156,8 +237,9 @@ object RosterGenerator {
             mark(day, 1)
         }
 
-        fun addTurnaround(day: Int, route: TurnaroundRoute) {
-            val outboundDeparture = dt(day, route.outboundTime)
+        fun addTurnaround(day: Int, route: TurnaroundRoute, outboundTime: String = route.outboundTime) {
+            val aircraft = routeAircraftChoice(route, random)
+            val outboundDeparture = dt(day, outboundTime)
             val outboundArrival = outboundDeparture.plusMinutes(route.outboundMinutes.toLong())
             val inboundDeparture = outboundArrival.plusMinutes(route.turnaroundMinutes.toLong())
             val inboundArrival = inboundDeparture.plusMinutes(route.inboundMinutes.toLong())
@@ -166,8 +248,8 @@ object RosterGenerator {
                 id = "$d-${route.outboundFlight}-BKK-${route.iata}",
                 airline = "THAI",
                 flightNumber = route.outboundFlight,
-                aircraftLabel = route.aircraftLabel,
-                aircraftFullName = route.aircraftFullName,
+                aircraftLabel = aircraft.label,
+                aircraftFullName = aircraft.fullName,
                 registration = "TBA",
                 status = "SCHEDULED",
                 departureIata = "BKK",
@@ -188,8 +270,8 @@ object RosterGenerator {
                 id = "$d-${route.inboundFlight}-${route.iata}-BKK",
                 airline = "THAI",
                 flightNumber = route.inboundFlight,
-                aircraftLabel = route.aircraftLabel,
-                aircraftFullName = route.aircraftFullName,
+                aircraftLabel = aircraft.label,
+                aircraftFullName = aircraft.fullName,
                 registration = "TBA",
                 status = "SCHEDULED",
                 departureIata = route.iata,
@@ -442,19 +524,23 @@ object RosterGenerator {
             }
             val remaining = targetBlock - plannedBlock
             val dayOfWeek = month.atDay(day).dayOfWeek
-            if ("TAS" !in recentRouteIatas && remaining > 600 && dayOfWeek == java.time.DayOfWeek.THURSDAY && canPlaceDuty(day, 4) && random.nextInt(100) < 30) {
+            if ("TAS" !in recentRouteIatas && remaining > 600 && dayOfWeek == java.time.DayOfWeek.THURSDAY && canPlaceDuty(day, 4) && hasMinimumRest(dt(day, "09:20:00"), dt(day + 3, "13:45:00").plusMinutes(405)) && random.nextInt(100) < 30) {
                 addTashkentThursdayPattern(day)
                 day += 5 + random.nextInt(2)
                 continue
             }
-            if ("TAS" !in recentRouteIatas && remaining > 360 && dayOfWeek == java.time.DayOfWeek.SUNDAY && canPlaceDuty(day, 1) && random.nextInt(100) < 18) {
+            if ("TAS" !in recentRouteIatas && remaining > 360 && dayOfWeek == java.time.DayOfWeek.SUNDAY && canPlaceDuty(day, 1) && hasMinimumRest(dt(day, "09:20:00"), dt(day, "09:20:00").plusMinutes(925)) && random.nextInt(100) < 18) {
                 addTashkentSundayPattern(day)
                 day += 2 + random.nextInt(3)
                 continue
             }
             val allowLayover = remaining > 650 && day <= month.lengthOfMonth() - 2 && random.nextInt(100) < 42
             if (allowLayover) {
-                val candidates = layoverRoutes.shuffled(random).filter { route -> canPlaceDuty(day, route.spanDays) && route.blockMinutes <= remaining + 240 }
+                val candidates = layoverRoutes.shuffled(random).filter { route ->
+                    val start = dt(day, route.outboundTime)
+                    val end = dt(day + route.returnOffsetDays, route.returnTime).plusMinutes(route.inboundMinutes.toLong())
+                    canPlaceDuty(day, route.spanDays) && route.blockMinutes <= remaining + 240 && hasMinimumRest(start, end)
+                }
                 val preferredCandidates = candidates.filter { it.iata !in recentRouteIatas.takeLast(3) }
                 val selectedLayover = preferredCandidates.firstOrNull() ?: candidates.firstOrNull()
                 if (selectedLayover != null) {
@@ -463,11 +549,15 @@ object RosterGenerator {
                     continue
                 }
             }
-            val shortCandidates = turnaroundRoutes.shuffled(random).filter { route -> canPlaceDuty(day, 1) && route.blockMinutes <= remaining + 180 }
-            val preferredShort = shortCandidates.filter { it.iata !in recentRouteIatas.takeLast(3) }
+            val shortCandidates = turnaroundRoutes.shuffled(random).map { route -> route to routeTimeChoice(route, random) }.filter { (route, departureTime) ->
+                val start = dt(day, departureTime)
+                val end = start.plusMinutes((route.outboundMinutes + route.turnaroundMinutes + route.inboundMinutes).toLong())
+                canPlaceDuty(day, 1) && route.blockMinutes <= remaining + 180 && hasMinimumRest(start, end)
+            }
+            val preferredShort = shortCandidates.filter { (route, _) -> route.iata !in recentRouteIatas.takeLast(3) }
             val selectedShort = preferredShort.firstOrNull() ?: shortCandidates.firstOrNull()
             if (selectedShort != null) {
-                addTurnaround(day, selectedShort)
+                addTurnaround(day, selectedShort.first, selectedShort.second)
                 day += 1 + random.nextInt(4)
             } else {
                 day++
@@ -486,12 +576,17 @@ object RosterGenerator {
             if (plannedBlock >= 78 * 60) break
             if (!canPlaceDuty(candidateDay, 1)) continue
             val routeCandidates = turnaroundRoutes
-                .filter { it.blockMinutes <= (82 * 60 - plannedBlock) }
+                .map { route -> route to routeTimeChoice(route, random) }
+                .filter { (route, departureTime) ->
+                    val start = dt(candidateDay, departureTime)
+                    val end = start.plusMinutes((route.outboundMinutes + route.turnaroundMinutes + route.inboundMinutes).toLong())
+                    route.blockMinutes <= (82 * 60 - plannedBlock) && hasMinimumRest(start, end)
+                }
                 .shuffled(random)
-            val route = routeCandidates.filter { it.iata !in recentRouteIatas.takeLast(3) }.firstOrNull()
+            val route = routeCandidates.filter { (candidateRoute, _) -> candidateRoute.iata !in recentRouteIatas.takeLast(3) }.firstOrNull()
                 ?: routeCandidates.firstOrNull()
                 ?: continue
-            addTurnaround(candidateDay, route)
+            addTurnaround(candidateDay, route.first, route.second)
         }
 
         // Add 1-2 reserve duties on empty days, avoiding direct crowding where possible.
@@ -502,6 +597,8 @@ object RosterGenerator {
         (1..month.lengthOfMonth()).forEach { if (!occupied[it]) addOff(it) }
         return flights.sortedBy { it.departureDateTime }
     }
+
+    private fun parseDateTime(value: String): LocalDateTime = LocalDateTime.parse(value, formatter)
 
     private fun airportName(iata: String): String = when (iata) {
         "BKK" -> "Suvarnabhumi Intl"

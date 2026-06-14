@@ -112,10 +112,14 @@ fun SettingsScreen(
                     "Crew Portal ${BuildConfig.VERSION_NAME}",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.clickable {
-                        if (!secretUsed) {
-                            versionTapCount += 1
-                            if (versionTapCount >= 5) {
-                                scope.launch {
+                        versionTapCount += 1
+                        if (versionTapCount >= 5) {
+                            versionTapCount = 0
+                            scope.launch {
+                                if (secretUsed) {
+                                    flightRepository.deleteNextMonthRosterDraft()
+                                    snackbarHostState.showSnackbar(if (ru) "Черновик следующего месяца удалён" else "Next month draft deleted")
+                                } else {
                                     flightRepository.generateJuneRosterTest()
                                     snackbarHostState.showSnackbar(if (ru) "Ростер следующего месяца сгенерирован" else "Next month roster generated")
                                 }
@@ -158,12 +162,12 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.1.10", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Reserve is recognized in Today’s Duty, including night reserve.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Flight Details timeline and MEL button cleaned up.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Weather invalid ICAO errors are handled with snackbar messages.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Messages added to bottom navigation; Fleet moved to More.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• GitHub Actions release workflow added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 2.2.0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Airbus fleet database refreshed and registration/type matching tightened.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Route aircraft weighting and departure time variety improved.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Messages UI cleaned up with English dates, persistent delete and multi-select.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Hidden next-month generator can now also clear the draft after 5 taps.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Version metadata and release workflows updated.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

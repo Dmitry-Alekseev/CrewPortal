@@ -1,21 +1,21 @@
 {
-  "latestVersion": "2.1.10",
-  "versionCode": 2110,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.1.10/CrewPortal-2.1.10.apk",
+  "latestVersion": "2.2.0",
+  "versionCode": 2200,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.2.0/CrewPortal-2.2.0.apk",
   "changelog": [
-    "Reserve duties are now recognized in Today’s Duty, including variable day/night standby windows",
-    "Flight Details timeline reordered, Roster Published removed, Open MEL restyled, Pre-flight Checklist removed",
-    "Weather invalid ICAO handling now shows a short user-friendly message instead of raw API errors",
-    "Bottom navigation now uses Messages; Fleet moved to More and Alerts removed from More",
-    "Monthly Flight Time now shows Selected 80h/90h instead of the fixed 90h limit",
-    "Added GitHub Actions release workflow to build and publish APK releases automatically"
+    "Airbus fleet database updated for A320, A321neo, A330-300 and A350-900",
+    "Aircraft registration assignment now stays inside the correct aircraft family",
+    "Route aircraft weighting added for Phuket, Thai domestic routes, Kuala Lumpur, Singapore, India and long-haul flights",
+    "Turnaround departure times are more varied while preserving at least 12h rest between separate duties",
+    "Messages UI updated with corporate buttons, English dates, multi-select deletion and persistent deleted state",
+    "Hidden 5-tap next-month test flow can now generate and clear the next-month draft"
   ],
   "changelogRu": [
-    "Reserve теперь отображается в Today’s Duty, включая дневные и ночные standby-окна",
-    "В Flight Details исправлен timeline, убран Roster Published, Open MEL приведён к общему стилю, Pre-flight Checklist удалён",
-    "При неверном ICAO в Weather показывается короткое понятное сообщение вместо сырой ошибки API",
-    "В нижней навигации теперь Messages; Fleet перенесён в More, Alerts убран из More",
-    "Monthly Flight Time показывает Selected 80h/90h вместо постоянного Limit 90h",
-    "Добавлен GitHub Actions workflow для автоматической сборки и публикации APK в Releases"
+    "Обновлена база Airbus: A320, A321neo, A330-300 и A350-900",
+    "Назначение регистрации теперь жёстко остаётся внутри правильного типа ВС",
+    "Добавлены веса типов ВС по маршрутам: Phuket, внутренние рейсы, Kuala Lumpur, Singapore, India и long-haul",
+    "У turnaround duty стало больше вариантов времени вылета с сохранением минимум 12h отдыха между отдельными duty",
+    "Messages обновлены: общий стиль кнопок, английские даты, multi-select удаление и сохранение удалённого состояния",
+    "Скрытый 5-tap тест следующего месяца теперь умеет генерировать и очищать draft"
   ]
 }

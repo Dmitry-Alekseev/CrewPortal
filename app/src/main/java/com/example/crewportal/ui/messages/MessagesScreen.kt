@@ -24,13 +24,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.data.repository.PreferencesRepository
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+import kotlinx.coroutines.launch
 
 private data class CompanyMessageUi(
     val id: String,
@@ -40,14 +44,20 @@ private data class CompanyMessageUi(
     val date: LocalDateTime
 )
 
+private val CorporateBlue = Color(0xFF1F3A5F)
+private val CorporateAccent = Color(0xFF2F5F88)
+private val DeleteRed = Color(0xFF8B2F2F)
+
 @Composable
 fun MessagesScreen(preferencesRepository: PreferencesRepository, ru: Boolean) {
+    val scope = rememberCoroutineScope()
     val enhancedTarget by preferencesRepository.enhancedRosterTarget.collectAsState(initial = false)
+    val readIds by preferencesRepository.readCompanyMessageIds.collectAsState(initial = emptySet())
+    val deletedIds by preferencesRepository.deletedCompanyMessageIds.collectAsState(initial = emptySet())
     var showRead by remember { mutableStateOf(false) }
-    val readMessages = remember { mutableStateListOf<CompanyMessageUi>() }
     val selectedForDelete = remember { mutableStateListOf<String>() }
 
-    val unread = buildList {
+    val allMessages = buildList {
         if (enhancedTarget) {
             add(
                 CompanyMessageUi(
@@ -68,7 +78,19 @@ fun MessagesScreen(preferencesRepository: PreferencesRepository, ru: Boolean) {
                 date = LocalDateTime.now().minusDays(1)
             )
         )
-    }.filterNot { unreadMessage -> readMessages.any { it.id == unreadMessage.id } }
+        add(
+            CompanyMessageUi(
+                id = "payslip-ready-sample",
+                title = if (ru) "Payslip будет приходить сюда" else "Payslip notices will appear here",
+                body = if (ru) "Когда зарплатный лист будет готов после закрытия месяца, сообщение появится во входящих." else "When a payslip is ready after monthly close, it will appear in Inbox.",
+                category = "Payroll",
+                date = LocalDateTime.now().minusDays(2).minusHours(4)
+            )
+        )
+    }.filterNot { it.id in deletedIds }
+
+    val unread = allMessages.filterNot { it.id in readIds }
+    val read = allMessages.filter { it.id in readIds }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -81,41 +103,44 @@ fun MessagesScreen(preferencesRepository: PreferencesRepository, ru: Boolean) {
         )
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            Button(
-                onClick = { showRead = false; selectedForDelete.clear() },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (!showRead) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = if (!showRead) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                modifier = Modifier.weight(1f)
-            ) { Text(if (ru) "Входящие" else "Inbox") }
-            Button(
-                onClick = { showRead = true; selectedForDelete.clear() },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (showRead) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = if (showRead) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                modifier = Modifier.weight(1f)
-            ) { Text(if (ru) "Прочитанные" else "Read") }
+            SegmentedMessageButton(
+                text = if (ru) "Входящие" else "Inbox",
+                selected = !showRead,
+                modifier = Modifier.weight(1f),
+                onClick = { showRead = false; selectedForDelete.clear() }
+            )
+            SegmentedMessageButton(
+                text = if (ru) "Прочитанные" else "Read",
+                selected = showRead,
+                modifier = Modifier.weight(1f),
+                onClick = { showRead = true; selectedForDelete.clear() }
+            )
         }
 
         if (showRead) {
             if (selectedForDelete.isNotEmpty()) {
-                OutlinedButton(
+                Button(
                     onClick = {
-                        readMessages.removeAll { it.id in selectedForDelete }
+                        val ids = selectedForDelete.toList()
                         selectedForDelete.clear()
+                        scope.launch { preferencesRepository.deleteCompanyMessages(ids) }
                     },
+                    colors = ButtonDefaults.buttonColors(containerColor = DeleteRed, contentColor = Color.White),
                     modifier = Modifier.fillMaxWidth()
-                ) { Text(if (ru) "Удалить выбранные" else "Delete selected") }
+                ) { Text(if (ru) "Удалить выбранные (${selectedForDelete.size})" else "Delete selected (${selectedForDelete.size})") }
             }
-            if (readMessages.isEmpty()) {
+            if (read.isEmpty()) {
                 EmptyMessage(if (ru) "Прочитанных сообщений нет" else "No read messages")
             } else {
-                readMessages.sortedByDescending { it.date }.forEach { message ->
-                    ReadMessageCard(message, selectedForDelete.contains(message.id)) {
-                        if (selectedForDelete.contains(message.id)) selectedForDelete.remove(message.id) else selectedForDelete.add(message.id)
-                    }
+                read.sortedByDescending { it.date }.forEach { message ->
+                    ReadMessageCard(
+                        message = message,
+                        selected = selectedForDelete.contains(message.id),
+                        selectionMode = selectedForDelete.isNotEmpty(),
+                        onToggleSelection = {
+                            if (selectedForDelete.contains(message.id)) selectedForDelete.remove(message.id) else selectedForDelete.add(message.id)
+                        }
+                    )
                 }
             }
         } else {
@@ -123,11 +148,26 @@ fun MessagesScreen(preferencesRepository: PreferencesRepository, ru: Boolean) {
                 EmptyMessage(if (ru) "Новых важных сообщений нет" else "No important new messages")
             } else {
                 unread.sortedByDescending { it.date }.forEach { message ->
-                    UnreadMessageCard(message, ru) { readMessages.add(0, message.copy(date = LocalDateTime.now())) }
+                    UnreadMessageCard(message, ru) {
+                        scope.launch { preferencesRepository.markCompanyMessageRead(message.id) }
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun SegmentedMessageButton(text: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (selected) CorporateBlue else MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+        ),
+        shape = RoundedCornerShape(14.dp),
+        modifier = modifier
+    ) { Text(text) }
 }
 
 @Composable
@@ -141,7 +181,11 @@ private fun EmptyMessage(text: String) {
 private fun UnreadMessageCard(message: CompanyMessageUi, ru: Boolean, onAcknowledge: () -> Unit) {
     MessageCardBase(message = message) {
         Spacer(Modifier.height(8.dp))
-        Button(onClick = onAcknowledge, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = onAcknowledge,
+            colors = ButtonDefaults.buttonColors(containerColor = CorporateAccent, contentColor = Color.White),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(if (ru) "Ознакомился" else "Acknowledge")
         }
     }
@@ -149,9 +193,12 @@ private fun UnreadMessageCard(message: CompanyMessageUi, ru: Boolean, onAcknowle
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ReadMessageCard(message: CompanyMessageUi, selected: Boolean, onLongPress: () -> Unit) {
+private fun ReadMessageCard(message: CompanyMessageUi, selected: Boolean, selectionMode: Boolean, onToggleSelection: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().combinedClickable(onClick = {}, onLongClick = onLongPress),
+        modifier = Modifier.fillMaxWidth().combinedClickable(
+            onClick = { if (selectionMode) onToggleSelection() },
+            onLongClick = onToggleSelection
+        ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
     ) {
@@ -187,8 +234,12 @@ private fun MessageHeader(message: CompanyMessageUi, selectedPrefix: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Column(Modifier.weight(1f)) {
             Text(selectedPrefix + message.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(message.category, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Text(message.category, style = MaterialTheme.typography.labelMedium, color = CorporateAccent)
         }
-        Text(message.date.format(DateTimeFormatter.ofPattern("dd MMM HH:mm")).uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            message.date.format(DateTimeFormatter.ofPattern("dd MMM • HH:mm", Locale.ENGLISH)).uppercase(Locale.ENGLISH),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

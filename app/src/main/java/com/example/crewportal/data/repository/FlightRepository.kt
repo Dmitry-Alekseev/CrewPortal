@@ -282,6 +282,26 @@ class FlightRepository(
         )
     }
 
+
+    suspend fun deleteNextMonthRosterDraft() {
+        val targetMonth = YearMonth.now().plusMonths(1)
+        val prefix = "%04d-%02d".format(targetMonth.year, targetMonth.monthValue)
+        val current = flightDao.getAllOnce()
+        val preserved = current.filterNot { it.departureDateTime.startsWith(prefix) }
+        flightDao.clearAll()
+        flightDao.insertAll(preserved)
+        RosterNotificationScheduler.scheduleRoster(context, preserved)
+        preferencesRepository.resetNextMonthRosterDecision()
+        preferencesRepository.setNextMonthRosterPrepared(false)
+        preferencesRepository.setSecretRosterGeneratorUsed(false)
+        NotificationHelper.show(
+            context,
+            "Next roster draft cleared",
+            "${targetMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${targetMonth.year} draft roster was removed. Current active roster was not changed.",
+            2_100_500 + targetMonth.monthValue
+        )
+    }
+
     suspend fun simulateRosterChange() {
         val next = flightDao.getAllOnce().firstOrNull { it.dutyType == "FLIGHT" && !it.isCompleted } ?: return
         NotificationHelper.show(
