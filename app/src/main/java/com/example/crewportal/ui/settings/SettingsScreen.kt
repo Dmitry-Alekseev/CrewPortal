@@ -186,12 +186,12 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.2.1", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Gate/stand timing now uses airport-local availability consistently.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Roster generator now accounts for simulator, medical, SEP and line check validity items.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Augmented crew is limited to flights longer than 10 hours.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Messages Inbox scrolling fixed.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• METAR and Settings buttons cleaned up; Update Center moved into Settings only.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 2.2.2", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Current month stays active while next-month draft is reviewed.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Roster and Calendar now use explicit Show next month preview controls.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Generated roster drafts now create a company Messages item.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Test generation uses a fresh random seed for each draft.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Version metadata updated to 2.2.2.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

@@ -143,7 +143,8 @@ object RosterGenerator {
     )
 
     fun generateForMonth(month: YearMonth): List<FlightEntity> {
-        val random = Random((month.year * 100 + month.monthValue).toLong() * 7919L)
+        val seed = System.currentTimeMillis() + System.nanoTime() + (month.year * 100L + month.monthValue) * 7919L
+        val random = Random(seed)
         val flights = mutableListOf<FlightEntity>()
         val occupied = BooleanArray(month.lengthOfMonth() + 1)
         val recentRouteIatas = mutableListOf<String>()

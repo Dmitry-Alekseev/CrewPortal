@@ -1,5 +1,12 @@
 # Crew Portal Changelog
 
+## 2.2.2
+- Fixed next-month draft state: selecting 80h/90h no longer switches the active roster away from the current month.
+- Added explicit next-month preview controls in Roster and Calendar when a draft exists.
+- Added company Messages item when a generated roster is ready for review.
+- Updated roster generation seed so test-generated drafts are fresh/random rather than near-identical copies.
+- Bumped app metadata, update metadata, workflows and APK naming to CrewPortal-2.2.2.apk.
+
 ## 2.2.1
 - Fixed gate/stand availability timing by using airport-local time consistently between notification logic and in-app display.
 - Added qualification-aware roster planning for Profile validity items: simulator recurrent, medical commission, SEP Land/Water and line check.

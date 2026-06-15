@@ -52,6 +52,8 @@ private val DeleteRed = Color(0xFF8B2F2F)
 @Composable
 fun MessagesScreen(preferencesRepository: PreferencesRepository, ru: Boolean) {
     val scope = rememberCoroutineScope()
+    val nextPrepared by preferencesRepository.nextMonthRosterPrepared.collectAsState(initial = false)
+    val nextReviewed by preferencesRepository.nextMonthRosterReviewed.collectAsState(initial = false)
     val enhancedTarget by preferencesRepository.enhancedRosterTarget.collectAsState(initial = false)
     val readIds by preferencesRepository.readCompanyMessageIds.collectAsState(initial = emptySet())
     val deletedIds by preferencesRepository.deletedCompanyMessageIds.collectAsState(initial = emptySet())
@@ -59,6 +61,21 @@ fun MessagesScreen(preferencesRepository: PreferencesRepository, ru: Boolean) {
     val selectedForDelete = remember { mutableStateListOf<String>() }
 
     val allMessages = buildList {
+        if (nextPrepared) {
+            add(
+                CompanyMessageUi(
+                    id = "next-roster-ready",
+                    title = if (ru) "Новый ростер готов" else "New roster available",
+                    body = if (ru) {
+                        if (nextReviewed) "Следующий месяц уже подтверждён. Он доступен как preview, текущий ростер остаётся активным." else "Расписание на следующий месяц готово. Откройте Calendar или Roster, проверьте график и подтвердите ознакомление."
+                    } else {
+                        if (nextReviewed) "The next month roster has been reviewed. It remains available as preview while the current roster stays active." else "Your next month roster is ready. Open Calendar or Roster, review the draft and acknowledge it."
+                    },
+                    category = if (ru) "Изменение расписания" else "Roster change",
+                    date = LocalDateTime.now().minusMinutes(20)
+                )
+            )
+        }
         if (enhancedTarget) {
             add(
                 CompanyMessageUi(

@@ -64,11 +64,8 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
 
     val nextMonth = currentMonth.plusMonths(1)
     val nextMonthHasRoster = duties.any { YearMonth.from(parseLocalDateTime(it.departureDateTime).toLocalDate()) == nextMonth }
-    val targetYearMonth = when {
-        nextPrepared && !nextReviewed && viewGeneratedMonth -> nextMonth
-        nextPrepared && nextReviewed && nextMonthHasRoster -> nextMonth
-        else -> currentMonth
-    }
+    val canPreviewNextMonth = nextPrepared && nextMonthHasRoster
+    val targetYearMonth = if (canPreviewNextMonth && viewGeneratedMonth) nextMonth else currentMonth
     val filtered = duties.filter {
         val date = parseLocalDateTime(it.departureDateTime).toLocalDate()
         YearMonth.from(date) == targetYearMonth
@@ -116,7 +113,7 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
                 onMonth = { monthGridView = true },
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
             )
-            if (nextPrepared && !nextReviewed && !viewGeneratedMonth) {
+            if (canPreviewNextMonth && !viewGeneratedMonth) {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
@@ -128,28 +125,33 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            if (ru) "Откройте календарь следующего месяца, проверьте график и подтвердите ознакомление." else "Open the next month calendar, review the roster and confirm it.",
+                            if (nextReviewed) {
+                                if (ru) "Следующий месяц доступен для просмотра. Текущий ростер остаётся активным." else "The next month is available as a preview. The current roster remains active."
+                            } else {
+                                if (ru) "Откройте календарь следующего месяца, проверьте график и подтвердите ознакомление." else "Open the next month calendar, review the roster and confirm it."
+                            },
                             color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                         Button(onClick = { viewGeneratedMonth = true }, modifier = Modifier.fillMaxWidth()) {
-                            Text(if (ru) "Открыть расписание" else "Open roster")
+                            Text(if (ru) "Показать следующий месяц" else "Show next month")
                         }
                     }
                 }
-            } else if (nextPrepared && !nextReviewed && viewGeneratedMonth) {
-                Text(
-                    if (ru) "Новый ростер открыт для ознакомления" else "New roster is open for review",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 10.dp)
-                )
-            } else if (nextPrepared && nextReviewed && targetYearMonth == nextMonth) {
-                Text(
-                    if (ru) "Ростер подтверждён" else "Roster reviewed and confirmed",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 10.dp)
-                )
+            } else if (canPreviewNextMonth && viewGeneratedMonth) {
+                Column(modifier = Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        if (nextReviewed) {
+                            if (ru) "Следующий месяц открыт как preview" else "Next month preview"
+                        } else {
+                            if (ru) "Новый ростер открыт для ознакомления" else "New roster is open for review"
+                        },
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    OutlinedButton(onClick = { viewGeneratedMonth = false }, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (ru) "Вернуться к текущему месяцу" else "Back to current month")
+                    }
+                }
             }
         }
         if (monthGridView) {
@@ -157,7 +159,7 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
         } else {
             items(allDates.toList()) { date -> CalendarDayCard(date, grouped[date].orEmpty(), leaveGrouped[date].orEmpty(), ru) }
         }
-        if (nextPrepared && !nextReviewed && viewGeneratedMonth) {
+        if (canPreviewNextMonth && !nextReviewed && viewGeneratedMonth) {
             item {
                 Button(onClick = { showTargetDialog = true }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (ru) "Я ознакомился с графиком" else "I have reviewed this roster")

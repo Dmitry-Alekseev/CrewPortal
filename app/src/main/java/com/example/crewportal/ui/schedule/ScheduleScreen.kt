@@ -114,7 +114,6 @@ fun ScheduleScreen(
     val darkTheme by preferencesRepository.darkTheme.collectAsState(initial = false)
     val language by preferencesRepository.appLanguage.collectAsState(initial = "en")
     val nextPrepared by preferencesRepository.nextMonthRosterPrepared.collectAsState(initial = false)
-    val nextReviewed by preferencesRepository.nextMonthRosterReviewed.collectAsState(initial = false)
     val enhancedTarget by preferencesRepository.enhancedRosterTarget.collectAsState(initial = false)
     val ru = language == "ru"
     val scope = rememberCoroutineScope()
@@ -122,8 +121,9 @@ fun ScheduleScreen(
     val now = nowAtAirport("BKK")
     val currentMonth = YearMonth.from(now)
     val nextMonth = currentMonth.plusMonths(1)
-    val nextMonthHasRoster = flights.any { YearMonth.from(parseLocalDateTime(it.departureDateTime).toLocalDate()) == nextMonth }
-    val targetMonth = if (nextPrepared && nextReviewed && nextMonthHasRoster) nextMonth else currentMonth
+    val nextMonthHasRoster = nextPrepared && flights.any { YearMonth.from(parseLocalDateTime(it.departureDateTime).toLocalDate()) == nextMonth }
+    var showNextMonthPreview by remember { mutableStateOf(false) }
+    val targetMonth = if (showNextMonthPreview && nextMonthHasRoster) nextMonth else currentMonth
     var isRefreshing by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights(showNotifications = false) }
@@ -165,6 +165,23 @@ fun ScheduleScreen(
             }
             Spacer(Modifier.height(8.dp))
             MonthlyProgressCard(flights = flights, month = targetMonth, selected90 = enhancedTarget, ru = ru)
+            if (nextMonthHasRoster) {
+                Spacer(Modifier.height(8.dp))
+                if (showNextMonthPreview) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { showNextMonthPreview = false }, modifier = Modifier.weight(1f)) {
+                            Text(if (ru) "Показать текущий месяц" else "Show current month")
+                        }
+                        OutlinedButton(onClick = { showNextMonthPreview = true }, enabled = false, modifier = Modifier.weight(1f)) {
+                            Text(if (ru) "Следующий месяц" else "Next month")
+                        }
+                    }
+                } else {
+                    OutlinedButton(onClick = { showNextMonthPreview = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (ru) "Показать следующий месяц" else "Show next month")
+                    }
+                }
+            }
             Spacer(Modifier.height(8.dp))
             TodayDutyCard(flights = flights, onDutyClick = onDutyClick, ru = ru)
         }
