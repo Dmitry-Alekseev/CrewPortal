@@ -73,22 +73,24 @@ object MelDatabase {
     }
 
     private fun itemCountFor(family: String, roll: Int): Int = when (family) {
+        // Keep some aircraft clean, but avoid long runs of empty MEL across different registrations.
         "A350" -> when {
-            roll < 78 -> 0
-            roll < 96 -> 1
-            else -> 2
+            roll < 42 -> 0
+            roll < 82 -> 1
+            roll < 96 -> 2
+            else -> 3
         }
         "A330" -> when {
-            roll < 42 -> 0
-            roll < 73 -> 1
-            roll < 91 -> 2
+            roll < 30 -> 0
+            roll < 68 -> 1
+            roll < 90 -> 2
             roll < 98 -> 3
             else -> 4
         }
         else -> when {
-            roll < 52 -> 0
-            roll < 82 -> 1
-            roll < 96 -> 2
+            roll < 34 -> 0
+            roll < 72 -> 1
+            roll < 94 -> 2
             else -> 3
         }
     }

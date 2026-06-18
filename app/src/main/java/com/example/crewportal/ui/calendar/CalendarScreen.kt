@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -86,13 +87,13 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
             text = { Text(if (ru) "Выберите плановую норму для следующего месяца." else "Choose monthly target for the generated roster.") },
             confirmButton = {
                 Button(onClick = {
-                    scope.launch { preferencesRepository.setNextMonthRosterDecision(reviewed = true, enhancedTarget = false) }
+                    scope.launch { flightRepository.setNextMonthRosterDecision(reviewed = true, enhancedTarget = false) }
                     showTargetDialog = false
                 }) { Text(if (ru) "80 часов" else "Standard 80h") }
             },
             dismissButton = {
                 OutlinedButton(onClick = {
-                    scope.launch { preferencesRepository.setNextMonthRosterDecision(reviewed = true, enhancedTarget = true) }
+                    scope.launch { flightRepository.setNextMonthRosterDecision(reviewed = true, enhancedTarget = true) }
                     showTargetDialog = false
                 }) { Text(if (ru) "90 часов" else "Enhanced 90h") }
             }
@@ -114,28 +115,9 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
             )
             if (canPreviewNextMonth && !viewGeneratedMonth) {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                ) {
-                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            if (ru) "Расписание на ${displayMonth(nextMonth.atDay(1))} готово" else "${displayMonth(nextMonth.atDay(1))} roster is ready",
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            if (nextReviewed) {
-                                if (ru) "Следующий месяц доступен для просмотра. Текущий ростер остаётся активным." else "The next month is available as a preview. The current roster remains active."
-                            } else {
-                                if (ru) "Откройте календарь следующего месяца, проверьте график и подтвердите ознакомление." else "Open the next month calendar, review the roster and confirm it."
-                            },
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Button(onClick = { viewGeneratedMonth = true }, modifier = Modifier.fillMaxWidth()) {
-                            Text(if (ru) "Показать следующий месяц" else "Show next month")
-                        }
-                    }
+                Spacer(Modifier.height(10.dp))
+                CorporateButton(onClick = { viewGeneratedMonth = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (ru) "Показать следующий месяц" else "Show next month")
                 }
             } else if (canPreviewNextMonth && viewGeneratedMonth) {
                 Column(modifier = Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -148,7 +130,7 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
                     )
-                    OutlinedButton(onClick = { viewGeneratedMonth = false }, modifier = Modifier.fillMaxWidth()) {
+                    CorporateSecondaryButton(onClick = { viewGeneratedMonth = false }, modifier = Modifier.fillMaxWidth()) {
                         Text(if (ru) "Вернуться к текущему месяцу" else "Back to current month")
                     }
                 }
@@ -161,12 +143,33 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
         }
         if (canPreviewNextMonth && !nextReviewed && viewGeneratedMonth) {
             item {
-                Button(onClick = { showTargetDialog = true }, modifier = Modifier.fillMaxWidth()) {
+                CorporateButton(onClick = { showTargetDialog = true }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (ru) "Я ознакомился с графиком" else "I have reviewed this roster")
                 }
             }
         }
     }
+}
+
+@Composable
+private fun CorporateButton(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F3A5F), contentColor = Color.White),
+        shape = RoundedCornerShape(14.dp),
+        modifier = modifier,
+        content = content
+    )
+}
+
+@Composable
+private fun CorporateSecondaryButton(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        modifier = modifier,
+        content = content
+    )
 }
 
 @Composable

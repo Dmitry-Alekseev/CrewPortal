@@ -106,7 +106,7 @@ object RosterGenerator {
             "KUL" -> listOf("09:05:00" to 35, "13:20:00" to 25, "16:10:00" to 25, "20:15:00" to 15)
             "HKT" -> listOf("07:45:00" to 40, "11:30:00" to 25, "15:45:00" to 25, "19:10:00" to 10)
             "CNX", "KBV" -> listOf("07:55:00" to 45, "10:15:00" to 25, "14:35:00" to 20, "18:20:00" to 10)
-            "DEL", "MNL" -> listOf(route.outboundTime to 45, "12:30:00" to 20, "17:10:00" to 20, "21:30:00" to 15)
+            "DEL", "MNL", "DPS" -> listOf(route.outboundTime to 45, "12:30:00" to 20, "17:10:00" to 20, "21:30:00" to 15)
             else -> listOf(route.outboundTime to 55, "10:40:00" to 20, "14:20:00" to 15, "18:30:00" to 10)
         }
         val total = options.sumOf { it.second }
@@ -129,7 +129,8 @@ object RosterGenerator {
         TurnaroundRoute("REP", "VDSR", "Siem Reap", "Siem Reap Angkor Intl", "TG2588", "TG2589", "09:35:00", 70, 80, 75, "A320", "Airbus A320-214"),
         TurnaroundRoute("DEL", "VIDP", "Delhi", "Indira Gandhi Intl", "TG331", "TG332", "08:20:00", 265, 75, 260, "A330", "Airbus A330-343"),
         TurnaroundRoute("DAC", "VGHS", "Dhaka", "Hazrat Shahjalal Intl", "TG321", "TG322", "10:40:00", 150, 85, 155, "A320", "Airbus A320-214"),
-        TurnaroundRoute("MNL", "RPLL", "Manila", "Ninoy Aquino Intl", "TG620", "TG621", "12:30:00", 200, 95, 205, "A330", "Airbus A330-343")
+        TurnaroundRoute("MNL", "RPLL", "Manila", "Ninoy Aquino Intl", "TG620", "TG621", "12:30:00", 200, 95, 205, "A330", "Airbus A330-343"),
+        TurnaroundRoute("DPS", "WADD", "Denpasar", "Ngurah Rai Intl", "TG431", "TG432", "08:50:00", 260, 90, 265, "A330", "Airbus A330-343")
     )
 
     private val layoverRoutes = listOf(
@@ -138,8 +139,7 @@ object RosterGenerator {
         LayoverRoute("SVO", "UUEE", "Moscow", "Sheremetyevo Intl", "TG974", "TG975", "21:55:00", 605, 2, "16:20:00", 590, "A350", "Airbus A350-941", "Hyatt Regency Moscow Petrovsky Park", "Moscow layover"),
         LayoverRoute("LHR", "EGLL", "London", "Heathrow", "TG910", "TG911", "00:55:00", 760, 2, "12:30:00", 705, "A350", "Airbus A350-941", "Sofitel London Heathrow", "Long-haul augmented crew"),
         LayoverRoute("NRT", "RJAA", "Tokyo", "Narita Intl", "TG642", "TG643", "23:50:00", 360, 2, "11:45:00", 410, "A330", "Airbus A330-343", "Hilton Tokyo Narita Airport", "Tokyo layover"),
-        LayoverRoute("ICN", "RKSI", "Seoul", "Incheon Intl", "TG658", "TG659", "23:10:00", 325, 2, "10:50:00", 360, "A330", "Airbus A330-343", "Grand Hyatt Incheon", "Seoul layover"),
-        LayoverRoute("DPS", "WADD", "Denpasar", "Ngurah Rai Intl", "TG431", "TG432", "08:50:00", 260, 1, "16:10:00", 265, "A330", "Airbus A330-343", "Hyatt Regency Bali", "Denpasar layover")
+        LayoverRoute("ICN", "RKSI", "Seoul", "Incheon Intl", "TG658", "TG659", "23:10:00", 325, 2, "10:50:00", 360, "A330", "Airbus A330-343", "Grand Hyatt Incheon", "Seoul layover")
     )
 
     fun generateForMonth(month: YearMonth): List<FlightEntity> {
@@ -381,8 +381,9 @@ object RosterGenerator {
                 dutyType = "FLIGHT",
                 dutyNote = route.note
             )
-            for (stayOffset in 1 until route.returnOffsetDays) {
+            for (stayOffset in 1..route.returnOffsetDays) {
                 val stayDay = day + stayOffset
+                val stayEnd = if (stayDay == returnDay) returnDeparture.minusMinutes(1).format(formatter) else dtString(stayDay, "23:59:00")
                 flights += FlightEntity(
                     id = "${date(stayDay)}-STAY-${route.iata}",
                     airline = "THAI",
@@ -400,7 +401,7 @@ object RosterGenerator {
                     arrivalCity = route.city,
                     arrivalAirport = route.hotel,
                     departureDateTime = dtString(stayDay, "00:00:00"),
-                    arrivalDateTime = dtString(stayDay, "23:59:00"),
+                    arrivalDateTime = stayEnd,
                     durationMinutes = 0,
                     dutyType = "STAY",
                     dutyNote = route.hotel

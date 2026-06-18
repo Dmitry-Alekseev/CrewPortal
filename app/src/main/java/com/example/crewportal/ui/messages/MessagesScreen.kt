@@ -31,7 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.data.repository.PreferencesRepository
+import com.example.crewportal.util.parseLocalDateTime
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -50,13 +52,14 @@ private val CorporateAccent = Color(0xFF2F5F88)
 private val DeleteRed = Color(0xFF8B2F2F)
 
 @Composable
-fun MessagesScreen(preferencesRepository: PreferencesRepository, ru: Boolean) {
+fun MessagesScreen(flightRepository: FlightRepository, preferencesRepository: PreferencesRepository, ru: Boolean) {
     val scope = rememberCoroutineScope()
     val nextPrepared by preferencesRepository.nextMonthRosterPrepared.collectAsState(initial = false)
     val nextReviewed by preferencesRepository.nextMonthRosterReviewed.collectAsState(initial = false)
     val enhancedTarget by preferencesRepository.enhancedRosterTarget.collectAsState(initial = false)
     val readIds by preferencesRepository.readCompanyMessageIds.collectAsState(initial = emptySet())
     val deletedIds by preferencesRepository.deletedCompanyMessageIds.collectAsState(initial = emptySet())
+    val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
     var showRead by remember { mutableStateOf(false) }
     val selectedForDelete = remember { mutableStateListOf<String>() }
 
@@ -87,24 +90,20 @@ fun MessagesScreen(preferencesRepository: PreferencesRepository, ru: Boolean) {
                 )
             )
         }
-        add(
-            CompanyMessageUi(
-                id = "validity-reminder-sample",
-                title = if (ru) "Проверка сроков квалификаций" else "Qualification validity check",
-                body = if (ru) "Messages будет использоваться для напоминаний о медкомиссии, тренажёре и проверках за 14 дней до окончания срока." else "Messages will be used for medical, simulator and check validity reminders 14 days before expiry.",
-                category = if (ru) "Сроки" else "Validity",
-                date = LocalDateTime.now().minusDays(1)
-            )
-        )
-        add(
-            CompanyMessageUi(
-                id = "payslip-ready-sample",
-                title = if (ru) "Payslip будет приходить сюда" else "Payslip notices will appear here",
-                body = if (ru) "Когда зарплатный лист будет готов после закрытия месяца, сообщение появится во входящих." else "When a payslip is ready after monthly close, it will appear in Inbox.",
-                category = "Payroll",
-                date = LocalDateTime.now().minusDays(2).minusHours(4)
-            )
-        )
+        flights
+            .filter { it.dutyNote.contains("Manual operational roster change") && it.departureIata == "BKK" }
+            .distinctBy { it.id }
+            .forEach { duty ->
+                add(
+                    CompanyMessageUi(
+                        id = "manual-change-${duty.id}",
+                        title = if (ru) "Оперативное изменение ростера" else "Operational roster change",
+                        body = if (ru) "${duty.flightNumber} BKK-${duty.arrivalIata} добавлен или изменён. Изменение уже отображается в Roster и Calendar." else "${duty.flightNumber} BKK-${duty.arrivalIata} has been added or changed. It is already visible in Roster and Calendar.",
+                        category = if (ru) "Изменение расписания" else "Roster change",
+                        date = parseLocalDateTime(duty.departureDateTime)
+                    )
+                )
+            }
     }.filterNot { it.id in deletedIds }
 
     val unread = allMessages.filterNot { it.id in readIds }
@@ -170,7 +169,12 @@ fun MessagesScreen(preferencesRepository: PreferencesRepository, ru: Boolean) {
             } else {
                 unread.sortedByDescending { it.date }.forEach { message ->
                     UnreadMessageCard(message, ru) {
-                        scope.launch { preferencesRepository.markCompanyMessageRead(message.id) }
+                        scope.launch {
+                            if (message.id == "90h-extra-duty-pending") {
+                                flightRepository.publishExtraDutyForSelectedTarget()
+                            }
+                            preferencesRepository.markCompanyMessageRead(message.id)
+                        }
                     }
                 }
             }
@@ -200,7 +204,7 @@ private fun EmptyMessage(text: String) {
 
 @Composable
 private fun UnreadMessageCard(message: CompanyMessageUi, ru: Boolean, onAcknowledge: () -> Unit) {
-    MessageCardBase(message = message) {
+    MessageCardBase(message = message, unread = true) {
         Spacer(Modifier.height(8.dp))
         Button(
             onClick = onAcknowledge,
@@ -228,11 +232,11 @@ private fun ReadMessageCard(message: CompanyMessageUi, selected: Boolean, select
 }
 
 @Composable
-private fun MessageCardBase(message: CompanyMessageUi, bottomContent: @Composable () -> Unit) {
+private fun MessageCardBase(message: CompanyMessageUi, unread: Boolean = false, bottomContent: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = if (unread) Color(0xFFEAF2F8) else MaterialTheme.colorScheme.surface)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             MessageHeader(message, selectedPrefix = "")

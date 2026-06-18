@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.YearMonth
 import org.json.JSONObject
 
@@ -301,6 +302,252 @@ class FlightRepository(
             "${targetMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${targetMonth.year} draft roster was removed. Current active roster was not changed.",
             2_100_500 + targetMonth.monthValue
         )
+    }
+
+
+
+    suspend fun setNextMonthRosterDecision(reviewed: Boolean, enhancedTarget: Boolean) {
+        preferencesRepository.setNextMonthRosterDecision(reviewed = reviewed, enhancedTarget = enhancedTarget)
+        if (enhancedTarget) {
+            NotificationHelper.show(
+                context,
+                "90h target selected",
+                "Additional duty will be published through Messages after final assignment.",
+                2_200_900
+            )
+        }
+    }
+
+    suspend fun publishExtraDutyForSelectedTarget(): Boolean {
+        val all = flightDao.getAllOnce()
+        val now = nowAtAirport("BKK")
+        val currentMonth = YearMonth.from(now.toLocalDate())
+        val nextMonth = currentMonth.plusMonths(1)
+        val nextPrefix = "%04d-%02d".format(nextMonth.year, nextMonth.monthValue)
+        val targetMonth = if (preferencesRepository.nextMonthRosterPrepared.first() && all.any { it.departureDateTime.startsWith(nextPrefix) }) nextMonth else currentMonth
+        val marker = "EXTRA-90H-${targetMonth.year}-${targetMonth.monthValue}"
+        if (all.any { it.id.contains(marker) }) return true
+
+        val earliestDay = if (targetMonth == currentMonth) now.toLocalDate().plusDays(2).dayOfMonth else 1
+        val candidate = (earliestDay..targetMonth.lengthOfMonth()).firstOrNull { day ->
+            val date = targetMonth.atDay(day)
+            val duties = all.filter { parseLocalDateTime(it.departureDateTime).toLocalDate() == date }
+            duties.isEmpty() || duties.all { it.dutyType in setOf("OFF", "RESERVE") }
+        } ?: return false
+
+        val date = targetMonth.atDay(candidate)
+        val removable = all.filter { parseLocalDateTime(it.departureDateTime).toLocalDate() == date && it.dutyType in setOf("OFF", "RESERVE") }.map { it.id }
+        if (removable.isNotEmpty()) flightDao.deleteByIds(removable)
+        val extra = buildManualDuty(
+            date = date,
+            reportTime = "10:00",
+            outboundFlight = "TG${700 + candidate}",
+            destinationIata = "SIN",
+            aircraftLabel = "A321neo",
+            registration = null,
+            pattern = "TURNAROUND",
+            returnFlight = "TG${701 + candidate}",
+            returnDate = date,
+            returnTime = null,
+            note = "90h additional duty • Operational roster change • $marker"
+        )
+        flightDao.insertAll(extra)
+        val updated = flightDao.getAllOnce()
+        RosterNotificationScheduler.scheduleRoster(context, updated)
+        NotificationHelper.show(
+            context,
+            "Additional duty published",
+            "A 90h target additional duty has been added to ${date.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${date.dayOfMonth}.",
+            2_200_910 + candidate
+        )
+        return true
+    }
+
+    suspend fun addOperationalRosterChange(
+        date: LocalDate,
+        reportTime: String,
+        outboundFlight: String,
+        destinationIata: String,
+        aircraftLabel: String,
+        registration: String?,
+        pattern: String,
+        returnFlight: String,
+        returnDate: LocalDate?,
+        returnTime: String?,
+        replaceExisting: Boolean
+    ): Boolean {
+        val normalizedPattern = pattern.uppercase()
+        val affectedDates = mutableSetOf(date)
+        if (normalizedPattern == "LAYOVER") {
+            val ret = returnDate ?: date.plusDays(1)
+            var d = date.plusDays(1)
+            while (!d.isAfter(ret)) {
+                affectedDates += d
+                d = d.plusDays(1)
+            }
+        }
+        val existing = flightDao.getAllOnce()
+        val removable = existing.filter { item ->
+            val itemDate = parseLocalDateTime(item.departureDateTime).toLocalDate()
+            itemDate in affectedDates && (replaceExisting || item.dutyType in setOf("OFF", "RESERVE", "STAY"))
+        }.map { it.id }
+        if (removable.isNotEmpty()) flightDao.deleteByIds(removable)
+        val created = buildManualDuty(
+            date = date,
+            reportTime = reportTime,
+            outboundFlight = outboundFlight.ifBlank { "TG999" },
+            destinationIata = destinationIata.uppercase(),
+            aircraftLabel = aircraftLabel,
+            registration = registration?.takeIf { it.isNotBlank() },
+            pattern = normalizedPattern,
+            returnFlight = returnFlight.ifBlank { "TG998" },
+            returnDate = returnDate ?: date.plusDays(if (normalizedPattern == "LAYOVER") 1L else 0L),
+            returnTime = returnTime?.takeIf { it.isNotBlank() },
+            note = "Manual operational roster change"
+        )
+        flightDao.insertAll(created)
+        val updated = flightDao.getAllOnce()
+        RosterNotificationScheduler.scheduleRoster(context, updated)
+        NotificationHelper.show(
+            context,
+            "Operational roster change",
+            "${outboundFlight.ifBlank { "TG999" }} BKK-${destinationIata.uppercase()} was added/changed and is now visible in Roster and Calendar.",
+            ("manual-${date}-${outboundFlight}-${destinationIata}").hashCode()
+        )
+        return true
+    }
+
+    private data class ManualRoute(
+        val iata: String,
+        val icao: String,
+        val city: String,
+        val airport: String,
+        val outboundMinutes: Int,
+        val inboundMinutes: Int,
+        val hotel: String
+    )
+
+    private fun manualRoute(iata: String): ManualRoute = when (iata.uppercase()) {
+        "HKT" -> ManualRoute("HKT", "VTSP", "Phuket", "Phuket Intl", 85, 90, "Thai Airways layover hotel Phuket")
+        "KBV" -> ManualRoute("KBV", "VTSG", "Krabi", "Krabi Intl", 80, 85, "Krabi crew hotel")
+        "SIN" -> ManualRoute("SIN", "WSSS", "Singapore", "Changi Intl", 150, 150, "Crowne Plaza Changi Airport")
+        "KUL" -> ManualRoute("KUL", "WMKK", "Kuala Lumpur", "KLIA", 145, 145, "Sama-Sama Hotel KLIA")
+        "DPS" -> ManualRoute("DPS", "WADD", "Denpasar", "Ngurah Rai Intl", 260, 265, "Hyatt Regency Bali")
+        "TAS" -> ManualRoute("TAS", "UTTT", "Tashkent", "Islam Karimov", 395, 405, "Hyatt Regency Tashkent")
+        "MNL" -> ManualRoute("MNL", "RPLL", "Manila", "Ninoy Aquino Intl", 200, 205, "Conrad Manila")
+        "DEL" -> ManualRoute("DEL", "VIDP", "Delhi", "Indira Gandhi Intl", 265, 260, "JW Marriott Aerocity")
+        else -> ManualRoute(iata.uppercase(), "", iata.uppercase(), "$iata Airport", 150, 150, "$iata crew hotel")
+    }
+
+    private fun aircraftFullName(label: String): String = when {
+        label.contains("A321", ignoreCase = true) -> "Airbus A321-251NX"
+        label.contains("A330", ignoreCase = true) -> "Airbus A330-343"
+        label.contains("A350", ignoreCase = true) -> "Airbus A350-941"
+        else -> "Airbus A320-214"
+    }
+
+    private fun buildManualDuty(
+        date: LocalDate,
+        reportTime: String,
+        outboundFlight: String,
+        destinationIata: String,
+        aircraftLabel: String,
+        registration: String?,
+        pattern: String,
+        returnFlight: String,
+        returnDate: LocalDate,
+        returnTime: String?,
+        note: String
+    ): List<FlightEntity> {
+        val route = manualRoute(destinationIata)
+        val report = LocalDateTime.of(date, LocalTime.parse(if (reportTime.length == 5) "$reportTime:00" else reportTime))
+        val outDeparture = report.plusMinutes(90)
+        val outArrival = outDeparture.plusMinutes(route.outboundMinutes.toLong())
+        val reg = registration ?: "TBA"
+        val full = aircraftFullName(aircraftLabel)
+        val outbound = FlightEntity(
+            id = "${date}-${outboundFlight}-BKK-${route.iata}-MANUAL",
+            airline = "THAI",
+            flightNumber = outboundFlight,
+            aircraftLabel = aircraftLabel,
+            aircraftFullName = full,
+            registration = reg,
+            status = "SCHEDULED",
+            departureIata = "BKK",
+            departureIcao = "VTBS",
+            departureCity = "Bangkok",
+            departureAirport = "Suvarnabhumi Intl",
+            arrivalIata = route.iata,
+            arrivalIcao = route.icao,
+            arrivalCity = route.city,
+            arrivalAirport = route.airport,
+            departureDateTime = outDeparture.toString(),
+            arrivalDateTime = outArrival.toString(),
+            durationMinutes = route.outboundMinutes,
+            dutyType = "FLIGHT",
+            dutyNote = note + if (pattern == "LAYOVER") " • Layover" else " • Turnaround"
+        )
+        val returnDeparture = if (pattern == "LAYOVER") {
+            val time = returnTime?.let { if (it.length == 5) "$it:00" else it } ?: "12:00:00"
+            LocalDateTime.of(returnDate, LocalTime.parse(time))
+        } else {
+            outArrival.plusMinutes(90)
+        }
+        val returnLeg = FlightEntity(
+            id = "${returnDate}-${returnFlight}-${route.iata}-BKK-MANUAL",
+            airline = "THAI",
+            flightNumber = returnFlight,
+            aircraftLabel = aircraftLabel,
+            aircraftFullName = full,
+            registration = reg,
+            status = "SCHEDULED",
+            departureIata = route.iata,
+            departureIcao = route.icao,
+            departureCity = route.city,
+            departureAirport = route.airport,
+            arrivalIata = "BKK",
+            arrivalIcao = "VTBS",
+            arrivalCity = "Bangkok",
+            arrivalAirport = "Suvarnabhumi Intl",
+            departureDateTime = returnDeparture.toString(),
+            arrivalDateTime = returnDeparture.plusMinutes(route.inboundMinutes.toLong()).toString(),
+            durationMinutes = route.inboundMinutes,
+            dutyType = "FLIGHT",
+            dutyNote = note + if (pattern == "LAYOVER") " • Return after layover" else " • Turnaround return"
+        )
+        if (pattern != "LAYOVER") return listOf(outbound, returnLeg)
+        val stayItems = buildList {
+            var d = date.plusDays(1)
+            while (!d.isAfter(returnDate)) {
+                val stayEnd = if (d == returnDate) returnDeparture.minusMinutes(1).toString() else d.atTime(23, 59).toString()
+                add(
+                    FlightEntity(
+                        id = "${d}-STAY-${route.iata}-MANUAL",
+                        airline = "THAI",
+                        flightNumber = "Stay in ${route.city}",
+                        aircraftLabel = "STAY",
+                        aircraftFullName = "Layover stay",
+                        registration = "—",
+                        status = "STAY",
+                        departureIata = route.iata,
+                        departureIcao = route.icao,
+                        departureCity = route.city,
+                        departureAirport = route.hotel,
+                        arrivalIata = route.iata,
+                        arrivalIcao = route.icao,
+                        arrivalCity = route.city,
+                        arrivalAirport = route.hotel,
+                        departureDateTime = d.atStartOfDay().toString(),
+                        arrivalDateTime = stayEnd,
+                        durationMinutes = 0,
+                        dutyType = "STAY",
+                        dutyNote = route.hotel
+                    )
+                )
+                d = d.plusDays(1)
+            }
+        }
+        return listOf(outbound) + stayItems + listOf(returnLeg)
     }
 
     suspend fun simulateRosterChange() {

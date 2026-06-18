@@ -29,6 +29,9 @@ interface FlightDao {
     @Query("DELETE FROM flights")
     suspend fun clearAll()
 
+    @Query("DELETE FROM flights WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>)
+
     @Query("UPDATE flights SET isRegistered = 1 WHERE id = :id")
     suspend fun markRegistered(id: String)
 

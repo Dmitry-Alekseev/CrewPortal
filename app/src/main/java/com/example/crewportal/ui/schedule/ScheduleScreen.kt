@@ -26,10 +26,12 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -37,6 +39,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -123,6 +126,8 @@ fun ScheduleScreen(
     val nextMonth = currentMonth.plusMonths(1)
     val nextMonthHasRoster = nextPrepared && flights.any { YearMonth.from(parseLocalDateTime(it.departureDateTime).toLocalDate()) == nextMonth }
     var showNextMonthPreview by remember { mutableStateOf(false) }
+    var hiddenOperationalTapCount by remember { mutableStateOf(0) }
+    var showOperationalChangeDialog by remember { mutableStateOf(false) }
     val targetMonth = if (showNextMonthPreview && nextMonthHasRoster) nextMonth else currentMonth
     var isRefreshing by remember { mutableStateOf(false) }
 
@@ -141,6 +146,34 @@ fun ScheduleScreen(
 
     val pullRefreshState = rememberPullRefreshState(refreshing = isRefreshing, onRefresh = refreshRoster)
 
+    if (showOperationalChangeDialog) {
+        OperationalRosterChangeDialog(
+            ru = ru,
+            onDismiss = { showOperationalChangeDialog = false },
+            onSubmit = { date, reportTime, outboundFlight, destination, aircraft, registration, pattern, returnFlight, returnDate, returnTime, replaceExisting ->
+                scope.launch {
+                    val ok = withContext(Dispatchers.IO) {
+                        flightRepository.addOperationalRosterChange(
+                            date = date,
+                            reportTime = reportTime,
+                            outboundFlight = outboundFlight,
+                            destinationIata = destination,
+                            aircraftLabel = aircraft,
+                            registration = registration,
+                            pattern = pattern,
+                            returnFlight = returnFlight,
+                            returnDate = returnDate,
+                            returnTime = returnTime,
+                            replaceExisting = replaceExisting
+                        )
+                    }
+                    showOperationalChangeDialog = false
+                    snackbarHostState.showSnackbar(if (ok) { if (ru) "Оперативное изменение внесено" else "Operational roster change added" } else { if (ru) "Не удалось внести изменение" else "Unable to add change" })
+                }
+            }
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -156,7 +189,13 @@ fun ScheduleScreen(
             SnackbarHost(hostState = snackbarHostState)
             Spacer(Modifier.height(12.dp))
             Text(if (ru) "Ростер" else "Roster", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            CompanySyncLine(ru = ru)
+            CompanySyncLine(ru = ru, onSecretTap = {
+                hiddenOperationalTapCount += 1
+                if (hiddenOperationalTapCount >= 5) {
+                    hiddenOperationalTapCount = 0
+                    showOperationalChangeDialog = true
+                }
+            })
             Spacer(Modifier.height(10.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -169,15 +208,20 @@ fun ScheduleScreen(
                 Spacer(Modifier.height(8.dp))
                 if (showNextMonthPreview) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { showNextMonthPreview = false }, modifier = Modifier.weight(1f)) {
+                        Button(
+                            onClick = { showNextMonthPreview = false },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F3A5F), contentColor = Color.White),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Text(if (ru) "Показать текущий месяц" else "Show current month")
                         }
-                        OutlinedButton(onClick = { showNextMonthPreview = true }, enabled = false, modifier = Modifier.weight(1f)) {
+                        OutlinedButton(onClick = { showNextMonthPreview = true }, enabled = false, shape = RoundedCornerShape(14.dp), modifier = Modifier.weight(1f)) {
                             Text(if (ru) "Следующий месяц" else "Next month")
                         }
                     }
                 } else {
-                    OutlinedButton(onClick = { showNextMonthPreview = true }, modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(onClick = { showNextMonthPreview = true }, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
                         Text(if (ru) "Показать следующий месяц" else "Show next month")
                     }
                 }
@@ -224,7 +268,7 @@ fun ScheduleScreen(
 }
 
 @Composable
-private fun CompanySyncLine(ru: Boolean) {
+private fun CompanySyncLine(ru: Boolean, onSecretTap: () -> Unit) {
     val transition = rememberInfiniteTransition(label = "syncPulse")
     val alpha by transition.animateFloat(
         initialValue = 0.55f,
@@ -236,7 +280,7 @@ private fun CompanySyncLine(ru: Boolean) {
         if (ru) "Синхронизировано с сетью компании" else "Company network synchronized",
         color = SuccessGreen,
         fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.alpha(alpha)
+        modifier = Modifier.alpha(alpha).clickable { onSecretTap() }
     )
 }
 
@@ -678,3 +722,113 @@ private fun shouldShowAirportAssignment(flight: FlightEntity): Boolean {
 }
 
 private fun formatDate(date: LocalDate): String = date.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)).uppercase(Locale.ENGLISH)
+
+@Composable
+private fun OperationalRosterChangeDialog(
+    ru: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (
+        date: LocalDate,
+        reportTime: String,
+        outboundFlight: String,
+        destination: String,
+        aircraft: String,
+        registration: String?,
+        pattern: String,
+        returnFlight: String,
+        returnDate: LocalDate?,
+        returnTime: String?,
+        replaceExisting: Boolean
+    ) -> Unit
+) {
+    var dateText by remember { mutableStateOf(LocalDate.now().plusDays(2).toString()) }
+    var reportTime by remember { mutableStateOf("10:00") }
+    var outboundFlight by remember { mutableStateOf("TG999") }
+    var destination by remember { mutableStateOf("DPS") }
+    var aircraft by remember { mutableStateOf("A321neo") }
+    var registration by remember { mutableStateOf("") }
+    var pattern by remember { mutableStateOf<String?>(null) }
+    var returnFlight by remember { mutableStateOf("TG998") }
+    var returnDateText by remember { mutableStateOf(LocalDate.now().plusDays(3).toString()) }
+    var returnTime by remember { mutableStateOf("12:00") }
+    var replaceExisting by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (ru) "Operational roster change" else "Operational roster change") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(if (ru) "1. Рейс туда" else "1. Outbound flight", fontWeight = FontWeight.Bold)
+                TextField(value = dateText, onValueChange = { dateText = it }, label = { Text("Date YYYY-MM-DD") }, modifier = Modifier.fillMaxWidth())
+                TextField(value = reportTime, onValueChange = { reportTime = it }, label = { Text("Report time HH:mm") }, modifier = Modifier.fillMaxWidth())
+                TextField(value = outboundFlight, onValueChange = { outboundFlight = it.uppercase(Locale.ENGLISH) }, label = { Text("Outbound flight") }, modifier = Modifier.fillMaxWidth())
+                TextField(value = destination, onValueChange = { destination = it.uppercase(Locale.ENGLISH).take(3) }, label = { Text("Destination IATA: DPS, SIN, KUL, TAS...") }, modifier = Modifier.fillMaxWidth())
+                TextField(value = aircraft, onValueChange = { aircraft = it }, label = { Text("Aircraft type: A320 / A321neo / A330 / A350") }, modifier = Modifier.fillMaxWidth())
+                TextField(value = registration, onValueChange = { registration = it.uppercase(Locale.ENGLISH) }, label = { Text("Registration optional, empty = assigned 24h prior") }, modifier = Modifier.fillMaxWidth())
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = replaceExisting, onCheckedChange = { replaceExisting = it })
+                    Text(if (ru) "Заменить существующие duty в эти даты" else "Replace existing duties on affected dates")
+                }
+                Text(if (ru) "2. Тип duty" else "2. Duty pattern", fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Button(
+                        onClick = { pattern = "TURNAROUND" },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (pattern == "TURNAROUND") Color(0xFF1F3A5F) else MaterialTheme.colorScheme.surfaceVariant, contentColor = if (pattern == "TURNAROUND") Color.White else MaterialTheme.colorScheme.onSurfaceVariant),
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Turnaround") }
+                    Button(
+                        onClick = { pattern = "LAYOVER" },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (pattern == "LAYOVER") Color(0xFF1F3A5F) else MaterialTheme.colorScheme.surfaceVariant, contentColor = if (pattern == "LAYOVER") Color.White else MaterialTheme.colorScheme.onSurfaceVariant),
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Layover") }
+                }
+                if (pattern != null) {
+                    Text(if (ru) "3. Рейс обратно" else "3. Return flight", fontWeight = FontWeight.Bold)
+                    TextField(value = returnFlight, onValueChange = { returnFlight = it.uppercase(Locale.ENGLISH) }, label = { Text("Return flight") }, modifier = Modifier.fillMaxWidth())
+                    if (pattern == "LAYOVER") {
+                        TextField(value = returnDateText, onValueChange = { returnDateText = it }, label = { Text("Return date YYYY-MM-DD") }, modifier = Modifier.fillMaxWidth())
+                        TextField(value = returnTime, onValueChange = { returnTime = it }, label = { Text("Return departure HH:mm") }, modifier = Modifier.fillMaxWidth())
+                        Text(if (ru) "Отель/STAY будет подобран автоматически по destination." else "Layover hotel/STAY will be selected automatically by destination.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        Text(if (ru) "Оборот будет рассчитан автоматически около 1–1.5h." else "Turnaround time will be calculated automatically around 1–1.5h.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error)
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    try {
+                        val parsedDate = LocalDate.parse(dateText)
+                        val selectedPattern = pattern ?: throw IllegalArgumentException("Select turnaround or layover")
+                        val parsedReturn = if (selectedPattern == "LAYOVER") LocalDate.parse(returnDateText) else parsedDate
+                        onSubmit(
+                            parsedDate,
+                            reportTime,
+                            outboundFlight,
+                            destination,
+                            aircraft,
+                            registration.takeIf { it.isNotBlank() },
+                            selectedPattern,
+                            returnFlight,
+                            parsedReturn,
+                            if (selectedPattern == "LAYOVER") returnTime else null,
+                            replaceExisting
+                        )
+                    } catch (_: Exception) {
+                        error = if (ru) "Проверьте дату, время и тип duty" else "Check date, time and duty pattern"
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F3A5F), contentColor = Color.White)
+            ) { Text(if (ru) "Отправить" else "Submit") }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text(if (ru) "Отмена" else "Cancel") }
+        }
+    )
+}

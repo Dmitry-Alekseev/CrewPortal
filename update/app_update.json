@@ -1,25 +1,23 @@
 {
-  "latestVersion": "2.2.2",
-  "versionCode": 2202,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.2.2/CrewPortal-2.2.2.apk",
+  "latestVersion": "2.2.3",
+  "versionCode": 2203,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.2.3/CrewPortal-2.2.3.apk",
   "changelog": [
-    "Current roster stays active when next-month draft is reviewed or 80/90h target is selected",
-    "Generated next-month roster now appears as a company Messages item for review",
-    "Next-month preview is available via explicit Show next month controls in Roster and Calendar",
-    "Roster generator uses a fresh random seed for draft testing instead of cloning the same monthly pattern",
-    "Augmented/double crew is limited to flights longer than 10 hours",
-    "Messages Inbox scrolling fixed",
-    "METAR Refresh and Settings buttons restyled, Update Center removed from More",
-    "Payroll now includes paid ground qualification days while simulator days count toward monthly norm"
+    "Added hidden Operational Roster Change form with ordered outbound → turnaround/layover flow",
+    "Manual roster changes now create consistent Roster/Calendar entries and company notification",
+    "90h extra-duty message can now publish an additional duty after acknowledgement",
+    "DPS/Bali can be generated as same-day turnaround when timing fits; layovers show STAY items clearly",
+    "MEL/Technical Remarks variability increased across aircraft",
+    "Messages icon now shows an unread red dot and unread cards are highlighted",
+    "Next-month preview buttons and acknowledgement controls cleaned up to corporate style"
   ],
   "changelogRu": [
-    "Текущий ростер остаётся активным после выбора 80/90h для draft следующего месяца",
-    "Сгенерированный следующий месяц теперь появляется в company Messages для ознакомления",
-    "Preview следующего месяца открывается только через явную кнопку Show next month в Roster и Calendar",
-    "Генератор использует свежий random seed для тестовой генерации, а не клонирует старый шаблон",
-    "Усиленный/double crew назначается только на рейсы дольше 10 часов",
-    "Исправлен скролл Inbox в Messages",
-    "Кнопки METAR Refresh и Settings приведены к общему стилю, Update Center убран из More",
-    "Payroll учитывает оплачиваемые ground qualification days, а тренажёр входит в месячную норму"
+    "Добавлена скрытая форма Operational Roster Change с порядком: рейс туда → turnaround/layover",
+    "Ручные изменения ростера согласованно появляются в Roster/Calendar и создают company notification",
+    "Сообщение по режиму 90h теперь может опубликовать дополнительную duty после ознакомления",
+    "DPS/Bali может генерироваться как same-day turnaround, если влезает; layover показывает STAY явно",
+    "Повышена вариативность MEL / Technical Remarks по разным бортам",
+    "На иконке Messages появляется красная точка для непрочитанных, карточки Inbox выделяются",
+    "Кнопки preview/acknowledge следующего месяца приведены к общему корпоративному стилю"
   ]
 }

@@ -1,6 +1,8 @@
 package com.example.crewportal.ui.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,7 +10,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AirplanemodeActive
@@ -39,6 +44,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -151,7 +157,7 @@ fun MainNavigation(
             }
         },
         bottomBar = {
-            BottomBar(navController = navController, items = bottomItems, ru = ru)
+            BottomBar(navController = navController, items = bottomItems, ru = ru, preferencesRepository = preferencesRepository, flightRepository = flightRepository)
         }
     ) { padding ->
         NavHost(
@@ -183,7 +189,7 @@ fun MainNavigation(
 
             composable(Screen.Calendar.route) { CalendarScreen(flightRepository, preferencesRepository, onDutyClick = { navController.navigate("details/$it") }) }
             composable(Screen.Weather.route) { WeatherScreen(weatherRepository, preferencesRepository) }
-            composable(Screen.Messages.route) { MessagesScreen(preferencesRepository, ru = ru) }
+            composable(Screen.Messages.route) { MessagesScreen(flightRepository = flightRepository, preferencesRepository = preferencesRepository, ru = ru) }
             composable(Screen.Fleet.route) { FleetScreen() }
             composable(Screen.Alerts.route) { NotificationsScreen(flightRepository) }
             composable(Screen.Profile.route) { ProfileScreen(preferencesRepository) }
@@ -233,11 +239,24 @@ private fun titleForRoute(route: String?, ru: Boolean): String {
 private fun BottomBar(
     navController: NavHostController,
     items: List<Screen>,
-    ru: Boolean
+    ru: Boolean,
+    preferencesRepository: PreferencesRepository,
+    flightRepository: FlightRepository
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val currentRoute = currentDestination?.route
+    val nextPrepared by preferencesRepository.nextMonthRosterPrepared.collectAsState(initial = false)
+    val enhancedTarget by preferencesRepository.enhancedRosterTarget.collectAsState(initial = false)
+    val readIds by preferencesRepository.readCompanyMessageIds.collectAsState(initial = emptySet())
+    val deletedIds by preferencesRepository.deletedCompanyMessageIds.collectAsState(initial = emptySet())
+    val flights by flightRepository.observeFlights().collectAsState(initial = emptyList())
+    val manualUnread = flights.any { flight ->
+        val id = "manual-change-${flight.id}"
+        flight.dutyNote.contains("Manual operational roster change") && flight.departureIata == "BKK" && id !in readIds && id !in deletedIds
+    }
+    val hasUnreadMessages = (nextPrepared && "next-roster-ready" !in readIds && "next-roster-ready" !in deletedIds) ||
+        (enhancedTarget && "90h-extra-duty-pending" !in readIds && "90h-extra-duty-pending" !in deletedIds) || manualUnread
 
     NavigationBar {
         items.forEach { screen ->
@@ -290,10 +309,21 @@ private fun BottomBar(
                     }
                 },
                 icon = {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = screen.label
-                    )
+                    Box {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = screen.label
+                        )
+                        if (screen == Screen.Messages && hasUnreadMessages) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 4.dp, y = (-2).dp)
+                                    .size(9.dp)
+                                    .background(Color(0xFFD32F2F), CircleShape)
+                            )
+                        }
+                    }
                 },
                 label = {
                     Text(
