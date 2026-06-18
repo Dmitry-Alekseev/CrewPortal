@@ -761,9 +761,8 @@ private fun OperationalRosterChangeDialog(
     var selectedDate by remember { mutableStateOf(LocalDate.now().plusDays(2)) }
     var reportTime by remember { mutableStateOf("10:00") }
     var outboundFlight by remember { mutableStateOf("TG999") }
-    val initialAirport = remember { AirportDatabase.byIata("DPS") ?: AirportDatabase.search("DPS").firstOrNull() }
-    var destinationQuery by remember { mutableStateOf(initialAirport?.let { "${it.icao} • ${it.city} / ${airportShortName(it.iata, it.name)}" } ?: "WADD") }
-    var selectedAirport by remember { mutableStateOf<AirportInfo?>(initialAirport) }
+    var destinationQuery by remember { mutableStateOf("") }
+    var selectedAirport by remember { mutableStateOf<AirportInfo?>(null) }
     var aircraft by remember { mutableStateOf("A321neo") }
     var registration by remember { mutableStateOf<String?>(null) }
     var pattern by remember { mutableStateOf<String?>(null) }
@@ -989,9 +988,16 @@ private fun AirportIcaoAutocompleteField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val options = remember(query) {
-        AirportDatabase.search(query)
+        val normalized = query.trim()
+        val source = if (normalized.isBlank()) {
+            AirportDatabase.all()
+        } else {
+            AirportDatabase.search(normalized)
+        }
+        source
             .filter { it.iata != "BKK" }
-            .take(8)
+            .distinctBy { it.icao }
+            .sortedWith(compareBy<AirportInfo> { it.icao }.thenBy { it.city }.thenBy { it.iata })
     }
     Box(modifier = Modifier.fillMaxWidth()) {
         TextField(
@@ -1014,7 +1020,9 @@ private fun AirportIcaoAutocompleteField(
         DropdownMenu(
             expanded = expanded && options.isNotEmpty(),
             onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth(0.92f)
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .height(320.dp)
         ) {
             options.forEach { airport ->
                 DropdownMenuItem(

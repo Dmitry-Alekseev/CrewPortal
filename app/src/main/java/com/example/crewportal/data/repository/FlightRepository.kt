@@ -2,6 +2,7 @@ package com.example.crewportal.data.repository
 
 import android.content.Context
 import com.example.crewportal.data.airport.AirportAssignmentPool
+import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.fleet.AircraftPool
 import com.example.crewportal.data.local.FlightDao
 import com.example.crewportal.data.local.FlightEntity
@@ -436,7 +437,23 @@ class FlightRepository(
         "TAS" -> ManualRoute("TAS", "UTTT", "Tashkent", "Islam Karimov", 395, 405, "Hyatt Regency Tashkent")
         "MNL" -> ManualRoute("MNL", "RPLL", "Manila", "Ninoy Aquino Intl", 200, 205, "Conrad Manila")
         "DEL" -> ManualRoute("DEL", "VIDP", "Delhi", "Indira Gandhi Intl", 265, 260, "JW Marriott Aerocity")
-        else -> ManualRoute(iata.uppercase(), "", iata.uppercase(), "$iata Airport", 150, 150, "$iata crew hotel")
+        else -> {
+            val code = iata.uppercase()
+            val airport = AirportDatabase.byIata(code) ?: AirportDatabase.search(code).firstOrNull()
+            if (airport != null) {
+                ManualRoute(
+                    airport.iata,
+                    airport.icao,
+                    airport.city,
+                    AirportDatabase.shortAirportName(airport.iata, airport.name),
+                    150,
+                    150,
+                    "${airport.city} crew hotel"
+                )
+            } else {
+                ManualRoute(code, "", code, "$code Airport", 150, 150, "$code crew hotel")
+            }
+        }
     }
 
     private fun aircraftFullName(label: String): String = when {

@@ -1,23 +1,17 @@
 {
-  "latestVersion": "2.2.4",
-  "versionCode": 2204,
-  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.2.4/CrewPortal-2.2.4.apk",
+  "latestVersion": "2.2.5",
+  "versionCode": 2205,
+  "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.2.5/CrewPortal-2.2.5.apk",
   "changelog": [
-    "Added hidden Operational Roster Change form with ordered outbound → turnaround/layover flow",
-    "Manual roster changes now create consistent Roster/Calendar entries and company notification",
-    "90h extra-duty message can now publish an additional duty after acknowledgement",
-    "DPS/Bali can be generated as same-day turnaround when timing fits; layovers show STAY items clearly",
-    "MEL/Technical Remarks variability increased across aircraft",
-    "Messages icon now shows an unread red dot and unread cards are highlighted",
-    "Next-month preview buttons and acknowledgement controls cleaned up to corporate style"
+    "Operational Roster Change destination no longer pre-fills Denpasar",
+    "Destination suggestions are ICAO-sorted, scrollable and available when the field is empty",
+    "Manual route airport names now resolve from the shared airport database, fixing HKG/HKG/HKG display",
+    "Version metadata, update metadata, workflows and APK naming updated to CrewPortal-2.2.5.apk"
   ],
   "changelogRu": [
-    "Добавлена скрытая форма Operational Roster Change с порядком: рейс туда → turnaround/layover",
-    "Ручные изменения ростера согласованно появляются в Roster/Calendar и создают company notification",
-    "Сообщение по режиму 90h теперь может опубликовать дополнительную duty после ознакомления",
-    "DPS/Bali может генерироваться как same-day turnaround, если влезает; layover показывает STAY явно",
-    "Повышена вариативность MEL / Technical Remarks по разным бортам",
-    "На иконке Messages появляется красная точка для непрочитанных, карточки Inbox выделяются",
-    "Кнопки preview/acknowledge следующего месяца приведены к общему корпоративному стилю"
+    "В Operational Roster Change destination больше не подставляет Denpasar автоматически",
+    "Подсказки destination отсортированы по ICAO, листаются и доступны даже при пустом поле",
+    "Ручные маршруты берут город/аэропорт из общей базы аэропортов, исправлен вывод HKG/HKG/HKG",
+    "Метаданные версии, update metadata, workflows и имя APK обновлены до CrewPortal-2.2.5.apk"
   ]
 }
