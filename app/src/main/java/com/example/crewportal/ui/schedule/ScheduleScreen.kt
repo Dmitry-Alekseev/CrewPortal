@@ -34,6 +34,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -41,6 +46,10 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,6 +69,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.crewportal.R
+import com.example.crewportal.data.airport.AirportDatabase
+import com.example.crewportal.data.airport.AirportInfo
+import com.example.crewportal.data.fleet.AircraftPool
 import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.leave.LeavePeriod
 import com.example.crewportal.data.local.FlightEntity
@@ -80,9 +92,11 @@ import com.example.crewportal.util.shouldShowRegistrationButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
@@ -725,6 +739,7 @@ private fun shouldShowAirportAssignment(flight: FlightEntity): Boolean {
 
 private fun formatDate(date: LocalDate): String = date.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)).uppercase(Locale.ENGLISH)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun OperationalRosterChangeDialog(
     ru: Boolean,
@@ -743,18 +758,27 @@ private fun OperationalRosterChangeDialog(
         replaceExisting: Boolean
     ) -> Unit
 ) {
-    var dateText by remember { mutableStateOf(LocalDate.now().plusDays(2).toString()) }
+    var selectedDate by remember { mutableStateOf(LocalDate.now().plusDays(2)) }
     var reportTime by remember { mutableStateOf("10:00") }
     var outboundFlight by remember { mutableStateOf("TG999") }
-    var destination by remember { mutableStateOf("DPS") }
+    val initialAirport = remember { AirportDatabase.byIata("DPS") ?: AirportDatabase.search("DPS").firstOrNull() }
+    var destinationQuery by remember { mutableStateOf(initialAirport?.let { "${it.icao} • ${it.city} / ${airportShortName(it.iata, it.name)}" } ?: "WADD") }
+    var selectedAirport by remember { mutableStateOf<AirportInfo?>(initialAirport) }
     var aircraft by remember { mutableStateOf("A321neo") }
-    var registration by remember { mutableStateOf("") }
+    var registration by remember { mutableStateOf<String?>(null) }
     var pattern by remember { mutableStateOf<String?>(null) }
     var returnFlight by remember { mutableStateOf("TG998") }
-    var returnDateText by remember { mutableStateOf(LocalDate.now().plusDays(3).toString()) }
+    var returnDate by remember { mutableStateOf(LocalDate.now().plusDays(3)) }
     var returnTime by remember { mutableStateOf("12:00") }
     var replaceExisting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
+
+    val aircraftTypes = remember { listOf("A320", "A321neo", "A330-300", "A350-900") }
+    val registrationOptions = remember(aircraft) {
+        AircraftPool.aircraft
+            .filter { it.label == aircraft }
+            .map { it.registration }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -762,19 +786,67 @@ private fun OperationalRosterChangeDialog(
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(if (ru) "1. Рейс туда" else "1. Outbound flight", fontWeight = FontWeight.Bold)
-                TextField(value = dateText, onValueChange = { dateText = it }, label = { Text("Date YYYY-MM-DD") }, modifier = Modifier.fillMaxWidth())
-                TextField(value = reportTime, onValueChange = { reportTime = it }, label = { Text("Report time HH:mm") }, modifier = Modifier.fillMaxWidth())
-                TextField(value = outboundFlight, onValueChange = { outboundFlight = it.uppercase(Locale.ENGLISH) }, label = { Text("Outbound flight") }, modifier = Modifier.fillMaxWidth())
-                TextField(value = destination, onValueChange = { destination = it.uppercase(Locale.ENGLISH).take(3) }, label = { Text("Destination IATA: DPS, SIN, KUL, TAS...") }, modifier = Modifier.fillMaxWidth())
-                TextField(value = aircraft, onValueChange = { aircraft = it }, label = { Text("Aircraft type: A320 / A321neo / A330 / A350") }, modifier = Modifier.fillMaxWidth())
-                TextField(value = registration, onValueChange = { registration = it.uppercase(Locale.ENGLISH) }, label = { Text("Registration optional, empty = assigned 24h prior") }, modifier = Modifier.fillMaxWidth())
+
+                OperationalDatePickerField(
+                    label = if (ru) "Дата" else "Date",
+                    date = selectedDate,
+                    onDateChange = { selectedDate = it }
+                )
+
+                OperationalTimePickerField(
+                    label = if (ru) "Время явки" else "Report time",
+                    value = reportTime,
+                    onValueChange = { reportTime = it }
+                )
+
+                TextField(
+                    value = outboundFlight,
+                    onValueChange = { outboundFlight = it.uppercase(Locale.ENGLISH).take(8) },
+                    label = { Text(if (ru) "Номер рейса туда" else "Outbound flight number") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                AirportIcaoAutocompleteField(
+                    ru = ru,
+                    query = destinationQuery,
+                    selectedAirport = selectedAirport,
+                    onQueryChange = {
+                        destinationQuery = it
+                        selectedAirport = null
+                    },
+                    onAirportSelected = { airport ->
+                        selectedAirport = airport
+                        destinationQuery = "${airport.icao} • ${airport.city} / ${airportShortName(airport.iata, airport.name)}"
+                    }
+                )
+
+                SimpleDropdownField(
+                    label = if (ru) "Тип самолёта" else "Aircraft type",
+                    value = aircraft,
+                    options = aircraftTypes,
+                    onSelected = {
+                        aircraft = it
+                        registration = null
+                    }
+                )
+
+                SimpleDropdownField(
+                    label = if (ru) "Регистрация" else "Registration",
+                    value = registration ?: if (ru) "Random / за 24 часа" else "Random / assigned 24h prior",
+                    options = listOf(if (ru) "Random / за 24 часа" else "Random / assigned 24h prior") + registrationOptions,
+                    onSelected = { selected ->
+                        registration = selected.takeIf { it.startsWith("HS-") }
+                    }
+                )
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = replaceExisting, onCheckedChange = { replaceExisting = it })
                     Text(if (ru) "Заменить существующие duty в эти даты" else "Replace existing duties on affected dates")
                 }
+
                 Text(if (ru) "2. Тип duty" else "2. Duty pattern", fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     Button(
@@ -790,10 +862,18 @@ private fun OperationalRosterChangeDialog(
                 }
                 if (pattern != null) {
                     Text(if (ru) "3. Рейс обратно" else "3. Return flight", fontWeight = FontWeight.Bold)
-                    TextField(value = returnFlight, onValueChange = { returnFlight = it.uppercase(Locale.ENGLISH) }, label = { Text("Return flight") }, modifier = Modifier.fillMaxWidth())
+                    TextField(value = returnFlight, onValueChange = { returnFlight = it.uppercase(Locale.ENGLISH).take(8) }, label = { Text(if (ru) "Номер рейса обратно" else "Return flight number") }, modifier = Modifier.fillMaxWidth())
                     if (pattern == "LAYOVER") {
-                        TextField(value = returnDateText, onValueChange = { returnDateText = it }, label = { Text("Return date YYYY-MM-DD") }, modifier = Modifier.fillMaxWidth())
-                        TextField(value = returnTime, onValueChange = { returnTime = it }, label = { Text("Return departure HH:mm") }, modifier = Modifier.fillMaxWidth())
+                        OperationalDatePickerField(
+                            label = if (ru) "Дата обратного рейса" else "Return date",
+                            date = returnDate,
+                            onDateChange = { returnDate = it }
+                        )
+                        OperationalTimePickerField(
+                            label = if (ru) "Время вылета обратно" else "Return departure time",
+                            value = returnTime,
+                            onValueChange = { returnTime = it }
+                        )
                         Text(if (ru) "Отель/STAY будет подобран автоматически по destination." else "Layover hotel/STAY will be selected automatically by destination.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
                         Text(if (ru) "Оборот будет рассчитан автоматически около 1–1.5h." else "Turnaround time will be calculated automatically around 1–1.5h.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -806,24 +886,25 @@ private fun OperationalRosterChangeDialog(
             Button(
                 onClick = {
                     try {
-                        val parsedDate = LocalDate.parse(dateText)
                         val selectedPattern = pattern ?: throw IllegalArgumentException("Select turnaround or layover")
-                        val parsedReturn = if (selectedPattern == "LAYOVER") LocalDate.parse(returnDateText) else parsedDate
+                        val airport = selectedAirport
+                            ?: AirportDatabase.search(destinationQuery).firstOrNull()
+                            ?: throw IllegalArgumentException("Select destination")
                         onSubmit(
-                            parsedDate,
+                            selectedDate,
                             reportTime,
                             outboundFlight,
-                            destination,
+                            airport.iata,
                             aircraft,
-                            registration.takeIf { it.isNotBlank() },
+                            registration,
                             selectedPattern,
                             returnFlight,
-                            parsedReturn,
+                            if (selectedPattern == "LAYOVER") returnDate else selectedDate,
                             if (selectedPattern == "LAYOVER") returnTime else null,
                             replaceExisting
                         )
                     } catch (_: Exception) {
-                        error = if (ru) "Проверьте дату, время и тип duty" else "Check date, time and duty pattern"
+                        error = if (ru) "Проверьте дату, время, destination и тип duty" else "Check date, time, destination and duty pattern"
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F3A5F), contentColor = Color.White)
@@ -834,3 +915,168 @@ private fun OperationalRosterChangeDialog(
         }
     )
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OperationalDatePickerField(
+    label: String,
+    date: LocalDate,
+    onDateChange: (LocalDate) -> Unit
+) {
+    var showPicker by remember { mutableStateOf(false) }
+    OutlinedButton(onClick = { showPicker = true }, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(formatDate(date), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+        }
+    }
+    if (showPicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = date.toPickerMillis())
+        DatePickerDialog(
+            onDismissRequest = { showPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { onDateChange(it.toLocalPickerDate()) }
+                    showPicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showPicker = false }) { Text("Cancel") } }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OperationalTimePickerField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    var showPicker by remember { mutableStateOf(false) }
+    val parsed = remember(value) { parseTimeParts(value) }
+    OutlinedButton(onClick = { showPicker = true }, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+        }
+    }
+    if (showPicker) {
+        val timeState = rememberTimePickerState(initialHour = parsed.first, initialMinute = parsed.second, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { showPicker = false },
+            title = { Text(label) },
+            text = { TimePicker(state = timeState) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onValueChange(formatTime(timeState.hour, timeState.minute))
+                    showPicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showPicker = false }) { Text("Cancel") } }
+        )
+    }
+}
+
+@Composable
+private fun AirportIcaoAutocompleteField(
+    ru: Boolean,
+    query: String,
+    selectedAirport: AirportInfo?,
+    onQueryChange: (String) -> Unit,
+    onAirportSelected: (AirportInfo) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = remember(query) {
+        AirportDatabase.search(query)
+            .filter { it.iata != "BKK" }
+            .take(8)
+    }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        TextField(
+            value = query,
+            onValueChange = { text ->
+                onQueryChange(text.uppercase(Locale.ENGLISH))
+                expanded = true
+            },
+            label = { Text(if (ru) "Destination ICAO / airport" else "Destination ICAO / airport") },
+            supportingText = {
+                val selected = selectedAirport
+                Text(
+                    selected?.let { "${it.iata} • ${it.city} / ${airportShortName(it.iata, it.name)}" }
+                        ?: if (ru) "Начни вводить ICAO, город или аэропорт: ULLI, WADD, PULKOVO..." else "Start typing ICAO, city or airport: ULLI, WADD, PULKOVO..."
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        DropdownMenu(
+            expanded = expanded && options.isNotEmpty(),
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.92f)
+        ) {
+            options.forEach { airport ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text("${airport.icao} • ${airport.iata} • ${airport.city}", fontWeight = FontWeight.SemiBold)
+                            Text(airportShortName(airport.iata, airport.name), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                        }
+                    },
+                    onClick = {
+                        onAirportSelected(airport)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SimpleDropdownField(
+    label: String,
+    value: String,
+    options: List<String>,
+    onSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.92f)
+        ) {
+            options.forEach { item ->
+                DropdownMenuItem(
+                    text = { Text(item) },
+                    onClick = {
+                        onSelected(item)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+private fun LocalDate.toPickerMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+
+private fun Long.toLocalPickerDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
+
+private fun parseTimeParts(value: String): Pair<Int, Int> {
+    val parts = value.split(":")
+    val hour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 10
+    val minute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+    return hour to minute
+}
+
+private fun formatTime(hour: Int, minute: Int): String = String.format(Locale.ENGLISH, "%02d:%02d", hour, minute)
+

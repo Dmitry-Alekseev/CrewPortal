@@ -41,6 +41,8 @@ object AirportDatabase {
         AirportInfo("PNH", "VDPP", "Phnom Penh Intl", "Phnom Penh", "Cambodia", 420, 40, "05/23", "Cambodia station.", "Regional turnaround station."),
         AirportInfo("VTE", "VLVT", "Wattay Intl", "Vientiane", "Laos", 420, 564, "13/31", "Laos station.", "Regional turnaround station."),
         AirportInfo("RGN", "VYYY", "Yangon Intl", "Yangon", "Myanmar", 390, 109, "03/21", "Myanmar station.", "Regional turnaround station."),
+        AirportInfo("DPS", "WADD", "Ngurah Rai Intl", "Denpasar", "Indonesia", 480, 14, "09/27", "Bali regional station.", "Medium-haul turnaround or layover station."),
+        AirportInfo("MNL", "RPLL", "Ninoy Aquino Intl", "Manila", "Philippines", 480, 75, "06/24, 13/31", "Philippines station.", "Regional medium-haul station."),
 
         AirportInfo("HKG", "VHHH", "Hong Kong Intl", "Hong Kong", "Hong Kong", 480, 28, "07L/25R, 07C/25C, 07R/25L", "Major regional station.", "High-density regional and cargo traffic."),
         AirportInfo("TPE", "RCTP", "Taoyuan Intl", "Taipei", "Taiwan", 480, 106, "05L/23R, 05R/23L", "Taiwan station.", "Regional long sector operation."),

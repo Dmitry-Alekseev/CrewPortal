@@ -1,11 +1,11 @@
 # Crew Portal
 
-Version: 2.2.3
+Version: 2.2.4
 
 Android crew operations portal built with Kotlin and Jetpack Compose.
 
-## Version 2.2.3 highlights
-- Hidden Operational Roster Change form for manual add/replace duty testing.
+## Version 2.2.4 highlights
+- Hidden Operational Roster Change form for manual add/replace duty testing, now with date/time pickers and ICAO autocomplete.
 - Ordered manual flow: outbound details → Turnaround/Layover → generated return/rest details.
 - Manual changes are inserted consistently into Roster and Calendar and trigger a company notification.
 - 90h selected target can publish an additional duty from Messages after acknowledgement.
@@ -14,4 +14,4 @@ Android crew operations portal built with Kotlin and Jetpack Compose.
 - Messages red-dot unread indicator and unread card highlight added.
 - Next-month preview buttons cleaned up and large reviewed info card removed.
 
-APK artifact name: `CrewPortal-2.2.3.apk`
+APK artifact name: `CrewPortal-2.2.4.apk`
