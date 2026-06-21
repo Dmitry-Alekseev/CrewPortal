@@ -375,7 +375,8 @@ class FlightRepository(
         returnFlight: String,
         returnDate: LocalDate?,
         returnTime: String?,
-        replaceExisting: Boolean
+        replaceExisting: Boolean,
+        asInstructor: Boolean = false
     ): Boolean {
         val normalizedPattern = pattern.uppercase()
         val affectedDates = mutableSetOf(date)
@@ -404,7 +405,7 @@ class FlightRepository(
             returnFlight = returnFlight.ifBlank { "TG998" },
             returnDate = returnDate ?: date.plusDays(if (normalizedPattern == "LAYOVER") 1L else 0L),
             returnTime = returnTime?.takeIf { it.isNotBlank() },
-            note = "Manual operational roster change"
+            note = "Manual operational roster change" + if (asInstructor) " • Line pilot instructor / observer" else ""
         )
         flightDao.insertAll(created)
         val updated = flightDao.getAllOnce()

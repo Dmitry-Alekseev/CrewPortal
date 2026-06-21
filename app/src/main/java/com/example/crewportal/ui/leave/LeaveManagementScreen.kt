@@ -63,7 +63,6 @@ fun LeaveManagementScreen() {
     val balance = LeaveDatabase.balance()
     var selectedStart by remember { mutableStateOf<LocalDate?>(null) }
     var selectedEnd by remember { mutableStateOf<LocalDate?>(null) }
-    var simulatedRequest by remember { mutableStateOf<LeavePeriod?>(null) }
     var sickOpen by remember { mutableStateOf(false) }
     var sickStart by remember { mutableStateOf<LocalDate?>(null) }
 
@@ -170,14 +169,16 @@ fun LeaveManagementScreen() {
                             scope.launch {
                                 snackbar.showSnackbar("Leave request submitted")
                                 delay(1200)
-                                simulatedRequest = LeavePeriod(
-                                    id = "personal-${start}",
-                                    type = "PERSONAL_LEAVE",
-                                    title = "Personal Leave",
-                                    start = start,
-                                    end = end,
-                                    status = "APPROVED",
-                                    note = "Approved by crew planning"
+                                LeaveDatabase.addPersonalLeave(
+                                    LeavePeriod(
+                                        id = "personal-${start}-${end}",
+                                        type = "PERSONAL_LEAVE",
+                                        title = "Personal Leave",
+                                        start = start,
+                                        end = end,
+                                        status = "APPROVED",
+                                        note = "Approved by crew planning"
+                                    )
                                 )
                                 snackbar.showSnackbar("Leave request approved")
                             }
@@ -189,7 +190,7 @@ fun LeaveManagementScreen() {
                         contentColor = MaterialTheme.colorScheme.onSurface
                     )
                 ) { Text("Submit request") }
-                simulatedRequest?.let { LeaveRow(it) }
+                LeaveDatabase.approvedPersonalLeave.forEach { LeaveRow(it) }
             }
         }
         item {

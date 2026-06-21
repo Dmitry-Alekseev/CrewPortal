@@ -59,7 +59,7 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
                 )
                 Column(Modifier.padding(start = 16.dp)) {
                     Text("Dmitrii Alekseev", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text("Captain", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Line Pilot Instructor", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Thai Airways", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Home Base: BKK", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -77,6 +77,7 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
             QualificationRow("PPL(A)", "Issued: 18 March 2023", "Private Pilot Licence record", "VALID")
             QualificationRow("CPL(A)", "Issued: 27 October 2023", "Commercial Pilot Licence record", "VALID")
             QualificationRow("ATPL(A)", "Issued: 14 September 2024", "Airline Transport Pilot Licence record", "VALID")
+            QualificationRow("Line Pilot Instructor", "Issued: 19 June 2026", "Line pilot instructor privilege", "VALID")
             QualificationRow("IR(A)", "Issued: 22 November 2023", "Instrument Rating", "VALID")
             QualificationRow("MEP(L)", "Issued: 10 December 2023", "Multi-engine piston land rating", "VALID")
             QualificationRow("MCC", "Completed: 18 January 2024", "Multi-Crew Cooperation course", "VALID")

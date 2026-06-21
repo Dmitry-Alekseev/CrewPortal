@@ -166,7 +166,7 @@ fun ScheduleScreen(
         OperationalRosterChangeDialog(
             ru = ru,
             onDismiss = { showOperationalChangeDialog = false },
-            onSubmit = { date, reportTime, outboundFlight, destination, aircraft, registration, pattern, returnFlight, returnDate, returnTime, replaceExisting ->
+            onSubmit = { date, reportTime, outboundFlight, destination, aircraft, registration, pattern, returnFlight, returnDate, returnTime, replaceExisting, asInstructor ->
                 scope.launch {
                     val ok = withContext(Dispatchers.IO) {
                         flightRepository.addOperationalRosterChange(
@@ -180,7 +180,8 @@ fun ScheduleScreen(
                             returnFlight = returnFlight,
                             returnDate = returnDate,
                             returnTime = returnTime,
-                            replaceExisting = replaceExisting
+                            replaceExisting = replaceExisting,
+                            asInstructor = asInstructor
                         )
                     }
                     showOperationalChangeDialog = false
@@ -625,6 +626,9 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                 }
             }
             Spacer(Modifier.height(8.dp))
+            if (flight.dutyNote.contains("Line pilot instructor", ignoreCase = true)) {
+                Text(if (ru) "Line pilot instructor / проверяющий — third crew member" else "Line pilot instructor / observer — third crew member", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+            }
             BriefingLine(flight = flight, ru = ru)
             airportAssignmentLine(flight).takeIf { it.isNotBlank() }?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             Text((if (ru) "Время duty: " else "Duty time: ") + formatMinutes(dutyMinutes(flight.departureDateTime, flight.arrivalDateTime, flight.durationMinutes)), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -755,7 +759,8 @@ private fun OperationalRosterChangeDialog(
         returnFlight: String,
         returnDate: LocalDate?,
         returnTime: String?,
-        replaceExisting: Boolean
+        replaceExisting: Boolean,
+        asInstructor: Boolean
     ) -> Unit
 ) {
     var selectedDate by remember { mutableStateOf(LocalDate.now().plusDays(2)) }
@@ -770,6 +775,7 @@ private fun OperationalRosterChangeDialog(
     var returnDate by remember { mutableStateOf(LocalDate.now().plusDays(3)) }
     var returnTime by remember { mutableStateOf("12:00") }
     var replaceExisting by remember { mutableStateOf(false) }
+    var asInstructor by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
 
     val aircraftTypes = remember { listOf("A320", "A321neo", "A330-300", "A350-900") }
@@ -846,6 +852,11 @@ private fun OperationalRosterChangeDialog(
                     Text(if (ru) "Заменить существующие duty в эти даты" else "Replace existing duties on affected dates")
                 }
 
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = asInstructor, onCheckedChange = { asInstructor = it })
+                    Text(if (ru) "Лечу как line pilot instructor / проверяющий" else "Operate as line pilot instructor / observer")
+                }
+
                 Text(if (ru) "2. Тип duty" else "2. Duty pattern", fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     Button(
@@ -900,7 +911,8 @@ private fun OperationalRosterChangeDialog(
                             returnFlight,
                             if (selectedPattern == "LAYOVER") returnDate else selectedDate,
                             if (selectedPattern == "LAYOVER") returnTime else null,
-                            replaceExisting
+                            replaceExisting,
+                            asInstructor
                         )
                     } catch (_: Exception) {
                         error = if (ru) "Проверьте дату, время, destination и тип duty" else "Check date, time, destination and duty pattern"

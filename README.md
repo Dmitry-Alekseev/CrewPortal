@@ -1,21 +1,15 @@
 # Crew Portal
 
-Version: 2.2.5
+Version: 2.2.6
 
-Android crew operations portal built with Kotlin and Jetpack Compose.
+Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus pilot workflow.
 
-## Version 2.2.5 highlights
+## Version 2.2.6 highlights
 
-- Operational Roster Change destination picker no longer pre-fills Denpasar.
-- Destination dropdown is ICAO-sorted and scrollable.
-- Manual route airport names are resolved from the shared airport database, preventing repeated code/code/code display for destinations such as HKG.
-- Hidden Operational Roster Change form for manual add/replace duty testing, now with date/time pickers and ICAO autocomplete.
-- Ordered manual flow: outbound details → Turnaround/Layover → generated return/rest details.
-- Manual changes are inserted consistently into Roster and Calendar and trigger a company notification.
-- 90h selected target can publish an additional duty from Messages after acknowledgement.
-- DPS/Bali can be planned as same-day turnaround when timing allows; layovers show STAY clearly.
-- MEL / Technical Remarks variability improved so different aircraft are not almost always empty.
-- Messages red-dot unread indicator and unread card highlight added.
-- Next-month preview buttons cleaned up and large reviewed info card removed.
+- Leave Management now applies approved personal leave to shared leave state.
+- Profile shows Dmitrii Alekseev as Line Pilot Instructor.
+- Line Pilot Instructor license added with issue date 19 June 2026.
+- Operational Roster Change supports instructor/observer duty checkbox.
+- Instructor manual duties display Dmitrii Alekseev as third crew member while operating Captain and First Officer remain system-generated.
 
-APK artifact name: `CrewPortal-2.2.5.apk`
+APK artifact name: `CrewPortal-2.2.6.apk`

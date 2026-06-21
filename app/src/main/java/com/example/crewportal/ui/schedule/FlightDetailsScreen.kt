@@ -186,7 +186,11 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                     DetailRow("First Officer", crew.firstOfficer, "Operating pilot")
                     if (crew.reliefCaptain != null) DetailRow("Relief Captain", crew.reliefCaptain, "Augmented crew")
                     if (crew.reliefFirstOfficer != null) DetailRow("Relief First Officer", crew.reliefFirstOfficer, "Augmented crew")
-                    if (item.dutyNote.contains("Line Check", ignoreCase = true)) DetailRow("Line Instructor", CrewPool.lineInstructorForFlight(item.id), "Line check supervision")
+                    if (item.dutyNote.contains("Line pilot instructor", ignoreCase = true)) {
+                        DetailRow("Line Pilot Instructor", "Dmitrii Alekseev", "Observer / checking pilot, not operating commander")
+                    } else if (item.dutyNote.contains("Line Check", ignoreCase = true)) {
+                        DetailRow("Line Instructor", CrewPool.lineInstructorForFlight(item.id), "Line check supervision")
+                    }
                     DetailRow("Cabin Manager", crew.cabinManager, "Thai cabin crew database")
                     DetailRow("Cabin Crew", "${crew.cabinCrewCount} crew members", "Assigned by cabin crew roster module")
                 }

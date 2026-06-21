@@ -186,11 +186,12 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.2.5", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Operational Roster Change destination starts empty, with no Denpasar prefill.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• ICAO/airport suggestions are sorted by ICAO and scrollable.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Manual routes now resolve airport names from AirportDatabase, including HKG.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Version metadata updated to 2.2.5.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 2.2.6", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Leave requests now apply to shared roster/calendar leave state.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Profile updated to Line Pilot Instructor with license dated 19 June 2026.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Operational Roster Change can mark a duty as instructor/observer.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Instructor duties show Dmitrii as third crew member, not operating Captain.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Version metadata updated to 2.2.6.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

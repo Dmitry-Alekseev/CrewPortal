@@ -1,5 +1,6 @@
 package com.example.crewportal.data.leave
 
+import androidx.compose.runtime.mutableStateListOf
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
@@ -47,7 +48,12 @@ object LeaveDatabase {
 
     // User-requested leave is created through Leave Management.
     // Demo personal/sick records are intentionally empty in 2.0.5 so the current test roster is not overwritten.
-    val approvedPersonalLeave = emptyList<LeavePeriod>()
+    val approvedPersonalLeave = mutableStateListOf<LeavePeriod>()
+
+    fun addPersonalLeave(period: LeavePeriod) {
+        approvedPersonalLeave.removeAll { it.id == period.id || (it.start == period.start && it.end == period.end && it.type == period.type) }
+        approvedPersonalLeave.add(period)
+    }
 
     val closedSickLeaves = emptyList<LeavePeriod>()
 
