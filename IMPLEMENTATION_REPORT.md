@@ -1,4 +1,6 @@
-# Crew Portal 2.2.9 — итоговый отчёт
+# Crew Portal 2.2.9 — historical report
+
+> This file is the preserved 2.2.9 baseline. The active report for this archive is `IMPLEMENTATION_REPORT_2_2_10.md`.
 
 ## Что реализовано
 

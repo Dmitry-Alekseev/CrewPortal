@@ -39,5 +39,11 @@ data class FlightEntity(
     @ColumnInfo(defaultValue = "NULL") val arrivalEpochMillis: Long? = null,
     @ColumnInfo(defaultValue = "0") val isAircraftDelivery: Boolean = false,
     @ColumnInfo(defaultValue = "''") val deliveryAircraftType: String = "",
-    @ColumnInfo(defaultValue = "0") val deliveryProcessed: Boolean = false
+    @ColumnInfo(defaultValue = "0") val deliveryProcessed: Boolean = false,
+    @ColumnInfo(defaultValue = "'AUTO_GENERATED'") val rosterSource: String = "AUTO_GENERATED",
+    @ColumnInfo(defaultValue = "''") val eventGroupId: String = "",
+    @ColumnInfo(defaultValue = "0") val eventDayIndex: Int = 0,
+    @ColumnInfo(defaultValue = "0") val eventTotalDays: Int = 0,
+    @ColumnInfo(defaultValue = "''") val lineCheckRole: String = "",
+    @ColumnInfo(defaultValue = "1") val flightTimeCreditEligible: Boolean = true
 )

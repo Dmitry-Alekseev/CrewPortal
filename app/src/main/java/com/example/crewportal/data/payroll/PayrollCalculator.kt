@@ -21,8 +21,8 @@ data class PayslipCalc(
 object PayrollCalculator {
     fun calculate(month: YearMonth, flights: List<FlightEntity>): PayslipCalc {
         val monthDuties = RosterMetrics.dutiesForMonth(flights, month)
-        val completed = monthDuties.filter { it.dutyType == DutyType.FLIGHT.value && it.isCompleted }
-        val sourceFlights = completed.ifEmpty { monthDuties.filter { it.dutyType == DutyType.FLIGHT.value } }
+        val completed = monthDuties.filter { it.dutyType == DutyType.FLIGHT.value && it.flightTimeCreditEligible && it.isCompleted }
+        val sourceFlights = completed.ifEmpty { monthDuties.filter { it.dutyType == DutyType.FLIGHT.value && it.flightTimeCreditEligible } }
         val blockMinutes = sourceFlights.sumOf { it.durationMinutes }
         val dutyMinutes = sourceFlights.count() * 90 + sourceFlights.groupBy { it.departureDateTime.take(10) }.size * 30
         val reserveDays = monthDuties.count { it.dutyType == DutyType.RESERVE.value }

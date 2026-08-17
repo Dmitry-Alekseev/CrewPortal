@@ -4,10 +4,8 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.local.FlightEntity
 import java.time.LocalDateTime
-import java.time.ZoneOffset
 
 object RosterNotificationScheduler {
     fun scheduleRoster(context: Context, flights: List<FlightEntity>) {
@@ -83,8 +81,7 @@ object RosterNotificationScheduler {
     }
 
     private fun airportLocalToEpochMillis(localDateTime: String, iata: String): Long {
-        val local = LocalDateTime.parse(localDateTime)
-        val offsetMinutes = AirportDatabase.byIata(iata)?.utcOffsetMinutes ?: 0
-        return local.atOffset(ZoneOffset.ofTotalSeconds(offsetMinutes * 60)).toInstant().toEpochMilli()
+        return airportLocalEpochMillis(localDateTime, iata)
+            ?: LocalDateTime.parse(localDateTime).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
 }

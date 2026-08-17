@@ -61,7 +61,7 @@ fun NotificationsScreen(flightRepository: FlightRepository) {
         CompanyMessages.messages.forEach { message ->
             item { NotificationCard("Company message", message) }
         }
-        item { NotificationCard("Medical status", "Class 1 Medical Certificate valid. Next medical due in August 2026.") }
+        item { NotificationCard("Medical status", "Class 1 Medical Certificate renewed. Next medical due in February 2027.") }
         item { NotificationCard("Training status", "Safety & Emergency Procedures and simulator recurrent session are valid.") }
     }
 }

@@ -28,4 +28,17 @@ class AirportTimeTest {
 
         assertEquals(LocalDateTime.parse("2026-08-06T10:20:00"), arrival)
     }
+
+    @Test
+    fun `London arrival uses seasonal ZoneId instead of fixed offset`() {
+        val summer = arrivalLocalDateTime(
+            LocalDateTime.parse("2026-08-17T08:00:00"), "BKK", "LHR", 760
+        )
+        val winter = arrivalLocalDateTime(
+            LocalDateTime.parse("2026-12-17T08:00:00"), "BKK", "LHR", 760
+        )
+
+        assertEquals(LocalDateTime.parse("2026-08-17T14:40:00"), summer)
+        assertEquals(LocalDateTime.parse("2026-12-17T13:40:00"), winter)
+    }
 }

@@ -1,6 +1,8 @@
 package com.example.crewportal.data.airport
 
 import java.time.LocalDateTime
+import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -17,8 +19,42 @@ data class AirportInfo(
     val terminalNotes: String,
     val operationalNotes: String,
     val atcNotes: String = "Company briefing required",
-    val metarIcao: String = icao
+    val metarIcao: String = icao,
+    val zoneId: String = AirportTimeZoneDirectory.zoneIdFor(iata, utcOffsetMinutes)
 )
+
+/** Region-based zones keep DST-sensitive airports correct; the offset is only a legacy fallback. */
+object AirportTimeZoneDirectory {
+    private val zones = buildMap {
+        listOf("BKK", "HKT", "CNX", "KBV", "HDY", "CEI", "UBP", "UTH", "KKC").forEach { put(it, "Asia/Bangkok") }
+        put("SIN", "Asia/Singapore")
+        listOf("KUL", "PEN").forEach { put(it, "Asia/Kuala_Lumpur") }
+        listOf("SGN", "HAN", "CXR").forEach { put(it, "Asia/Ho_Chi_Minh") }
+        listOf("REP", "PNH").forEach { put(it, "Asia/Phnom_Penh") }
+        put("VTE", "Asia/Vientiane"); put("RGN", "Asia/Yangon"); put("DPS", "Asia/Makassar"); put("MNL", "Asia/Manila")
+        put("HKG", "Asia/Hong_Kong"); listOf("TPE", "KHH").forEach { put(it, "Asia/Taipei") }
+        listOf("NRT", "HND", "KIX", "NGO", "FUK", "CTS").forEach { put(it, "Asia/Tokyo") }
+        listOf("ICN", "PUS").forEach { put(it, "Asia/Seoul") }
+        listOf("PEK", "PVG", "CAN", "KMG", "TFU").forEach { put(it, "Asia/Shanghai") }
+        listOf("DEL", "BOM", "BLR", "MAA", "HYD", "CCU", "AMD").forEach { put(it, "Asia/Kolkata") }
+        put("DAC", "Asia/Dhaka"); put("KTM", "Asia/Kathmandu"); put("CMB", "Asia/Colombo")
+        listOf("ISB", "LHE", "KHI").forEach { put(it, "Asia/Karachi") }
+        put("DXB", "Asia/Dubai"); put("DOH", "Asia/Qatar"); put("KWI", "Asia/Kuwait"); put("MCT", "Asia/Muscat")
+        listOf("JED", "MED").forEach { put(it, "Asia/Riyadh") }
+        put("IST", "Europe/Istanbul"); listOf("FRA", "MUC").forEach { put(it, "Europe/Berlin") }
+        put("ZRH", "Europe/Zurich"); put("LHR", "Europe/London"); put("CDG", "Europe/Paris"); put("BRU", "Europe/Brussels")
+        put("CPH", "Europe/Copenhagen"); put("ARN", "Europe/Stockholm"); put("OSL", "Europe/Oslo")
+        listOf("FCO", "MXP").forEach { put(it, "Europe/Rome") }; put("AMS", "Europe/Amsterdam")
+        put("TAS", "Asia/Tashkent"); listOf("LED", "SVO").forEach { put(it, "Europe/Moscow") }
+        put("OVB", "Asia/Novosibirsk"); put("SVX", "Asia/Yekaterinburg"); listOf("UUD", "IKT").forEach { put(it, "Asia/Irkutsk") }
+        listOf("VVO", "KHV").forEach { put(it, "Asia/Vladivostok") }
+        put("SYD", "Australia/Sydney"); put("MEL", "Australia/Melbourne"); put("PER", "Australia/Perth")
+        put("BNE", "Australia/Brisbane"); put("AKL", "Pacific/Auckland")
+    }
+
+    fun zoneIdFor(iata: String, fallbackOffsetMinutes: Int): String = zones[iata.uppercase(Locale.ENGLISH)]
+        ?: ZoneOffset.ofTotalSeconds(fallbackOffsetMinutes * 60).id
+}
 
 object AirportDatabase {
     private val airportList = listOf(
@@ -38,6 +74,7 @@ object AirportDatabase {
         AirportInfo("SGN", "VVTS", "Tan Son Nhat Intl", "Ho Chi Minh City", "Vietnam", 420, 33, "07L/25R, 07R/25L", "Vietnam station.", "Busy regional station; expect ATC flow management."),
         AirportInfo("HAN", "VVNB", "Noi Bai Intl", "Hanoi", "Vietnam", 420, 39, "11L/29R, 11R/29L", "Vietnam station.", "Regional international operation."),
         AirportInfo("CXR", "VVCR", "Cam Ranh Intl", "Nha Trang", "Vietnam", 420, 40, "02/20", "Resort station.", "Regional leisure operation."),
+        AirportInfo("REP", "VDSR", "Siem Reap Angkor Intl", "Siem Reap", "Cambodia", 420, 60, "05/23", "Cambodia regional station.", "Short-haul international turnaround station."),
         AirportInfo("PNH", "VDPP", "Phnom Penh Intl", "Phnom Penh", "Cambodia", 420, 40, "05/23", "Cambodia station.", "Regional turnaround station."),
         AirportInfo("VTE", "VLVT", "Wattay Intl", "Vientiane", "Laos", 420, 564, "13/31", "Laos station.", "Regional turnaround station."),
         AirportInfo("RGN", "VYYY", "Yangon Intl", "Yangon", "Myanmar", 390, 109, "03/21", "Myanmar station.", "Regional turnaround station."),
@@ -179,25 +216,24 @@ object AirportDatabase {
     fun utcText(localDateTime: String, iata: String): String {
         val airport = byIata(iata) ?: return "UTC time unavailable"
         val local = LocalDateTime.parse(localDateTime)
-        val utc = local.atOffset(offsetFor(airport.utcOffsetMinutes)).withOffsetSameInstant(ZoneOffset.UTC)
+        val utc = local.atZone(ZoneId.of(airport.zoneId)).withZoneSameInstant(ZoneOffset.UTC)
         return utc.format(DateTimeFormatter.ofPattern("dd MMM HH:mm 'UTC'", Locale.ENGLISH)).uppercase(Locale.ENGLISH)
     }
 
     fun utcClockText(localDateTime: String, iata: String): String {
         val airport = byIata(iata) ?: return "UTC"
         val local = LocalDateTime.parse(localDateTime)
-        val utc = local.atOffset(offsetFor(airport.utcOffsetMinutes)).withOffsetSameInstant(ZoneOffset.UTC)
+        val utc = local.atZone(ZoneId.of(airport.zoneId)).withZoneSameInstant(ZoneOffset.UTC)
         return utc.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH))
     }
 
     fun localOffsetText(iata: String): String {
-        val minutes = byIata(iata)?.utcOffsetMinutes ?: return "UTC offset unavailable"
+        val airport = byIata(iata) ?: return "UTC offset unavailable"
+        val minutes = ZoneId.of(airport.zoneId).rules.getOffset(Instant.now()).totalSeconds / 60
         val sign = if (minutes >= 0) "+" else "-"
         val absMinutes = kotlin.math.abs(minutes)
         val hours = absMinutes / 60
         val mins = absMinutes % 60
         return if (mins == 0) "UTC$sign$hours" else "UTC$sign$hours:${mins.toString().padStart(2, '0')}"
     }
-
-    private fun offsetFor(minutes: Int): ZoneOffset = ZoneOffset.ofTotalSeconds(minutes * 60)
 }

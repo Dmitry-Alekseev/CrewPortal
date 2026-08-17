@@ -393,11 +393,12 @@ private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves:
             }
             val visibleDuties = if (leaves.isNotEmpty()) emptyList() else duties
             visibleDuties.forEach { duty ->
-                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") { if (ru) "ВЫХОДНОЙ" else "OFF" } else if (duty.dutyType == "RESERVE") { if (ru) "РЕЗЕРВ" else "RESERVE" } else if (duty.dutyType == "STAY") { val city = AirportDatabase.cityName(duty.departureIata, duty.departureCity); if (ru) "ОТДЫХ В ${city.uppercase()}" else "Stay in $city" } else duty.dutyType
+                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") { if (ru) "ВЫХОДНОЙ" else "OFF" } else if (duty.dutyType == "RESERVE") { if (ru) "РЕЗЕРВ" else "RESERVE" } else if (duty.dutyType == "STAY") { val city = AirportDatabase.cityName(duty.departureIata, duty.departureCity); if (ru) "ОТДЫХ В ${city.uppercase()}" else "Stay in $city" } else if (duty.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY")) duty.flightNumber else duty.dutyType
                 val chipColor = when (duty.dutyType) {
                     "FLIGHT" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                     "RESERVE" -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
-                    "TRAINING" -> Color(0xFFFFB74D).copy(alpha = 0.26f)
+                    "SIMULATOR", "SAFETY" -> Color(0xFFFFB74D).copy(alpha = 0.26f)
+                    "MEDICAL" -> Color(0xFF4FC3F7).copy(alpha = 0.28f)
                     "OFF" -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.62f)
                     "STAY" -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f)
                     else -> MaterialTheme.colorScheme.surfaceVariant

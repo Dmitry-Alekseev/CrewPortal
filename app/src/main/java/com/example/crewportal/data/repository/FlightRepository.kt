@@ -1,10 +1,12 @@
 package com.example.crewportal.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.example.crewportal.data.airport.AirportAssignmentPool
 import com.example.crewportal.data.fleet.AircraftTypeCatalog
 import com.example.crewportal.data.local.FlightDao
 import com.example.crewportal.data.local.FlightEntity
+import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.roster.RosterGenerator
 import com.example.crewportal.data.roster.RosterChangeEngine
 import com.example.crewportal.data.route.RouteCatalog
@@ -36,9 +38,13 @@ class FlightRepository(
     fun observeFlight(id: String): Flow<FlightEntity?> = flightDao.observeById(id)
 
     suspend fun loadScheduleFromAssetsIfNeeded() {
-        if (flightDao.count() > 0) return
+        if (flightDao.count() > 0) {
+            Log.d(TAG, "Current roster generation skipped: persisted roster already exists")
+            return
+        }
         val currentMonthRoster = RosterGenerator.generateForMonth(currentBangkokMonth())
         flightDao.insertAll(normalizeInstants(currentMonthRoster))
+        Log.d(TAG, "Current month roster generated: ${currentBangkokMonth()}")
         RosterNotificationScheduler.scheduleRoster(context, currentMonthRoster)
     }
 
@@ -74,7 +80,7 @@ class FlightRepository(
     suspend fun prepareNextMonthRosterIfDue() {
         val today = nowAtAirport("BKK").toLocalDate()
         val currentMonth = YearMonth.from(today)
-        val triggerDate = currentMonth.atEndOfMonth().minusDays(6)
+        val triggerDate = currentMonth.atDay(minOf(27, currentMonth.lengthOfMonth()))
         if (today.isBefore(triggerDate)) return
 
         val nextMonth = currentMonth.plusMonths(1)
@@ -84,6 +90,7 @@ class FlightRepository(
         if (!alreadyGenerated) {
             val generated = RosterGenerator.generateForMonth(nextMonth)
             flightDao.insertAll(normalizeInstants(generated))
+            Log.d(TAG, "Next month roster generated: $nextMonth")
             RosterNotificationScheduler.scheduleRoster(context, snapshot + generated)
             preferencesRepository.resetNextMonthRosterDecision()
             preferencesRepository.setNextMonthRosterPrepared(true)
@@ -94,6 +101,7 @@ class FlightRepository(
                 2_008_000 + nextMonth.monthValue
             )
         } else if (!preferencesRepository.nextMonthRosterPrepared.first()) {
+            Log.d(TAG, "Next month generation skipped: roster already exists for $nextMonth")
             preferencesRepository.setNextMonthRosterPrepared(true)
         }
     }
@@ -261,12 +269,15 @@ class FlightRepository(
             }
             if (flight.dutyType == "FLIGHT" && !flight.isFlightTimeAdded && hasArrived(flight.arrivalDateTime, flight.arrivalIata)) {
                 flightDao.markCompletedAndAdded(flight.id)
-                preferencesRepository.addFlightTime(flight.durationMinutes, flight.aircraftLabel)
+                if (flight.flightTimeCreditEligible) {
+                    preferencesRepository.addFlightTime(flight.durationMinutes, flight.aircraftLabel)
+                }
                 if (showNotifications) {
                     NotificationHelper.show(
                         context,
                         "Flight completed",
-                        "${flight.flightNumber} completed. ${flight.durationMinutes / 60}h ${flight.durationMinutes % 60}m added to your flight time.",
+                        if (flight.flightTimeCreditEligible) "${flight.flightNumber} completed. ${flight.durationMinutes / 60}h ${flight.durationMinutes % 60}m added to your flight time."
+                        else "${flight.flightNumber} completed as instructor/checking duty; operating block time was not credited.",
                         flight.id.hashCode() + 10_000
                     )
                 }
@@ -356,29 +367,39 @@ class FlightRepository(
         if (all.any { it.id.contains(marker) }) return true
 
         val earliestDay = if (targetMonth == currentMonth) now.toLocalDate().plusDays(2).dayOfMonth else 1
-        val candidate = (earliestDay..targetMonth.lengthOfMonth()).firstOrNull { day ->
+        var selectedDate: LocalDate? = null
+        var selectedExtra: List<FlightEntity>? = null
+        for (day in earliestDay..targetMonth.lengthOfMonth()) {
             val date = targetMonth.atDay(day)
+            if (LeaveDatabase.leaveFor(date) != null) continue
             val duties = all.filter { parseLocalDateTime(it.departureDateTime).toLocalDate() == date }
-            duties.isEmpty() || duties.all { it.dutyType in setOf("OFF", "RESERVE") }
-        } ?: return false
-
-        val date = targetMonth.atDay(candidate)
+            if (duties.isNotEmpty() && duties.any { it.dutyType !in setOf("OFF", "RESERVE") }) continue
+            val proposed = normalizeInstants(buildManualDuty(
+                date = date,
+                reportTime = "10:00",
+                outboundFlight = "TG${700 + day}",
+                destinationIata = "SIN",
+                aircraftLabel = "A321neo",
+                registration = null,
+                pattern = "TURNAROUND",
+                returnFlight = "TG${701 + day}",
+                returnDate = date,
+                returnTime = null,
+                note = "90h additional duty • Operational roster change • $marker",
+                rosterSource = "COMPANY_EXTRA_DUTY"
+            ))
+            if (!hasTwelveHourRestAround(proposed, all)) continue
+            selectedDate = date
+            selectedExtra = proposed
+            break
+        }
+        val date = selectedDate ?: return false
+        val extra = selectedExtra ?: return false
+        val candidate = date.dayOfMonth
         val removable = all.filter { parseLocalDateTime(it.departureDateTime).toLocalDate() == date && it.dutyType in setOf("OFF", "RESERVE") }.map { it.id }
         if (removable.isNotEmpty()) flightDao.deleteByIds(removable)
-        val extra = buildManualDuty(
-            date = date,
-            reportTime = "10:00",
-            outboundFlight = "TG${700 + candidate}",
-            destinationIata = "SIN",
-            aircraftLabel = "A321neo",
-            registration = null,
-            pattern = "TURNAROUND",
-            returnFlight = "TG${701 + candidate}",
-            returnDate = date,
-            returnTime = null,
-            note = "90h additional duty • Operational roster change • $marker"
-        )
-        flightDao.insertAll(normalizeInstants(extra))
+        flightDao.insertAll(extra)
+        Log.d(TAG, "Extra 90h duty inserted: ${date}")
         val updated = flightDao.getAllOnce()
         RosterNotificationScheduler.scheduleRoster(context, updated)
         NotificationHelper.show(
@@ -388,6 +409,32 @@ class FlightRepository(
             2_200_910 + candidate
         )
         return true
+    }
+
+    private fun hasTwelveHourRestAround(candidate: List<FlightEntity>, roster: List<FlightEntity>): Boolean {
+        val candidateStart = candidate.minOfOrNull { dutyStartEpoch(it) } ?: return false
+        val candidateEnd = candidate.maxOfOrNull { dutyEndEpoch(it) } ?: return false
+        return roster.asSequence()
+            .filter { it.dutyType !in setOf("OFF", "RESERVE", "STAY") }
+            .all { existing ->
+                val existingStart = dutyStartEpoch(existing)
+                val existingEnd = dutyEndEpoch(existing)
+                when {
+                    existingEnd <= candidateStart -> candidateStart - existingEnd >= 12 * 60 * 60 * 1000L
+                    candidateEnd <= existingStart -> existingStart - candidateEnd >= 12 * 60 * 60 * 1000L
+                    else -> false
+                }
+            }
+    }
+
+    private fun dutyStartEpoch(duty: FlightEntity): Long {
+        val base = duty.departureEpochMillis ?: airportLocalEpochMillis(duty.departureDateTime, duty.departureIata) ?: Long.MIN_VALUE
+        return if (duty.dutyType == "FLIGHT") base - 90 * 60 * 1000L else base
+    }
+
+    private fun dutyEndEpoch(duty: FlightEntity): Long {
+        val base = duty.arrivalEpochMillis ?: airportLocalEpochMillis(duty.arrivalDateTime, duty.arrivalIata) ?: Long.MAX_VALUE
+        return if (duty.dutyType == "FLIGHT") base + 30 * 60 * 1000L else base
     }
 
     /**
@@ -421,6 +468,12 @@ class FlightRepository(
             }
         }
         val existing = flightDao.getAllOnce()
+        val protectedQualification = existing.any { item ->
+            val itemDate = parseLocalDateTime(item.departureDateTime).toLocalDate()
+            itemDate in affectedDates && item.eventGroupId.isNotBlank() &&
+                (item.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY") || item.lineCheckRole.isNotBlank())
+        }
+        if (protectedQualification) return false
         val removable = existing.filter { item ->
             val itemDate = parseLocalDateTime(item.departureDateTime).toLocalDate()
             itemDate in affectedDates && (replaceExisting || item.dutyType in setOf("OFF", "RESERVE", "STAY"))
@@ -468,14 +521,14 @@ class FlightRepository(
         val hotel: String
     )
 
-    private fun manualRoute(iata: String): ManualRoute = RouteCatalog.byIata(iata).let { route ->
+    private fun manualRoute(iata: String, seed: String): ManualRoute = RouteCatalog.byIata(iata).let { route ->
         ManualRoute(
             route.destinationIata,
             route.destinationIcao,
             route.destinationCity,
             route.destinationAirport,
-            route.outboundMinutes,
-            route.inboundMinutes,
+            route.outboundMinutesFor("$seed-OUT"),
+            route.inboundMinutesFor("$seed-IN"),
             route.hotel
         )
     }
@@ -494,14 +547,17 @@ class FlightRepository(
         returnDate: LocalDate,
         returnTime: String?,
         note: String,
-        isAircraftDelivery: Boolean = false
+        isAircraftDelivery: Boolean = false,
+        rosterSource: String = "OPERATIONAL_CHANGE"
     ): List<FlightEntity> {
-        val route = manualRoute(destinationIata)
+        val route = manualRoute(destinationIata, "$date-$outboundFlight-$returnFlight")
         val report = LocalDateTime.of(date, LocalTime.parse(if (reportTime.length == 5) "$reportTime:00" else reportTime))
         val outDeparture = report.plusMinutes(90)
         val outArrival = arrivalLocalDateTime(outDeparture, "BKK", route.iata, route.outboundMinutes)
         val reg = registration ?: "TBA"
         val full = aircraftFullName(aircraftLabel)
+        val instructorObserver = note.contains("Line pilot instructor", ignoreCase = true)
+        val source = if (isAircraftDelivery) "DELIVERY" else rosterSource
         val outbound = FlightEntity(
             id = "${date}-${outboundFlight}-BKK-${route.iata}-MANUAL",
             airline = "THAI",
@@ -524,7 +580,10 @@ class FlightRepository(
             dutyType = "FLIGHT",
             dutyNote = if (isAircraftDelivery) "$note • Aircraft Delivery / Ferry" else note + if (pattern == "LAYOVER") " • Layover" else " • Turnaround",
             isAircraftDelivery = isAircraftDelivery,
-            deliveryAircraftType = if (isAircraftDelivery) aircraftLabel else ""
+            deliveryAircraftType = if (isAircraftDelivery) aircraftLabel else "",
+            rosterSource = source,
+            lineCheckRole = if (instructorObserver) "INSTRUCTOR" else "",
+            flightTimeCreditEligible = !instructorObserver
         )
         if (isAircraftDelivery) return listOf(outbound)
         val returnDeparture = if (pattern == "LAYOVER") {
@@ -553,7 +612,10 @@ class FlightRepository(
             arrivalDateTime = arrivalLocalDateTime(returnDeparture, route.iata, "BKK", route.inboundMinutes).toString(),
             durationMinutes = route.inboundMinutes,
             dutyType = "FLIGHT",
-            dutyNote = note + if (pattern == "LAYOVER") " • Return after layover" else " • Turnaround return"
+            dutyNote = note + if (pattern == "LAYOVER") " • Return after layover" else " • Turnaround return",
+            rosterSource = source,
+            lineCheckRole = if (instructorObserver) "INSTRUCTOR" else "",
+            flightTimeCreditEligible = !instructorObserver
         )
         if (pattern != "LAYOVER") return listOf(outbound, returnLeg)
         val stayItems = buildList {
@@ -581,7 +643,9 @@ class FlightRepository(
                         arrivalDateTime = stayEnd,
                         durationMinutes = 0,
                         dutyType = "STAY",
-                        dutyNote = route.hotel
+                        dutyNote = route.hotel,
+                        rosterSource = source,
+                        flightTimeCreditEligible = false
                     )
                 )
                 d = d.plusDays(1)
@@ -625,6 +689,10 @@ class FlightRepository(
 
         // Long-haul departures after a real layover/night stop still receive airport assignment.
         return flight.durationMinutes >= 360
+    }
+
+    private companion object {
+        const val TAG = "CrewRoster"
     }
 
     private suspend fun assignAirportPositionIfNeeded(flight: FlightEntity): com.example.crewportal.data.airport.AirportAssignment {

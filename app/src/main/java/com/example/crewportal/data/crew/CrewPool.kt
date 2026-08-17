@@ -88,9 +88,9 @@ object CrewPool {
         "Benjawan T."
     )
 
-    fun forFlight(flightId: String, longHaul: Boolean): FlightCrew {
+    fun forFlight(flightId: String, longHaul: Boolean, userAsInstructor: Boolean = false): FlightCrew {
         val seed = abs(flightId.hashCode())
-        val captain = "Dmitrii Alekseev"
+        val captain = if (userAsInstructor) thaiCaptains[seed % thaiCaptains.size] else "Dmitrii Alekseev"
         val fo = thaiFirstOfficers[(seed / 3) % thaiFirstOfficers.size]
         val cm = cabinManagers[(seed / 7) % cabinManagers.size]
 

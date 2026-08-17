@@ -7,8 +7,8 @@ import kotlin.math.sin
 data class AirportCoordinate(val latitude: Double, val longitude: Double)
 
 /**
- * Offline coordinates used by route briefing maps and fallback block-time estimation.
- * Keeping this data inside the APK avoids map/API keys, tile-server blocks and network-only maps.
+ * Stable airport coordinates used by the public route map and fallback block-time estimation.
+ * Coordinates stay inside the APK; only the OpenFreeMap vector basemap needs network access.
  */
 object AirportGeoDirectory {
     private val coordinates = mapOf(

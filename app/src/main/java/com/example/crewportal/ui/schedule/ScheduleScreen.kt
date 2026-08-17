@@ -454,10 +454,10 @@ private fun MonthlyProgressCard(flights: List<FlightEntity>, month: YearMonth, s
     val monthDate = month.atDay(1)
     val monthLabel = monthDate.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH))
     val monthFlights = RosterMetrics.dutiesForMonth(flights, month).filter {
-        it.dutyType in setOf("FLIGHT", "SIMULATOR") &&
+        it.dutyType == "FLIGHT" && it.flightTimeCreditEligible &&
             LeaveDatabase.leaveFor(parseLocalDateTime(it.departureDateTime).toLocalDate()) == null
     }
-    val countedDutyTypes = setOf("FLIGHT", "SIMULATOR")
+    val countedDutyTypes = setOf("FLIGHT")
     val planned = RosterMetrics.blockMinutes(monthFlights, month, countedDutyTypes)
     val completed = RosterMetrics.blockMinutes(monthFlights, month, countedDutyTypes, completedOnly = true)
     val adjustedTarget = LeaveDatabase.adjustedMonthlyTargetMinutes(month)
@@ -493,6 +493,10 @@ private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> 
     val today = now.toLocalDate()
     val leave = LeaveDatabase.leaveFor(today)
     val todayFlights = flights.filter { it.dutyType == "FLIGHT" && parseLocalDateTime(it.departureDateTime).toLocalDate() == today }.sortedBy { it.departureDateTime }
+    val groundDuty = flights
+        .filter { it.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY") }
+        .filter { parseLocalDateTime(it.departureDateTime).toLocalDate() == today }
+        .minByOrNull { it.departureDateTime }
     val reserveDuty = flights.filter { it.dutyType == "RESERVE" }
         .firstOrNull { duty ->
             val start = parseLocalDateTime(duty.departureDateTime)
@@ -512,6 +516,13 @@ private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> 
                 leave != null -> {
                     Text(leave.title, color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Text("${formatDate(leave.start)} — ${formatDate(leave.end)} • Day ${java.time.temporal.ChronoUnit.DAYS.between(leave.start, today).toInt() + 1} of ${leave.days}", color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.86f))
+                }
+                groundDuty != null -> {
+                    Column(Modifier.clickable { onDutyClick(groundDuty.id) }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(groundDuty.flightNumber, color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text("${displayTime(groundDuty.departureDateTime)}-${displayTime(groundDuty.arrivalDateTime)} • ${groundDuty.departureAirport}", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(groundDuty.dutyNote, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.88f))
+                    }
                 }
                 reserveDuty != null -> {
                     val start = parseLocalDateTime(reserveDuty.departureDateTime)
@@ -691,6 +702,7 @@ fun DutyCard(flight: FlightEntity, onClick: (() -> Unit)?) {
     val title = when {
         isOff -> "OFF"
         isStay -> "Stay in ${AirportDatabase.cityName(flight.departureIata, flight.departureCity)}"
+        flight.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY") -> flight.flightNumber
         else -> flight.dutyType
     }
     Card(modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable { onClick() } else Modifier), shape = RoundedCornerShape(18.dp), elevation = CardDefaults.cardElevation(2.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -702,7 +714,7 @@ fun DutyCard(flight: FlightEntity, onClick: (() -> Unit)?) {
             }
             Text("${displayDate(flight.departureDateTime)} • ${displayTime(flight.departureDateTime)}-${displayTime(flight.arrivalDateTime)}")
             Text(flight.dutyNote.ifBlank { if (isOff) "Day off" else if (isStay) "Layover stay" else "Hotel standby duty" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (!isOff) Text("Location: ${if (isStay) flight.departureAirport else airportShortName(flight.departureIata, flight.departureAirport)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!isOff) Text("Location: ${if (isStay || flight.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY")) flight.departureAirport else airportShortName(flight.departureIata, flight.departureAirport)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

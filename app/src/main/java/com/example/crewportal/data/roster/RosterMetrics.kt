@@ -24,6 +24,7 @@ object RosterMetrics {
     ): Int = dutiesForMonth(roster, month)
         .asSequence()
         .filter { it.dutyType in includedDutyTypes }
+        .filter { it.flightTimeCreditEligible }
         .filter { !completedOnly || it.isCompleted }
         .sumOf { it.durationMinutes }
 }

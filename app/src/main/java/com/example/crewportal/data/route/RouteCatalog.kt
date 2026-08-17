@@ -9,18 +9,37 @@ data class RouteDefinition(
     val destinationIcao: String,
     val destinationCity: String,
     val destinationAirport: String,
-    val outboundMinutes: Int,
-    val inboundMinutes: Int,
+    val outboundMinMinutes: Int,
+    val outboundMaxMinutes: Int,
+    val inboundMinMinutes: Int,
+    val inboundMaxMinutes: Int,
     val aircraft: String,
     val operationType: String,
-    val hotel: String
+    val hotel: String,
+    val autoGenerationEnabled: Boolean
 ) {
     val code: String get() = "BKK-$destinationIata"
     val displayName: String get() = "Bangkok — $destinationCity"
+    val outboundMinutes: Int get() = midpoint(outboundMinMinutes, outboundMaxMinutes)
+    val inboundMinutes: Int get() = midpoint(inboundMinMinutes, inboundMaxMinutes)
+
+    fun outboundMinutesFor(seed: String): Int = selectFiveMinuteStep(outboundMinMinutes, outboundMaxMinutes, seed.hashCode())
+    fun inboundMinutesFor(seed: String): Int = selectFiveMinuteStep(inboundMinMinutes, inboundMaxMinutes, seed.hashCode())
+
+    private fun midpoint(min: Int, max: Int): Int = (((min + max) / 2) / 5) * 5
+    private fun selectFiveMinuteStep(min: Int, max: Int, seed: Int): Int {
+        val slots = ((max - min) / 5).coerceAtLeast(0) + 1
+        return min + Math.floorMod(seed, slots) * 5
+    }
 }
 
 /** Shared route metadata for screens and manual roster changes. */
 object RouteCatalog {
+    private val autoGenerationIatas = setOf(
+        "HKT", "SIN", "KUL", "CNX", "KBV", "SGN", "HAN", "REP", "DEL", "DAC", "MNL", "DPS",
+        "HKG", "IST", "FRA", "SVO", "LHR", "NRT", "ICN", "LED", "TAS"
+    )
+
     val routes = listOf(
         route("HKT", 85, 90, "A320 Family", "Domestic"), route("CNX", 75, 80, "A320 Family", "Domestic"),
         route("KBV", 80, 85, "A320 Family", "Domestic"), route("CXR", 105, 110, "A321neo", "Regional"),
@@ -40,7 +59,8 @@ object RouteCatalog {
         route("OVB", 420, 410, "A330 / A350", "Long-haul"), route("SVX", 500, 480, "A330 / A350", "Long-haul"),
         route("UUD", 355, 345, "A330", "Long-haul"), route("VVO", 390, 380, "A330", "Long-haul"),
         route("IKT", 370, 360, "A330", "Long-haul"), route("KHV", 410, 400, "A330", "Long-haul"),
-        route("DPS", 260, 265, "A330", "Regional"), route("MNL", 200, 205, "A330", "Regional")
+        route("DPS", 260, 265, "A330", "Regional"), route("MNL", 200, 205, "A330", "Regional"),
+        route("REP", 70, 75, "A320 Family", "Regional"), route("DAC", 150, 155, "A320 Family", "Regional")
     )
 
     fun byIata(iata: String): RouteDefinition {
@@ -64,16 +84,29 @@ object RouteCatalog {
 
     private fun route(iata: String, outbound: Int, inbound: Int, aircraft: String, operation: String): RouteDefinition {
         val airport = AirportDatabase.byIata(iata) ?: AirportDatabase.search(iata).firstOrNull()
+        val outboundRange = when (iata) {
+            "MNL" -> 195..210
+            "DPS" -> 250..270
+            else -> (outbound - 10).coerceAtLeast(60)..(outbound + 10)
+        }
+        val inboundRange = when (iata) {
+            "MNL" -> 200..215
+            "DPS" -> 255..275
+            else -> (inbound - 10).coerceAtLeast(60)..(inbound + 10)
+        }
         return RouteDefinition(
             destinationIata = iata,
             destinationIcao = airport?.icao.orEmpty(),
             destinationCity = airport?.city ?: iata,
             destinationAirport = airport?.let { AirportDatabase.shortAirportName(it.iata, it.name) } ?: "$iata Airport",
-            outboundMinutes = outbound,
-            inboundMinutes = inbound,
+            outboundMinMinutes = outboundRange.first,
+            outboundMaxMinutes = outboundRange.last,
+            inboundMinMinutes = inboundRange.first,
+            inboundMaxMinutes = inboundRange.last,
             aircraft = aircraft,
             operationType = operation,
-            hotel = CrewHotelDirectory.hotelFor(iata)
+            hotel = CrewHotelDirectory.hotelFor(iata),
+            autoGenerationEnabled = iata in autoGenerationIatas
         )
     }
 }

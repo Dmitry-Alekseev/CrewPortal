@@ -185,12 +185,12 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.2.9", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Route maps are fully offline and no longer depend on blocked tile servers.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Saint Petersburg and London use authoritative long-haul block times.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Unknown routes use distance-based estimates instead of 2h 30m.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• STAY labels resolve the destination city instead of generic crew-hotel text.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Version metadata updated to 2.2.9.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 2.2.10", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Route maps use the public OpenFreeMap vector basemap without an API key.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Medical, simulator and line-check validity dates now use a six-month cycle.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Generator reserves linked training/check events before ordinary flights.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Route times are persisted from directional five-minute min/max ranges.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Version metadata updated to 2.2.10.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

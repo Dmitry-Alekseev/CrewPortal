@@ -1,5 +1,18 @@
 # Crew Portal Changelog
 
+## 2.2.10
+
+- Replaced the placeholder gray route diagram with OpenFreeMap's public Liberty vector basemap through MapLibre; no API key or signing secret is required.
+- Added a shared qualification schedule for Profile, Documents & Qualifications and roster generation.
+- Recorded the completed August medical and line check and July simulator session; each next-due date is six months later.
+- Added linked three-day simulator, two-day medical, SEP and instructor line-check events before normal flight generation, including cross-month group metadata and protection from partial roster replacement.
+- Excluded simulator, medical and instructor-observer line-check duties from monthly operating flight time and operating block pay.
+- Added persisted roster source, linked-event and flight-time-credit columns through Room migration 4 to 5.
+- Made generated and manual block times deterministic five-minute selections within directional min/max route ranges.
+- Changed automatic next-month generation to the 27th and loaded persisted leave in the background worker before generation.
+- Preserved the already-published current month during application and generator-rule updates.
+- Bumped Android, update and GitHub workflow metadata to 2.2.10 / versionCode 2210.
+
 ## 2.2.9
 
 - Replaced the online osmdroid tile map with a bundled, offline Compose route map; no map API key or tile-server access is required.

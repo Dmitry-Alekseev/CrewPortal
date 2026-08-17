@@ -11,6 +11,7 @@ import androidx.work.WorkerParameters
 import com.example.crewportal.data.local.AppDatabase
 import com.example.crewportal.data.repository.FleetRepository
 import com.example.crewportal.data.repository.FlightRepository
+import com.example.crewportal.data.repository.LeaveRepository
 import com.example.crewportal.data.repository.PreferencesRepository
 import java.util.concurrent.TimeUnit
 
@@ -20,6 +21,9 @@ class NextRosterWorker(appContext: Context, params: WorkerParameters) : Coroutin
         val preferences = PreferencesRepository(applicationContext)
         val fleet = FleetRepository(db.fleetAircraftDao())
         fleet.initialize()
+        // WorkManager can start in a fresh process, so load the same persisted leave source
+        // used by the UI before generating a roster. Approved leave always wins over duty.
+        LeaveRepository(db.leavePeriodDao()).initialize()
         FlightRepository(applicationContext, db.flightDao(), preferences, fleet).prepareNextMonthRosterIfDue()
     }.fold(onSuccess = { Result.success() }, onFailure = { Result.retry() })
 }

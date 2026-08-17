@@ -2,6 +2,10 @@ package com.example.crewportal.data.roster
 
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.airport.CrewHotelDirectory
+import com.example.crewportal.data.leave.LeaveDatabase
+import com.example.crewportal.data.qualification.PilotQualificationSchedule
+import com.example.crewportal.data.qualification.ScheduledQualificationDay
+import com.example.crewportal.data.route.RouteCatalog
 import com.example.crewportal.util.arrivalLocalDateTime
 import java.time.LocalDateTime
 import java.time.YearMonth
@@ -132,7 +136,8 @@ object RosterGenerator {
         TurnaroundRoute("DEL", "VIDP", "Delhi", "Indira Gandhi Intl", "TG331", "TG332", "08:20:00", 265, 75, 260, "A330", "Airbus A330-343"),
         TurnaroundRoute("DAC", "VGHS", "Dhaka", "Hazrat Shahjalal Intl", "TG321", "TG322", "10:40:00", 150, 85, 155, "A320", "Airbus A320-214"),
         TurnaroundRoute("MNL", "RPLL", "Manila", "Ninoy Aquino Intl", "TG620", "TG621", "12:30:00", 200, 95, 205, "A330", "Airbus A330-343"),
-        TurnaroundRoute("DPS", "WADD", "Denpasar", "Ngurah Rai Intl", "TG431", "TG432", "08:50:00", 260, 90, 265, "A330", "Airbus A330-343")
+        TurnaroundRoute("DPS", "WADD", "Denpasar", "Ngurah Rai Intl", "TG431", "TG432", "08:50:00", 260, 90, 265, "A330", "Airbus A330-343"),
+        TurnaroundRoute("HKG", "VHHH", "Hong Kong", "Hong Kong Intl", "TG600", "TG601", "08:10:00", 175, 105, 180, "A330", "Airbus A330-343")
     )
 
     private val layoverRoutes = listOf(
@@ -142,13 +147,15 @@ object RosterGenerator {
         LayoverRoute("LHR", "EGLL", "London", "Heathrow", "TG910", "TG911", "00:55:00", 760, 2, "12:30:00", 705, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("LHR"), "Long-haul augmented crew"),
         LayoverRoute("LED", "ULLI", "Saint Petersburg", "Pulkovo", "TG986", "TG987", "21:30:00", 650, 2, "15:10:00", 625, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("LED"), "Saint Petersburg layover"),
         LayoverRoute("NRT", "RJAA", "Tokyo", "Narita Intl", "TG642", "TG643", "23:50:00", 360, 2, "11:45:00", 410, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("NRT"), "Tokyo layover"),
-        LayoverRoute("ICN", "RKSI", "Seoul", "Incheon Intl", "TG658", "TG659", "23:10:00", 325, 2, "10:50:00", 360, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("ICN"), "Seoul layover")
+        LayoverRoute("ICN", "RKSI", "Seoul", "Incheon Intl", "TG658", "TG659", "23:10:00", 325, 2, "10:50:00", 360, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("ICN"), "Seoul layover"),
+        LayoverRoute("DPS", "WADD", "Denpasar", "Ngurah Rai Intl", "TG431", "TG432", "20:30:00", 260, 1, "18:15:00", 265, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("DPS"), "Denpasar overnight layover")
     )
 
     fun generateForMonth(month: YearMonth, seed: Long = stableSeed(month)): List<FlightEntity> {
         val random = Random(seed)
         val flights = mutableListOf<FlightEntity>()
         val occupied = BooleanArray(month.lengthOfMonth() + 1)
+        val qualificationEvents = PilotQualificationSchedule.eventsForMonth(month)
         val recentRouteIatas = mutableListOf<String>()
         var plannedBlock = 0
         val targetBlock = 78 * 60 + random.nextInt(5) * 30 // 78h00..80h00, then may slightly overshoot.
@@ -247,13 +254,14 @@ object RosterGenerator {
             startTime: String,
             endTime: String,
             note: String,
-            countsTowardNorm: Boolean
+            eventGroupId: String = "",
+            eventDayIndex: Int = 0,
+            eventTotalDays: Int = 0
         ) {
             if (!canUse(day, 1)) return
             val start = dt(day, startTime)
             val end = dt(day, endTime)
             if (!hasMinimumRest(start, end)) return
-            val minutes = ChronoUnit.MINUTES.between(start, end).toInt()
             flights += FlightEntity(
                 id = "${date(day)}-${dutyType}-${title.replace(" ", "-")}",
                 airline = "THAI",
@@ -272,38 +280,82 @@ object RosterGenerator {
                 arrivalAirport = "Thai Airways Training Center",
                 departureDateTime = start.format(formatter),
                 arrivalDateTime = end.format(formatter),
-                durationMinutes = if (countsTowardNorm) minutes else 0,
+                durationMinutes = 0,
                 dutyType = dutyType,
-                dutyNote = note
+                dutyNote = note,
+                eventGroupId = eventGroupId,
+                eventDayIndex = eventDayIndex,
+                eventTotalDays = eventTotalDays,
+                flightTimeCreditEligible = false
             )
-            if (countsTowardNorm) plannedBlock += minutes
             mark(day, 1)
         }
 
         fun addMandatoryQualificationEvents() {
-            // These dates mirror Profile → Documents & Qualifications.
-            // They are inserted before random flying, so the roster generator plans around them.
-            if (month == YearMonth.of(2026, 7)) {
-                addGroundDuty(16, "SIMULATOR", "Simulator Training", "10:00:00", "16:00:00", "Simulator recurrent day 1: training session", countsTowardNorm = true)
-                addGroundDuty(17, "SIMULATOR", "Simulator Pre-check", "10:00:00", "16:00:00", "Simulator recurrent day 2: pre-exam preparation", countsTowardNorm = true)
-                addGroundDuty(18, "SIMULATOR", "Simulator Check", "10:00:00", "16:00:00", "Simulator recurrent day 3: exam/check", countsTowardNorm = true)
-            }
-            if (month == YearMonth.of(2026, 8)) {
-                addGroundDuty(10, "MEDICAL", "Medical Commission", "09:00:00", "18:00:00", "Class 1 medical commission. Paid ground duty, not counted into flight norm.", countsTowardNorm = false)
-            }
-            if (month == YearMonth.of(2026, 10)) {
-                addGroundDuty(6, "SAFETY", "SEP Land", "10:00:00", "16:00:00", "Safety & Emergency Procedures — Land. Paid ground duty, not counted into flight norm.", countsTowardNorm = false)
-                addGroundDuty(8, "SAFETY", "SEP Water", "10:00:00", "16:00:00", "Safety & Emergency Procedures — Water. Paid ground duty, not counted into flight norm.", countsTowardNorm = false)
+            qualificationEvents.filter { it.dutyType != "LINE_CHECK" }.groupBy { it.eventGroupId }.values.forEach { rawGroup ->
+                val group = rawGroup.sortedBy { it.dayIndex }
+                val template = group.first()
+                val span = template.totalDays.coerceAtLeast(1)
+                val preferredStart = template.date.minusDays((template.dayIndex - 1).toLong())
+                val candidateStarts = buildList {
+                    add(preferredStart)
+                    (1..10).forEach { offset ->
+                        add(preferredStart.minusDays(offset.toLong()))
+                        add(preferredStart.plusDays(offset.toLong()))
+                    }
+                }.filter { start ->
+                    val end = start.plusDays((span - 1).toLong())
+                    !end.isBefore(month.atDay(1)) && !start.isAfter(month.atEndOfMonth())
+                }
+                val actualStart = candidateStarts.firstOrNull { start ->
+                    (0 until span).all { offset ->
+                        val eventDate = start.plusDays(offset.toLong())
+                        LeaveDatabase.leaveFor(eventDate) == null &&
+                            (YearMonth.from(eventDate) != month || !occupied[eventDate.dayOfMonth])
+                    }
+                } ?: return@forEach
+                (1..span).forEach { index ->
+                    val actualDate = actualStart.plusDays((index - 1).toLong())
+                    if (YearMonth.from(actualDate) != month) return@forEach
+                    val event = group.firstOrNull { it.dayIndex == index } ?: template.copy(
+                        title = template.title.substringBefore(" — Day") + " — Day $index/$span",
+                        note = template.note.substringBefore(" • Day") + " • Day $index/$span",
+                        dayIndex = index
+                    )
+                    val (startTime, endTime) = if (event.dutyType == "MEDICAL") "09:00:00" to "18:00:00" else "10:00:00" to "16:00:00"
+                    addGroundDuty(
+                        day = actualDate.dayOfMonth,
+                        dutyType = event.dutyType,
+                        title = event.title,
+                        startTime = startTime,
+                        endTime = endTime,
+                        note = event.note,
+                        eventGroupId = event.eventGroupId,
+                        eventDayIndex = index,
+                        eventTotalDays = span
+                    )
+                }
             }
         }
 
-        fun addTurnaround(day: Int, route: TurnaroundRoute, outboundTime: String = route.outboundTime) {
+        fun addTurnaround(
+            day: Int,
+            route: TurnaroundRoute,
+            outboundTime: String = route.outboundTime,
+            lineCheckEvent: ScheduledQualificationDay? = null
+        ) {
             val aircraft = routeAircraftChoice(route, random)
+            val routePolicy = RouteCatalog.byIata(route.iata)
+            val durationSeed = "$seed-${date(day)}-${route.outboundFlight}-${random.nextInt()}"
+            val outboundMinutes = routePolicy.outboundMinutesFor("$durationSeed-OUT")
+            val inboundMinutes = routePolicy.inboundMinutesFor("$durationSeed-IN")
             val outboundDeparture = dt(day, outboundTime)
-            val outboundArrival = arrivalLocalDateTime(outboundDeparture, "BKK", route.iata, route.outboundMinutes)
+            val outboundArrival = arrivalLocalDateTime(outboundDeparture, "BKK", route.iata, outboundMinutes)
             val inboundDeparture = outboundArrival.plusMinutes(route.turnaroundMinutes.toLong())
-            val inboundArrival = arrivalLocalDateTime(inboundDeparture, route.iata, "BKK", route.inboundMinutes)
+            val inboundArrival = arrivalLocalDateTime(inboundDeparture, route.iata, "BKK", inboundMinutes)
             val d = date(day)
+            val lineCheck = lineCheckEvent != null
+            val lineCheckNote = if (lineCheck) "Line Check • Line pilot instructor / observer" else "Turnaround duty"
             flights += FlightEntity(
                 id = "$d-${route.outboundFlight}-BKK-${route.iata}",
                 airline = "THAI",
@@ -322,9 +374,14 @@ object RosterGenerator {
                 arrivalAirport = route.airport,
                 departureDateTime = outboundDeparture.format(formatter),
                 arrivalDateTime = outboundArrival.format(formatter),
-                durationMinutes = route.outboundMinutes,
+                durationMinutes = outboundMinutes,
                 dutyType = "FLIGHT",
-                dutyNote = "Turnaround duty"
+                dutyNote = lineCheckNote,
+                eventGroupId = lineCheckEvent?.eventGroupId.orEmpty(),
+                eventDayIndex = lineCheckEvent?.dayIndex ?: 0,
+                eventTotalDays = lineCheckEvent?.totalDays ?: 0,
+                lineCheckRole = lineCheckEvent?.lineCheckRole.orEmpty(),
+                flightTimeCreditEligible = !lineCheck
             )
             flights += FlightEntity(
                 id = "$d-${route.inboundFlight}-${route.iata}-BKK",
@@ -344,22 +401,31 @@ object RosterGenerator {
                 arrivalAirport = airportName("BKK"),
                 departureDateTime = inboundDeparture.format(formatter),
                 arrivalDateTime = inboundArrival.format(formatter),
-                durationMinutes = route.inboundMinutes,
+                durationMinutes = inboundMinutes,
                 dutyType = "FLIGHT",
-                dutyNote = "Turnaround return"
+                dutyNote = if (lineCheck) "Line Check return • Line pilot instructor / observer" else "Turnaround return",
+                eventGroupId = lineCheckEvent?.eventGroupId.orEmpty(),
+                eventDayIndex = lineCheckEvent?.dayIndex ?: 0,
+                eventTotalDays = lineCheckEvent?.totalDays ?: 0,
+                lineCheckRole = lineCheckEvent?.lineCheckRole.orEmpty(),
+                flightTimeCreditEligible = !lineCheck
             )
-            plannedBlock += route.blockMinutes
+            if (!lineCheck) plannedBlock += outboundMinutes + inboundMinutes
             recentRouteIatas += route.iata
             if (recentRouteIatas.size > 5) recentRouteIatas.removeAt(0)
             mark(day, 1)
         }
 
         fun addLayover(day: Int, route: LayoverRoute) {
+            val routePolicy = RouteCatalog.byIata(route.iata)
+            val durationSeed = "$seed-${date(day)}-${route.outboundFlight}-${random.nextInt()}"
+            val outboundMinutes = routePolicy.outboundMinutesFor("$durationSeed-OUT")
+            val inboundMinutes = routePolicy.inboundMinutesFor("$durationSeed-IN")
             val outboundDeparture = dt(day, route.outboundTime)
-            val outboundArrival = arrivalLocalDateTime(outboundDeparture, "BKK", route.iata, route.outboundMinutes)
+            val outboundArrival = arrivalLocalDateTime(outboundDeparture, "BKK", route.iata, outboundMinutes)
             val returnDay = day + route.returnOffsetDays
             val returnDeparture = dt(returnDay, route.returnTime)
-            val returnArrival = arrivalLocalDateTime(returnDeparture, route.iata, "BKK", route.inboundMinutes)
+            val returnArrival = arrivalLocalDateTime(returnDeparture, route.iata, "BKK", inboundMinutes)
             val d = date(day)
             flights += FlightEntity(
                 id = "$d-${route.outboundFlight}-BKK-${route.iata}",
@@ -379,7 +445,7 @@ object RosterGenerator {
                 arrivalAirport = route.airport,
                 departureDateTime = outboundDeparture.format(formatter),
                 arrivalDateTime = outboundArrival.format(formatter),
-                durationMinutes = route.outboundMinutes,
+                durationMinutes = outboundMinutes,
                 dutyType = "FLIGHT",
                 dutyNote = route.note
             )
@@ -427,11 +493,11 @@ object RosterGenerator {
                 arrivalAirport = airportName("BKK"),
                 departureDateTime = returnDeparture.format(formatter),
                 arrivalDateTime = returnArrival.format(formatter),
-                durationMinutes = route.inboundMinutes,
+                durationMinutes = inboundMinutes,
                 dutyType = "FLIGHT",
                 dutyNote = "${route.city} return"
             )
-            plannedBlock += route.blockMinutes
+            plannedBlock += outboundMinutes + inboundMinutes
             recentRouteIatas += route.iata
             if (recentRouteIatas.size > 5) recentRouteIatas.removeAt(0)
             mark(day, route.spanDays)
@@ -463,7 +529,36 @@ object RosterGenerator {
             return arrivalLocalDateTime(deadheadDeparture, "TAS", "BKK", 405)
         }
 
+        // Leave is reserved before qualification events and ordinary flying. The UI renders the
+        // persisted Leave records directly, so no duplicate OFF/Flight rows are created here.
+        LeaveDatabase.leaveForMonth(month).forEach { leave ->
+            var cursor = maxOf(leave.start, month.atDay(1))
+            val end = minOf(leave.end, month.atEndOfMonth())
+            while (!cursor.isAfter(end)) {
+                occupied[cursor.dayOfMonth] = true
+                cursor = cursor.plusDays(1)
+            }
+        }
         addMandatoryQualificationEvents()
+
+        qualificationEvents.filter { it.dutyType == "LINE_CHECK" }.forEach { event ->
+            val preferred = event.date.dayOfMonth
+            val candidateDays = buildList {
+                add(preferred)
+                (1..7).forEach { offset -> add(preferred - offset); add(preferred + offset) }
+            }.filter { it in 1..month.lengthOfMonth() }
+            val route = turnaroundRoutes.first { it.iata == "HKG" }
+            val routePolicy = RouteCatalog.byIata(route.iata)
+            val dayForCheck = candidateDays.firstOrNull { candidate ->
+                if (!canPlaceDuty(candidate, 1)) return@firstOrNull false
+                val start = dt(candidate, route.outboundTime)
+                val outboundEnd = arrivalLocalDateTime(start, "BKK", route.iata, routePolicy.outboundMaxMinutes)
+                val returnStart = outboundEnd.plusMinutes(route.turnaroundMinutes.toLong())
+                val end = arrivalLocalDateTime(returnStart, route.iata, "BKK", routePolicy.inboundMaxMinutes)
+                hasMinimumRest(start, end)
+            }
+            if (dayForCheck != null) addTurnaround(dayForCheck, route, route.outboundTime, event)
+        }
 
         var day = 1 + random.nextInt(2)
         var guard = 0
@@ -551,20 +646,10 @@ object RosterGenerator {
         reserveDays.forEach { addReserve(it) }
 
         (1..month.lengthOfMonth()).forEach { if (!occupied[it]) addOff(it) }
-        return applyLineCheckIfDue(flights, month).sortedBy { it.departureDateTime }
-    }
-
-    private fun applyLineCheckIfDue(flights: List<FlightEntity>, month: YearMonth): List<FlightEntity> {
-        if (month != YearMonth.of(2026, 8)) return flights
-        val candidate = flights
-            .filter { it.dutyType == "FLIGHT" && it.departureIata == "BKK" }
-            .minByOrNull { kotlin.math.abs(ChronoUnit.DAYS.between(LocalDateTime.parse(it.departureDateTime, formatter).toLocalDate(), month.atDay(6))) }
-            ?: return flights
-        return flights.map { flight ->
-            if (flight.id == candidate.id) {
-                flight.copy(dutyNote = listOf(flight.dutyNote, "Line Check").filter { it.isNotBlank() }.joinToString(" • "))
-            } else flight
-        }
+        val generated = flights.sortedBy { it.departureDateTime }
+        val validationErrors = RosterConflictValidator.errors(month, generated)
+        check(validationErrors.isEmpty()) { "Generated roster conflicts: ${validationErrors.joinToString()}" }
+        return generated
     }
 
     private fun parseDateTime(value: String): LocalDateTime = LocalDateTime.parse(value, formatter)
@@ -598,5 +683,5 @@ object RosterGenerator {
     private fun stableSeed(month: YearMonth): Long =
         (month.year * 100L + month.monthValue) * 7_919L + GENERATOR_RULESET_VERSION
 
-    private const val GENERATOR_RULESET_VERSION = 2_208L
+    private const val GENERATOR_RULESET_VERSION = 2_210L
 }

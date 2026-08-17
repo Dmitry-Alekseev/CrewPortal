@@ -1,14 +1,15 @@
 # Crew Portal
 
-Version: 2.2.9
+Version: 2.2.10
 
 Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus pilot workflow.
 
-## Version 2.2.9 highlights
+## Version 2.2.10 highlights
 
-- Route maps are rendered from bundled airport coordinates and need no tile server, API key or network access.
-- LED is supported by the offline map and generated layover rules.
-- BKK-LED is 10h50 outbound / 10h25 inbound; BKK-LHR is 12h40 outbound / 11h45 inbound.
+- Route maps use an interactive OpenFreeMap vector basemap through MapLibre; no API key is required.
+- Qualifications have one shared source of truth: completed and next-due dates appear identically in Profile and Documents & Qualifications.
+- Medical (2 days), simulator (3 days), SEP and instructor line checks are reserved before ordinary roster generation and recur every six months.
+- Route block time is selected once in a five-minute step inside each directional min/max range and persisted on the roster leg.
 - Unknown supported destinations use a distance-based block estimate instead of a fixed 2h30 fallback.
 - STAY headings always resolve the airport city; legacy crew-hotel text cannot become the location title.
 
@@ -17,7 +18,7 @@ Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus 
 - Room migration 3→4 preserves roster data and adds persistent fleet, leave, logbook and UTC instant state.
 - Roster replacement is transactional, generation deterministic, and next-month publication runs through WorkManager.
 - Payroll policy and common route metadata have dedicated non-UI sources of truth.
-- GitHub builds require no signing secrets and reuse the legacy certificate. For the requested clean test, uninstall 2.2.8 first and install 2.2.9 to create a new current-month database.
+- GitHub builds require no signing secrets and reuse the legacy certificate, allowing an in-place update that preserves local data.
 - Leave Management now applies approved personal leave to shared leave state.
 - Profile shows Dmitrii Alekseev as Line Pilot Instructor.
 - Line Pilot Instructor license added with issue date 19 June 2026.
@@ -29,4 +30,4 @@ Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus 
 - `CREW_PORTAL_DEVELOPER_GUIDE.md` documents architecture, state, business rules and safe extension points.
 - GitHub Android CI uses the checked-in Gradle 8.7 wrapper and runs unit tests, lint and `assembleDebug`.
 
-APK artifact name: `CrewPortal-2.2.9.apk`
+APK artifact name: `CrewPortal-2.2.10.apk`

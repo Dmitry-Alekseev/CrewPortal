@@ -1,6 +1,6 @@
 # Crew Portal Developer Guide / FAQ
 
-Документ описывает проект Crew Portal 2.2.9 в том виде, в котором он находится в этом архиве. Цель — дать новому разработчику карту кода, состояния и business rules, а также показать безопасные точки изменения.
+Документ описывает проект Crew Portal 2.2.10 в том виде, в котором он находится в этом архиве. Цель — дать новому разработчику карту кода, состояния и business rules, а также показать безопасные точки изменения.
 
 ## 1. Быстрый старт
 
@@ -92,7 +92,7 @@ RosterGenerator / RosterChangeEngine / notification scheduler
 - `observeAll/observeCompleted/observeById` питают Compose screens;
 - write methods изменяют отдельные idempotency flags или заменяют roster snapshot.
 
-В версии 2.2.8 schema повышена до 4 через явную `MIGRATION_3_4`; destructive fallback удалён. Перед следующим schema bump добавьте `Migration(old, new)`, SQL alterations, migration test и только затем увеличивайте `version`.
+В версии 2.2.8 schema повышена до 4 через явную `MIGRATION_3_4`; в 2.2.10 schema 5 добавлена через `MIGRATION_4_5`. Destructive fallback удалён. Перед следующим schema bump добавьте `Migration(old, new)`, SQL alterations, migration test и только затем увеличивайте `version`.
 
 ### Preferences DataStore
 
@@ -236,7 +236,7 @@ Sunday pattern:
 - `dutiesForMonth(roster, month)` фильтрует по stored departure month;
 - `blockMinutes(roster, month, includedDutyTypes, completedOnly)` суммирует `durationMinutes` только выбранных duty types.
 
-Roster Monthly Progress считает `FLIGHT` + `SIMULATOR`, исключая dates, закрытые LeaveDatabase. Planned берёт все такие duties, completed — только `isCompleted=true`. DEADHEAD/STAY/OFF/RESERVE не входят.
+Roster Monthly Progress считает только operating `FLIGHT` с `flightTimeCreditEligible=true`, исключая dates, закрытые LeaveDatabase. Planned берёт все такие duties, completed — только `isCompleted=true`. SIMULATOR/MEDICAL/SAFETY, instructor-observer Line Check, DEADHEAD/STAY/OFF/RESERVE не входят.
 
 Cumulative Profile flight time обновляется иначе: только завершённые `FLIGHT`, один раз на sector. Payroll block использует completed `FLIGHT`; если completed ещё нет, показывает planned `FLIGHT` как projection.
 
@@ -323,7 +323,7 @@ Input: month и полный roster snapshot. Output: `PayslipCalc`.
 - generated turnarounds/layovers: `RosterGenerator.kt`;
 - manual duration fallback: `FlightRepository.manualRoute`;
 - reference-only company list: `CompanyRoutesScreen.kt`;
-- offline map coordinates: `data/airport/AirportGeoDirectory.kt`.
+- route-map airport coordinates: `data/airport/AirportGeoDirectory.kt`.
 
 Route definitions пока не сведены в единую full route table, поэтому новый route необходимо согласованно добавить во все нужные consumers. Airports и hotels уже вынесены в shared catalogs.
 
@@ -549,15 +549,15 @@ Payroll policy вынесена из Compose в pure `data/payroll/PayrollCalcul
 
 `RosterGenerator.generateForMonth(month, seed)` детерминирован. Default seed зависит только от месяца и `GENERATOR_RULESET_VERSION`. Для изменения правил увеличьте ruleset version и обновите tests; уже опубликованный current month всё равно не регенерируется при app update.
 
-`NextRosterScheduler` регистрирует immediate и daily WorkManager jobs. `NextRosterWorker` вызывает публичный idempotent `prepareNextMonthRosterIfDue`; дата по умолчанию — шесть дней до конца текущего месяца. Менять дату нужно только в этой функции и соответствующем тесте.
+`NextRosterScheduler` регистрирует immediate и daily WorkManager jobs. `NextRosterWorker` восстанавливает persisted leave в `LeaveDatabase`, затем вызывает публичный idempotent `prepareNextMonthRosterIfDue`; дата генерации — 27-е число текущего месяца. Менять дату нужно только в этой функции и соответствующем тесте.
 
 ### Release signing
 
-GitHub signing secrets и `KEYSTORE_BASE64` не нужны. В проект возвращён legacy `app/crewportal-debug.keystore`, полностью совпадающий с ключом предыдущего архива; `app/build.gradle.kts` использует его для debug build. Это сохраняет signing certificate при обновлении. Для согласованного clean-test 2.2.9 пользователь удаляет 2.2.8, поэтому Android очищает прежние Room/DataStore данные, а первый запуск создаёт новую БД текущего Bangkok month. `android-build.yml` и `release-apk.yml` собирают `testDebugUnitTest`, `lintDebug`, `assembleDebug`; release workflow прикладывает APK к GitHub Release. Для Google Play позднее потребуется отдельная production-signing схема.
+GitHub signing secrets и `KEYSTORE_BASE64` не нужны. В проект возвращён legacy `app/crewportal-debug.keystore`, полностью совпадающий с ключом предыдущего архива; `app/build.gradle.kts` использует его для debug build. Это сохраняет signing certificate и локальную Room/DataStore БД при обновлении поверх установленной 2.2.x. `android-build.yml` и `release-apk.yml` собирают `testDebugUnitTest`, `lintDebug`, `assembleDebug`; release workflow прикладывает APK к GitHub Release. Для Google Play позднее потребуется отдельная production-signing схема.
 
-## 20. Offline maps и route-duration policy в 2.2.9
+## 20. Public map и route-duration policy в 2.2.10
 
-`data/airport/AirportGeoDirectory.kt` — единый встроенный каталог координат. `FlightDetailsScreen.OfflineRouteMap` рисует нейтральную карту, маршрут и точки вылета/прилёта через Compose Canvas. Запросов к OpenStreetMap/Google Maps, API keys, WebView и tile servers нет; поэтому `Access blocked` не влияет на Route Map. Библиотека osmdroid удалена.
+`data/airport/AirportGeoDirectory.kt` — единый встроенный каталог координат. `FlightDetailsScreen.PublicRouteMap` создаёт native `MapView`, загружает публичный OpenFreeMap Liberty style через MapLibre и поверх него рисует маршрут и точки вылета/прилёта. API key, WebView и Google Maps SDK не используются. Для карты нужен доступ к `tiles.openfreemap.org`; при отсутствии сети остальные flight details продолжают работать.
 
 `RouteCatalog.byIata` сначала возвращает явное company value. Для LED это 650/625 минут, для LHR — 760/705 минут. Если airport известен, но явной route entry нет, `estimatedRoute` вычисляет conservative scheduled block из great-circle distance `AirportGeoDirectory.distanceNm`; fixed fallback 150/150 удалён. Company Routes показывает форматированное время отдельно для outbound и inbound.
 
@@ -571,3 +571,25 @@ STAY title не доверяет legacy `departureCity`: Calendar, Roster и Fli
 4. для generated rotation добавьте flight-number/time template в `RosterGenerator`;
 5. при layover добавьте hotel в `CrewHotelDirectory`;
 6. добавьте unit test exact block time и наличие coordinate.
+
+## 21. Qualifications, linked events и Room schema 5
+
+`data/qualification/PilotQualificationSchedule.kt` — source of truth для Medical, Simulator, Line Check и SEP. `QualificationValidity` хранит название, дату прохождения, следующую дату и периодичность. `eventsForMonth(month)` разворачивает recurring records в `ScheduledQualificationDay`: дату, duty type, title/note, общий `eventGroupId`, номер дня и размер группы, а для Line Check — operating role. Profile и Documents & Qualifications читают те же `QualificationValidity`, поэтому экранные сроки не расходятся с генератором.
+
+`RosterGenerator.generateForMonth` сначала резервирует Leave, затем qualification groups, потом Line Check на реальном HKG turnaround и только после этого обычные рейсы/reserve/OFF. Simulator создаётся связанной группой из трёх последовательных дней, Medical — из двух. Для группы ищется целиком свободное окно; отдельный средний день не переносится. На границе месяца каждая часть получает одинаковый `eventGroupId` и правильный `eventDayIndex/eventTotalDays`. Ground events имеют нулевой block credit. Пользователь в текущем сценарии выполняет Line Check как instructor/observer, поэтому оба operating legs видны в roster, но имеют `flightTimeCreditEligible=false`.
+
+`FlightEntity` schema 5 добавляет `rosterSource`, `eventGroupId`, `eventDayIndex`, `eventTotalDays`, `lineCheckRole`, `flightTimeCreditEligible`. `MIGRATION_4_5` добавляет columns с совместимыми defaults, помечает старые Aircraft Delivery и manual operational changes и не удаляет существующие roster rows. `FlightRepository.addOperationalRosterChange` отказывается частично заменять связанную qualification group; extra 90h duty выбирает только безопасный OFF/RESERVE день без Leave и с 12-hour rest.
+
+`RosterMetrics`, `ScheduleScreen` и `PayrollCalculator` используют `flightTimeCreditEligible`: operating monthly flight time и block pay не включают Simulator/Medical/SEP и instructor-observer Line Check. `CalendarScreen`, `ScheduleScreen.TodayDutyCard` и `FlightDetailsScreen` показывают training title, location, group day и instructor role из persisted entity.
+
+### How to change qualification rules
+
+1. Измените completion/next-due и cadence в `PilotQualificationSchedule`.
+2. Измените recurring template в `eventsForMonth`; для нового multi-day event задайте полный `totalDays` и стабильный `eventGroupId`.
+3. Если появляется новый persisted duty type, добавьте его в `DutyType`, календарные цвета, Today’s Duty и payroll ground policy.
+4. Если duty даёт operating block credit, выставляйте `flightTimeCreditEligible=true` только для фактической operating роли.
+5. Не меняйте уже опубликованный current-month roster только из-за нового ruleset: `refreshBuiltInRosterOnAppUpdate` намеренно seed-ит только пустую БД.
+
+### How to change the map provider
+
+Style URI находится в `FlightDetailsScreen.OPEN_FREE_MAP_STYLE_URI`, Android SDK dependency — в `app/build.gradle.kts`. Новый provider должен поддерживать MapLibre style JSON и HTTPS. Координаты аэропортов остаются в `AirportGeoDirectory`; добавление аэропорта без coordinate оставит flight details доступными, но не сможет построить route overlay.

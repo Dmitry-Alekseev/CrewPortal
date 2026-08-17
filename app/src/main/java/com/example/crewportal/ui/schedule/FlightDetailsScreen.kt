@@ -1,6 +1,6 @@
 package com.example.crewportal.ui.schedule
 
-import androidx.compose.foundation.Canvas
+import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -27,20 +27,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.airport.AirportGeoDirectory
 import com.example.crewportal.data.airport.AirportCoordinate
@@ -70,7 +68,16 @@ import com.example.crewportal.util.nowAtAirport
 import com.example.crewportal.util.reportDateTime
 import com.example.crewportal.util.shouldShowRegistrationButton
 import kotlinx.coroutines.launch
+import org.maplibre.android.MapLibre
+import org.maplibre.android.annotations.MarkerOptions
+import org.maplibre.android.annotations.PolylineOptions
+import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.geometry.LatLngBounds
+import org.maplibre.android.maps.MapView
 import java.time.format.DateTimeFormatter
+
+private const val OPEN_FREE_MAP_STYLE_URI = "https://tiles.openfreemap.org/styles/liberty"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,7 +103,8 @@ fun FlightDetailsScreen(
         } else {
             val longHaul = item.durationMinutes >= 360
             val augmentedCrew = item.durationMinutes > 10 * 60
-            val crew = CrewPool.forFlight(item.id, augmentedCrew)
+            val userAsInstructor = item.lineCheckRole == "INSTRUCTOR" || item.dutyNote.contains("Line pilot instructor", ignoreCase = true)
+            val crew = CrewPool.forFlight(item.id, augmentedCrew, userAsInstructor)
             val fuel = estimatedFuel(item.durationMinutes, item.aircraftLabel)
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -109,8 +117,11 @@ fun FlightDetailsScreen(
                     InfoCard(when (item.dutyType) { "OFF" -> "Day Off"; "STAY" -> "Stay in ${AirportDatabase.cityName(item.departureIata, item.departureCity)}"; else -> "${item.dutyType} Details" }) {
                         DetailRow("Date", displayDate(item.departureDateTime), displayDaySafe(item.departureDateTime))
                         DetailRow("Time", "${displayTime(item.departureDateTime)}-${displayTime(item.arrivalDateTime)}", "Local time")
-                        DetailRow("Location", when (item.dutyType) { "RESERVE", "STAY" -> item.departureAirport; else -> "Not applicable" }, item.departureCity)
+                        DetailRow("Location", when (item.dutyType) { "RESERVE", "STAY", "SIMULATOR", "MEDICAL", "SAFETY" -> item.departureAirport; else -> "Not applicable" }, item.departureCity)
                         DetailRow("Note", item.dutyNote.ifBlank { if (item.dutyType == "OFF") "No assigned duty" else "Company accommodation / reserve" }, "Company roster item")
+                        if (item.eventGroupId.isNotBlank()) {
+                            DetailRow("Event", item.eventGroupId, if (item.eventTotalDays > 1) "Day ${item.eventDayIndex}/${item.eventTotalDays}" else "Fixed qualification event")
+                        }
                     }
                     return@Column
                 }
@@ -186,7 +197,7 @@ fun FlightDetailsScreen(
                     DetailRow("First Officer", crew.firstOfficer, "Operating pilot")
                     if (crew.reliefCaptain != null) DetailRow("Relief Captain", crew.reliefCaptain, "Augmented crew")
                     if (crew.reliefFirstOfficer != null) DetailRow("Relief First Officer", crew.reliefFirstOfficer, "Augmented crew")
-                    if (item.dutyNote.contains("Line pilot instructor", ignoreCase = true)) {
+                    if (userAsInstructor) {
                         DetailRow("Line Pilot Instructor", "Dmitrii Alekseev", "Observer / checking pilot, not operating commander")
                     } else if (item.dutyNote.contains("Line Check", ignoreCase = true)) {
                         DetailRow("Line Instructor", CrewPool.lineInstructorForFlight(item.id), "Line check supervision")
@@ -277,12 +288,12 @@ private fun RouteMapCard(flight: FlightEntity) {
     InfoCard("Route Map") {
         if (departurePoint == null || arrivalPoint == null) {
             Text(
-                "Offline route diagram ${flight.departureIata}-${flight.arrivalIata} • coordinates pending",
+                "Route map ${flight.departureIata}-${flight.arrivalIata} • airport coordinates pending",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             return@InfoCard
         }
-        OfflineRouteMap(departurePoint, arrivalPoint)
+        PublicRouteMap(flight.id, flight.departureIata, flight.arrivalIata, departurePoint, arrivalPoint)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -295,7 +306,7 @@ private fun RouteMapCard(flight: FlightEntity) {
             )
 
             Text(
-                text = "${AirportGeoDirectory.distanceNm(flight.departureIata, flight.arrivalIata) ?: briefingDistanceNm(flight.durationMinutes)} NM • offline",
+                text = "${AirportGeoDirectory.distanceNm(flight.departureIata, flight.arrivalIata) ?: briefingDistanceNm(flight.durationMinutes)} NM • OpenFreeMap",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -309,62 +320,57 @@ private fun RouteMapCard(flight: FlightEntity) {
 }
 
 @Composable
-private fun OfflineRouteMap(departure: AirportCoordinate, arrival: AirportCoordinate) {
-    val routeColor = MaterialTheme.colorScheme.primary
-    val gridColor = MaterialTheme.colorScheme.outlineVariant
-    val landColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.22f)
-    val backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-
-    Canvas(Modifier.fillMaxWidth().height(280.dp)) {
-        drawRect(backgroundColor)
-        for (longitude in -120..120 step 60) {
-            val x = ((longitude + 180.0) / 360.0 * size.width).toFloat()
-            drawLine(gridColor, Offset(x, 0f), Offset(x, size.height), 1f)
-        }
-        for (latitude in -60..60 step 30) {
-            val y = ((90.0 - latitude) / 180.0 * size.height).toFloat()
-            drawLine(gridColor, Offset(0f, y), Offset(size.width, y), 1f)
-        }
-
-        offlineLandShapes.forEach { outline ->
-            val path = Path()
-            outline.forEachIndexed { index, point ->
-                val projected = project(point, size.width, size.height)
-                if (index == 0) path.moveTo(projected.x, projected.y) else path.lineTo(projected.x, projected.y)
+private fun PublicRouteMap(
+    routeId: String,
+    departureIata: String,
+    arrivalIata: String,
+    departure: AirportCoordinate,
+    arrival: AirportCoordinate
+) {
+    val context = LocalContext.current
+    val mapView = remember(routeId) {
+        MapLibre.getInstance(context)
+        MapView(context).apply {
+            onCreate(null)
+            getMapAsync { map ->
+                map.setStyle(OPEN_FREE_MAP_STYLE_URI) {
+                    val from = LatLng(departure.latitude, departure.longitude)
+                    val to = LatLng(arrival.latitude, arrival.longitude)
+                    map.clear()
+                    map.addPolyline(
+                        PolylineOptions()
+                            .add(from, to)
+                            .color(AndroidColor.rgb(31, 58, 95))
+                            .width(5f)
+                    )
+                    map.addMarker(MarkerOptions().position(from).title(departureIata))
+                    map.addMarker(MarkerOptions().position(to).title(arrivalIata))
+                    post {
+                        val bounds = LatLngBounds.Builder().include(from).include(to).build()
+                        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 72), 700)
+                    }
+                }
             }
-            path.close()
-            drawPath(path, landColor)
         }
-
-        val start = project(departure, size.width, size.height)
-        val end = project(arrival, size.width, size.height)
-        val arc = Path().apply {
-            moveTo(start.x, start.y)
-            val control = Offset((start.x + end.x) / 2f, (start.y + end.y) / 2f - size.height * 0.15f)
-            quadraticBezierTo(control.x, control.y, end.x, end.y)
-        }
-        drawPath(arc, routeColor, style = Stroke(width = 6f, cap = StrokeCap.Round))
-        drawCircle(Color.White, radius = 10f, center = start)
-        drawCircle(routeColor, radius = 7f, center = start)
-        drawCircle(Color.White, radius = 10f, center = end)
-        drawCircle(routeColor, radius = 7f, center = end)
     }
+
+    DisposableEffect(mapView) {
+        mapView.onStart()
+        mapView.onResume()
+        onDispose {
+            mapView.onPause()
+            mapView.onStop()
+            mapView.onDestroy()
+        }
+    }
+
+    AndroidView(
+        factory = { mapView },
+        modifier = Modifier.fillMaxWidth().height(300.dp)
+    )
 }
 
 private fun displayDaySafe(dateTime: String): String = com.example.crewportal.util.displayDay(dateTime)
-
-private fun project(point: AirportCoordinate, width: Float, height: Float): Offset = Offset(
-    x = (((point.longitude + 180.0) / 360.0) * width).toFloat(),
-    y = (((90.0 - point.latitude) / 180.0) * height).toFloat()
-)
-
-private val offlineLandShapes = listOf(
-    listOf(AirportCoordinate(72.0, -168.0), AirportCoordinate(70.0, -52.0), AirportCoordinate(15.0, -82.0), AirportCoordinate(8.0, -104.0), AirportCoordinate(30.0, -118.0)),
-    listOf(AirportCoordinate(12.0, -81.0), AirportCoordinate(-56.0, -68.0), AirportCoordinate(-20.0, -36.0), AirportCoordinate(8.0, -60.0)),
-    listOf(AirportCoordinate(72.0, -10.0), AirportCoordinate(72.0, 170.0), AirportCoordinate(8.0, 145.0), AirportCoordinate(0.0, 42.0), AirportCoordinate(37.0, -10.0)),
-    listOf(AirportCoordinate(35.0, -17.0), AirportCoordinate(-35.0, 18.0), AirportCoordinate(-35.0, 52.0), AirportCoordinate(12.0, 51.0)),
-    listOf(AirportCoordinate(-10.0, 112.0), AirportCoordinate(-44.0, 113.0), AirportCoordinate(-39.0, 154.0), AirportCoordinate(-12.0, 153.0))
-)
 
 private fun shouldShowAirportAssignment(flight: FlightEntity): Boolean {
     return flight.departureIata == "BKK" || flight.durationMinutes >= 360

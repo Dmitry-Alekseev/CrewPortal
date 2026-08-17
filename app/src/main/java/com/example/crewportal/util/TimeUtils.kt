@@ -4,8 +4,7 @@ import java.time.Duration
 import com.example.crewportal.data.airport.AirportDatabase
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -33,11 +32,9 @@ fun shouldShowRegistrationButton(departureIata: String, durationMinutes: Int): B
 }
 
 fun nowAtAirport(iata: String?): LocalDateTime {
-    val offsetMinutes = iata?.let { AirportDatabase.byIata(it)?.utcOffsetMinutes }
-    return if (offsetMinutes != null) {
-        OffsetDateTime.now(ZoneOffset.UTC)
-            .withOffsetSameInstant(ZoneOffset.ofTotalSeconds(offsetMinutes * 60))
-            .toLocalDateTime()
+    val zoneId = iata?.let { AirportDatabase.byIata(it)?.zoneId }
+    return if (zoneId != null) {
+        LocalDateTime.now(ZoneId.of(zoneId))
     } else {
         LocalDateTime.now()
     }

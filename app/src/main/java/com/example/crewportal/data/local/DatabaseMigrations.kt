@@ -2,6 +2,7 @@ package com.example.crewportal.data.local
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import android.util.Log
 
 /** Preserves the v3 flight roster while adding persistent operational modules. */
 val MIGRATION_3_4 = object : Migration(3, 4) {
@@ -67,5 +68,20 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
                 note TEXT NOT NULL
             )""".trimIndent()
         )
+    }
+}
+
+/** Adds generator provenance and linked qualification-event metadata without rewriting roster rows. */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE flights ADD COLUMN rosterSource TEXT NOT NULL DEFAULT 'AUTO_GENERATED'")
+        db.execSQL("ALTER TABLE flights ADD COLUMN eventGroupId TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE flights ADD COLUMN eventDayIndex INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE flights ADD COLUMN eventTotalDays INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE flights ADD COLUMN lineCheckRole TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE flights ADD COLUMN flightTimeCreditEligible INTEGER NOT NULL DEFAULT 1")
+        db.execSQL("UPDATE flights SET rosterSource = 'DELIVERY' WHERE isAircraftDelivery = 1")
+        db.execSQL("UPDATE flights SET rosterSource = 'OPERATIONAL_CHANGE' WHERE dutyNote LIKE '%Manual operational roster change%'")
+        Log.d("CrewRoster", "Room migration 4 to 5 completed")
     }
 }

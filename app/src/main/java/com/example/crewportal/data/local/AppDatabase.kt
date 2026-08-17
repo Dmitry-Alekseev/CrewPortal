@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [FlightEntity::class, LogbookEntryEntity::class, FleetAircraftEntity::class, LeavePeriodEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,7 +24,7 @@ abstract class AppDatabase : RoomDatabase() {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "crew_portal.db"
-            ).addMigrations(MIGRATION_3_4).build().also { INSTANCE = it }
+            ).addMigrations(MIGRATION_3_4, MIGRATION_4_5).build().also { INSTANCE = it }
         }
     }
 }

@@ -30,8 +30,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.R
 import com.example.crewportal.data.repository.PreferencesRepository
+import com.example.crewportal.data.qualification.PilotQualificationSchedule
 import com.example.crewportal.ui.theme.SuccessGreen
 import com.example.crewportal.util.formatTotalMinutes
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun ProfileScreen(preferencesRepository: PreferencesRepository) {
@@ -91,24 +95,29 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
         }
 
         InfoCard("Documents & Qualifications") {
-            QualificationRow("Class 1 Medical Certificate", "Completed: 10 February 2026", "Next: 10 August 2026", "VALID")
-            QualificationRow("Safety & Emergency Procedures — Land", "Completed: 06 April 2026", "Next: 06 October 2026", "VALID")
-            QualificationRow("Safety & Emergency Procedures — Water", "Completed: 08 April 2026", "Next: 08 October 2026", "VALID")
-            QualificationRow("Simulator Recurrent Session", "Completed: 18 January 2026", "Next: 18 July 2026", "VALID")
-            QualificationRow("Line Check", "Completed: 06 May 2026", "Next: 06 August 2026", "VALID")
+            QualificationRow(PilotQualificationSchedule.medical.title, "Completed: ${profileDate(PilotQualificationSchedule.medical.completed)}", "Next: ${profileDate(PilotQualificationSchedule.medical.nextDue)} • 6-month cycle", "VALID")
+            QualificationRow(PilotQualificationSchedule.sepLand.title, "Completed: ${profileDate(PilotQualificationSchedule.sepLand.completed)}", "Next: ${profileDate(PilotQualificationSchedule.sepLand.nextDue)}", "VALID")
+            QualificationRow(PilotQualificationSchedule.sepWater.title, "Completed: ${profileDate(PilotQualificationSchedule.sepWater.completed)}", "Next: ${profileDate(PilotQualificationSchedule.sepWater.nextDue)}", "VALID")
+            QualificationRow(PilotQualificationSchedule.simulator.title, "Completed: ${profileDate(PilotQualificationSchedule.simulator.completed)}", "Next: ${profileDate(PilotQualificationSchedule.simulator.nextDue)} • 6-month cycle", "VALID")
+            QualificationRow(PilotQualificationSchedule.lineCheck.title, "Completed: ${profileDate(PilotQualificationSchedule.lineCheck.completed)}", "Next: ${profileDate(PilotQualificationSchedule.lineCheck.nextDue)} • 6-month cycle", "VALID")
         }
 
 
         InfoCard("Expiry Dashboard") {
-            ProfileRow("Medical certificate", "Due Aug 2026")
-            ProfileRow("Line check", "Due Aug 2026")
-            ProfileRow("Simulator recurrent", "Due Jul 2026")
-            ProfileRow("Emergency procedures", "Due Oct 2026")
+            ProfileRow("Medical certificate", "Due ${profileMonth(PilotQualificationSchedule.medical.nextDue)}")
+            ProfileRow("Line check", "Due ${profileMonth(PilotQualificationSchedule.lineCheck.nextDue)}")
+            ProfileRow("Simulator recurrent", "Due ${profileMonth(PilotQualificationSchedule.simulator.nextDue)}")
+            ProfileRow("Emergency procedures", "Due ${profileMonth(PilotQualificationSchedule.sepLand.nextDue)}")
             Spacer(Modifier.height(4.dp))
             Text("All qualifications are valid. Reminder threshold: 60 days before expiry.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
+
+private val profileDateFormatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.ENGLISH)
+private val profileMonthFormatter = DateTimeFormatter.ofPattern("MMM yyyy", Locale.ENGLISH)
+private fun profileDate(date: LocalDate): String = date.format(profileDateFormatter)
+private fun profileMonth(date: LocalDate): String = date.format(profileMonthFormatter)
 
 @Composable
 private fun InfoCard(title: String, content: @Composable ColumnScope.() -> Unit) {

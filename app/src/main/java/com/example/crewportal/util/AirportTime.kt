@@ -2,7 +2,7 @@ package com.example.crewportal.util
 
 import com.example.crewportal.data.airport.AirportDatabase
 import java.time.LocalDateTime
-import java.time.ZoneOffset
+import java.time.ZoneId
 
 /**
  * Converts a scheduled airport-local departure into the airport-local arrival time.
@@ -18,21 +18,19 @@ fun arrivalLocalDateTime(
     arrivalIata: String,
     blockMinutes: Int
 ): LocalDateTime {
-    val departureOffset = airportOffset(departureIata) ?: return departureLocal.plusMinutes(blockMinutes.toLong())
-    val arrivalOffset = airportOffset(arrivalIata) ?: return departureLocal.plusMinutes(blockMinutes.toLong())
+    val departureZone = airportZone(departureIata) ?: return departureLocal.plusMinutes(blockMinutes.toLong())
+    val arrivalZone = airportZone(arrivalIata) ?: return departureLocal.plusMinutes(blockMinutes.toLong())
     return departureLocal
-        .atOffset(departureOffset)
+        .atZone(departureZone)
         .plusMinutes(blockMinutes.toLong())
-        .withOffsetSameInstant(arrivalOffset)
+        .withZoneSameInstant(arrivalZone)
         .toLocalDateTime()
 }
 
-private fun airportOffset(iata: String): ZoneOffset? = AirportDatabase.byIata(iata)
-    ?.utcOffsetMinutes
-    ?.let { ZoneOffset.ofTotalSeconds(it * 60) }
+private fun airportZone(iata: String): ZoneId? = AirportDatabase.byIata(iata)?.zoneId?.let(ZoneId::of)
 
 /** Converts an airport-local legacy timestamp to a stable UTC instant. */
 fun airportLocalEpochMillis(localDateTime: String, iata: String): Long? {
-    val offset = airportOffset(iata) ?: return null
-    return LocalDateTime.parse(localDateTime).atOffset(offset).toInstant().toEpochMilli()
+    val zone = airportZone(iata) ?: return null
+    return LocalDateTime.parse(localDateTime).atZone(zone).toInstant().toEpochMilli()
 }

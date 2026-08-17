@@ -44,9 +44,10 @@ fun CompanyRoutesScreen(ru: Boolean) {
                     Text("Aircraft: ${item.aircraft}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Operation: ${item.operationType}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
-                        "Block time BKK-${item.destinationIata}: ${formatMinutes(item.outboundMinutes)} • ${item.destinationIata}-BKK: ${formatMinutes(item.inboundMinutes)}",
+                        "Block BKK-${item.destinationIata}: ${formatMinutes(item.outboundMinMinutes)}–${formatMinutes(item.outboundMaxMinutes)} • ${item.destinationIata}-BKK: ${formatMinutes(item.inboundMinMinutes)}–${formatMinutes(item.inboundMaxMinutes)}",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Text(if (item.autoGenerationEnabled) "Auto-generation: enabled" else "Auto-generation: manual only", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
