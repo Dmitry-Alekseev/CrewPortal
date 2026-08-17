@@ -102,9 +102,10 @@ fun FlightDetailsScreen(
             Text("Flight not found", modifier = Modifier.padding(padding).padding(24.dp))
         } else {
             val longHaul = item.durationMinutes >= 360
-            val augmentedCrew = item.durationMinutes > 10 * 60
+            val augmentedCrew = item.durationMinutes > 10 * 60 || item.dutyNote.contains("4 pilots", ignoreCase = true)
             val userAsInstructor = item.lineCheckRole == "INSTRUCTOR" || item.dutyNote.contains("Line pilot instructor", ignoreCase = true)
-            val crew = CrewPool.forFlight(item.id, augmentedCrew, userAsInstructor)
+            val deliveryPassenger = item.isAircraftDelivery && !item.flightTimeCreditEligible
+            val crew = CrewPool.forFlight(item.id, augmentedCrew, userAsInstructor || deliveryPassenger)
             val fuel = estimatedFuel(item.durationMinutes, item.aircraftLabel)
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -114,10 +115,18 @@ fun FlightDetailsScreen(
                 Text("${item.departureCity} → ${item.arrivalCity}", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 if (item.dutyType != "FLIGHT") {
-                    InfoCard(when (item.dutyType) { "OFF" -> "Day Off"; "STAY" -> "Stay in ${AirportDatabase.cityName(item.departureIata, item.departureCity)}"; else -> "${item.dutyType} Details" }) {
+                    InfoCard(when (item.dutyType) { "OFF" -> "Day Off"; "STAY" -> "Stay in ${AirportDatabase.cityName(item.departureIata, item.departureCity)}"; "DEADHEAD" -> "Passenger Positioning"; "CREW_REST" -> "Delivery Crew Rest"; "TECHNICAL_STOP" -> "Delivery Technical Stop"; else -> "${item.dutyType} Details" }) {
                         DetailRow("Date", displayDate(item.departureDateTime), displayDaySafe(item.departureDateTime))
                         DetailRow("Time", "${displayTime(item.departureDateTime)}-${displayTime(item.arrivalDateTime)}", "Local time")
-                        DetailRow("Location", when (item.dutyType) { "RESERVE", "STAY", "SIMULATOR", "MEDICAL", "SAFETY" -> item.departureAirport; else -> "Not applicable" }, item.departureCity)
+                        DetailRow(
+                            "Location",
+                            when (item.dutyType) {
+                                "DEADHEAD" -> "${item.departureIata} / ${item.departureIcao} → ${item.arrivalIata} / ${item.arrivalIcao}"
+                                "RESERVE", "STAY", "SIMULATOR", "MEDICAL", "SAFETY", "CREW_REST", "TECHNICAL_STOP" -> item.departureAirport
+                                else -> "Not applicable"
+                            },
+                            if (item.dutyType == "DEADHEAD") "${item.airline} ${item.flightNumber} • passenger" else item.departureCity
+                        )
                         DetailRow("Note", item.dutyNote.ifBlank { if (item.dutyType == "OFF") "No assigned duty" else "Company accommodation / reserve" }, "Company roster item")
                         if (item.eventGroupId.isNotBlank()) {
                             DetailRow("Event", item.eventGroupId, if (item.eventTotalDays > 1) "Day ${item.eventDayIndex}/${item.eventTotalDays}" else "Fixed qualification event")
@@ -136,6 +145,15 @@ fun FlightDetailsScreen(
                     DetailRow("Registration", if (item.registration == "TBA") "Assigned 24h prior" else item.registration, "Released with crew registration window")
                     DetailRow("Block Time", formatMinutes(item.durationMinutes), "Scheduled block time")
                     DetailRow("Status", if (item.isCompleted) "Completed" else if (item.isRegistered) "Registered" else "Scheduled", "Company portal synchronized")
+                }
+
+                if (item.isAircraftDelivery) {
+                    InfoCard("Aircraft Delivery Plan") {
+                        DetailRow("Delivery Route", "${item.departureIcao} → ${item.arrivalIcao}", "${item.departureIata} → ${item.arrivalIata}")
+                        DetailRow("New Aircraft", item.deliveryAircraftType.ifBlank { item.aircraftLabel }, item.registration)
+                        DetailRow("Crew / Role", item.dutyNote, if (item.flightTimeCreditEligible) "Operating block credited" else "Passenger/rest leg — no block credit")
+                        DetailRow("Fleet Activation", if (item.arrivalIata == "BKK") "After this leg arrives" else "After final BKK arrival", "Persistent fleet enrollment is idempotent")
+                    }
                 }
 
                 ElectronicLogbookCard(item, logbookRepository)
@@ -193,6 +211,9 @@ fun FlightDetailsScreen(
                 DutyLimitMonitorCard(item)
 
                 InfoCard("Crew List") {
+                    if (item.isAircraftDelivery) {
+                        DetailRow("Your Delivery Role", if (deliveryPassenger) "Passenger / in-flight rest" else "Operating pilot", item.dutyNote)
+                    }
                     DetailRow("Captain", crew.captain, "Operating commander")
                     DetailRow("First Officer", crew.firstOfficer, "Operating pilot")
                     if (crew.reliefCaptain != null) DetailRow("Relief Captain", crew.reliefCaptain, "Augmented crew")

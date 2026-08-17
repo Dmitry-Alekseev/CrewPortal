@@ -3,6 +3,8 @@ package com.example.crewportal.data.repository
 import android.content.Context
 import android.util.Log
 import com.example.crewportal.data.airport.AirportAssignmentPool
+import com.example.crewportal.data.delivery.AircraftDeliveryPlanner
+import com.example.crewportal.data.delivery.AircraftDeliveryRequest
 import com.example.crewportal.data.fleet.AircraftTypeCatalog
 import com.example.crewportal.data.local.FlightDao
 import com.example.crewportal.data.local.FlightEntity
@@ -56,10 +58,9 @@ class FlightRepository(
         val installedVersion = preferencesRepository.installedAppVersion.first()
         if (installedVersion != versionName) {
             // App updates must never overwrite or hide the active local/generated roster.
-            // Keep the review/accept state; only refresh the installed version marker and reopen
-            // the one-time generator test for the new build.
+            // Keep the review/accept state and the permanent one-time test marker. The hidden
+            // generator must not become available again merely because the app was updated.
             preferencesRepository.setInstalledAppVersion(versionName)
-            preferencesRepository.setSecretRosterGeneratorUsed(false)
         }
 
         restoreGeneratedRosterStateIfNeeded()
@@ -282,7 +283,7 @@ class FlightRepository(
                     )
                 }
             }
-            if (flight.isAircraftDelivery && !flight.deliveryProcessed && hasArrived(flight.arrivalDateTime, flight.arrivalIata)) {
+            if (flight.isAircraftDelivery && flight.arrivalIata == "BKK" && !flight.deliveryProcessed && hasArrived(flight.arrivalDateTime, flight.arrivalIata)) {
                 fleetRepository.addDeliveredAircraft(
                     registration = flight.registration,
                     aircraftLabel = flight.deliveryAircraftType.ifBlank { flight.aircraftLabel },
@@ -302,12 +303,18 @@ class FlightRepository(
         }
     }
 
-    suspend fun generateJuneRosterTest() {
-        if (preferencesRepository.secretRosterGeneratorUsed.first()) return
+    /**
+     * One-time QA escape hatch for preparing next month before the normal day-27 gate.
+     * The permanent flag is written only after a successful insert and is never reset by update,
+     * draft deletion or process restart.
+     */
+    suspend fun generateNextMonthRosterOnce(): Boolean {
+        if (preferencesRepository.secretRosterGeneratorUsed.first()) return false
         val targetMonth = currentBangkokMonth().plusMonths(1)
-        val generated = RosterGenerator.generateForMonth(targetMonth)
         val prefix = "%04d-%02d".format(targetMonth.year, targetMonth.monthValue)
         val current = flightDao.getAllOnce()
+        if (current.any { it.departureDateTime.startsWith(prefix) }) return false
+        val generated = RosterGenerator.generateForMonth(targetMonth)
         val preserved = current.filterNot { it.departureDateTime.startsWith(prefix) }
         val merged = (preserved + generated).sortedBy { it.departureDateTime }
         flightDao.replaceAll(normalizeInstants(merged))
@@ -321,6 +328,7 @@ class FlightRepository(
             "${targetMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${targetMonth.year} roster is ready for calendar review.",
             2_100_000 + targetMonth.monthValue
         )
+        return true
     }
 
 
@@ -333,13 +341,49 @@ class FlightRepository(
         RosterNotificationScheduler.scheduleRoster(context, preserved)
         preferencesRepository.resetNextMonthRosterDecision()
         preferencesRepository.setNextMonthRosterPrepared(false)
-        preferencesRepository.setSecretRosterGeneratorUsed(false)
         NotificationHelper.show(
             context,
             "Next roster draft cleared",
             "${targetMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${targetMonth.year} draft roster was removed. Current active roster was not changed.",
             2_100_500 + targetMonth.monthValue
         )
+    }
+
+    /**
+     * Applies a complete Airbus delivery plan as one roster state transition. Ordinary generated
+     * duties on affected dates are replaced automatically because the simplified 3.0 form has no
+     * replacement switch. Qualification groups remain protected and make the operation fail
+     * atomically instead of being partially removed.
+     */
+    suspend fun addAircraftDeliveryPlan(request: AircraftDeliveryRequest): Boolean {
+        val plan = AircraftDeliveryPlanner.build(request)
+        val affectedDates = plan.rows.flatMap { row ->
+            listOf(
+                parseLocalDateTime(row.departureDateTime).toLocalDate(),
+                parseLocalDateTime(row.arrivalDateTime).toLocalDate()
+            )
+        }.toSet()
+        val existing = flightDao.getAllOnce()
+        val protectedQualification = existing.any { item ->
+            parseLocalDateTime(item.departureDateTime).toLocalDate() in affectedDates &&
+                item.eventGroupId.isNotBlank() &&
+                (item.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY") || item.lineCheckRole.isNotBlank())
+        }
+        if (protectedQualification) return false
+
+        val merged = (
+            existing.filterNot { parseLocalDateTime(it.departureDateTime).toLocalDate() in affectedDates } +
+                plan.rows
+            ).sortedBy { it.departureDateTime }
+        flightDao.replaceAll(normalizeInstants(merged))
+        RosterNotificationScheduler.scheduleRoster(context, merged)
+        NotificationHelper.show(
+            context,
+            "Aircraft Delivery planned",
+            "XFW-${plan.intermediateIata}-BKK • ${plan.flightCrewSize} pilots • ${plan.stopMinutes / 60}h ${plan.stopMinutes % 60}m stop • ${request.registration}",
+            ("delivery-${request.deliveryDate}-${request.registration}").hashCode()
+        )
+        return true
     }
 
 

@@ -39,9 +39,9 @@ object AirportTimeZoneDirectory {
         listOf("DEL", "BOM", "BLR", "MAA", "HYD", "CCU", "AMD").forEach { put(it, "Asia/Kolkata") }
         put("DAC", "Asia/Dhaka"); put("KTM", "Asia/Kathmandu"); put("CMB", "Asia/Colombo")
         listOf("ISB", "LHE", "KHI").forEach { put(it, "Asia/Karachi") }
-        put("DXB", "Asia/Dubai"); put("DOH", "Asia/Qatar"); put("KWI", "Asia/Kuwait"); put("MCT", "Asia/Muscat")
+        listOf("DXB", "DWC").forEach { put(it, "Asia/Dubai") }; put("DOH", "Asia/Qatar"); put("GYD", "Asia/Baku"); put("KWI", "Asia/Kuwait"); put("MCT", "Asia/Muscat")
         listOf("JED", "MED").forEach { put(it, "Asia/Riyadh") }
-        put("IST", "Europe/Istanbul"); listOf("FRA", "MUC").forEach { put(it, "Europe/Berlin") }
+        put("IST", "Europe/Istanbul"); listOf("FRA", "MUC", "HAM", "XFW").forEach { put(it, "Europe/Berlin") }
         put("ZRH", "Europe/Zurich"); put("LHR", "Europe/London"); put("CDG", "Europe/Paris"); put("BRU", "Europe/Brussels")
         put("CPH", "Europe/Copenhagen"); put("ARN", "Europe/Stockholm"); put("OSL", "Europe/Oslo")
         listOf("FCO", "MXP").forEach { put(it, "Europe/Rome") }; put("AMS", "Europe/Amsterdam")
@@ -114,7 +114,9 @@ object AirportDatabase {
         AirportInfo("KHI", "OPKC", "Jinnah Intl", "Karachi", "Pakistan", 300, 100, "07L/25R, 07R/25L", "Pakistan station.", "Regional long sector operation."),
 
         AirportInfo("DXB", "OMDB", "Dubai Intl", "Dubai", "United Arab Emirates", 240, 62, "12L/30R, 12R/30L", "Middle East station.", "High-density international operation."),
+        AirportInfo("DWC", "OMDW", "Al Maktoum Intl / Dubai World Central", "Dubai", "United Arab Emirates", 240, 170, "12/30", "Aircraft delivery technical stop.", "Fuel, handling and crew support for delivery operations."),
         AirportInfo("DOH", "OTHH", "Hamad Intl", "Doha", "Qatar", 180, 13, "16L/34R, 16R/34L", "Middle East station.", "Long/medium-haul connection station."),
+        AirportInfo("GYD", "UBBB", "Heydar Aliyev Intl", "Baku", "Azerbaijan", 240, 10, "16/34, 17/35", "Aircraft delivery technical stop.", "Fuel and crew support available by prior arrangement."),
         AirportInfo("KWI", "OKKK", "Kuwait Intl", "Kuwait City", "Kuwait", 180, 206, "15L/33R, 15R/33L", "Middle East station.", "Hot weather performance briefing may be required."),
         AirportInfo("MCT", "OOMS", "Muscat Intl", "Muscat", "Oman", 240, 48, "08L/26R, 08R/26L", "Middle East station.", "Regional Middle East operation."),
         AirportInfo("JED", "OEJN", "King Abdulaziz Intl", "Jeddah", "Saudi Arabia", 180, 48, "16L/34R, 16C/34C, 16R/34L", "Saudi Arabia station.", "Seasonal religious traffic; station briefing required."),
@@ -122,6 +124,8 @@ object AirportDatabase {
 
         AirportInfo("IST", "LTFM", "Istanbul Airport", "Istanbul", "Türkiye", 180, 325, "16L/34R, 16R/34L, 17L/35R, 17R/35L, 18/36", "Europe/Türkiye long-haul station.", "Large airport, gate/stand and taxi planning important."),
         AirportInfo("FRA", "EDDF", "Frankfurt Main", "Frankfurt", "Germany", 120, 364, "07L/25R, 07C/25C, 07R/25L, 18", "Europe long-haul station.", "Major Star Alliance hub; company handling available."),
+        AirportInfo("HAM", "EDDH", "Hamburg Airport", "Hamburg", "Germany", 120, 53, "05/23, 15/33", "Passenger positioning destination.", "Commercial arrival airport for Airbus delivery crews."),
+        AirportInfo("XFW", "EDHI", "Hamburg Finkenwerder", "Hamburg", "Germany", 120, 23, "05/23", "Airbus production and delivery airfield.", "Aircraft delivery flight begins at EDHI; no separate EDDH-EDHI roster item is shown."),
         AirportInfo("MUC", "EDDM", "Munich", "Munich", "Germany", 120, 1487, "08L/26R, 08R/26L", "Europe station.", "Long-haul station with local handler."),
         AirportInfo("ZRH", "LSZH", "Zurich", "Zurich", "Switzerland", 120, 1416, "10/28, 14/32, 16/34", "Europe station.", "Alpine weather monitoring where applicable."),
         AirportInfo("LHR", "EGLL", "Heathrow", "London", "United Kingdom", 60, 83, "09L/27R, 09R/27L", "Europe long-haul station.", "Slot-controlled airport; ground delay monitoring required."),

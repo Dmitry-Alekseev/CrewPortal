@@ -5,6 +5,8 @@ enum class DutyType(val value: String) {
     FLIGHT("FLIGHT"),
     AIRCRAFT_DELIVERY("AIRCRAFT_DELIVERY"),
     DEADHEAD("DEADHEAD"),
+    CREW_REST("CREW_REST"),
+    TECHNICAL_STOP("TECHNICAL_STOP"),
     STAY("STAY"),
     OFF("OFF"),
     RESERVE("RESERVE"),

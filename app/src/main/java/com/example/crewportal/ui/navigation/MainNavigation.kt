@@ -35,9 +35,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -147,6 +149,10 @@ fun MainNavigation(
             if (showBackButton) {
                 TopAppBar(
                     title = { Text(titleForRoute(currentRoute, ru)) },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground
+                    ),
                     navigationIcon = {
                         IconButton(onClick = {
                             if (!navController.popBackStack()) {
@@ -265,7 +271,10 @@ private fun BottomBar(
     val hasUnreadMessages = (nextPrepared && "next-roster-ready" !in readIds && "next-roster-ready" !in deletedIds) ||
         (enhancedTarget && "90h-extra-duty-pending" !in readIds && "90h-extra-duty-pending" !in deletedIds) || manualUnread
 
-    NavigationBar {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp
+    ) {
         items.forEach { screen ->
             val icon = when (screen) {
                 Screen.Schedule -> Icons.Default.Flight
@@ -307,6 +316,13 @@ private fun BottomBar(
 
             NavigationBarItem(
                 selected = selected,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
                 onClick = {
                     if (currentRoute != screen.route) {
                         navController.navigate(screen.route) {

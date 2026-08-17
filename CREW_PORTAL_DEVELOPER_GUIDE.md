@@ -1,6 +1,6 @@
 # Crew Portal Developer Guide / FAQ
 
-Документ описывает проект Crew Portal 2.2.10 в том виде, в котором он находится в этом архиве. Цель — дать новому разработчику карту кода, состояния и business rules, а также показать безопасные точки изменения.
+Документ описывает проект Crew Portal 3.0. Цель — дать новому разработчику карту кода, состояния и business rules, а также показать безопасные точки изменения.
 
 ## 1. Быстрый старт
 
@@ -126,14 +126,15 @@ RosterGenerator / RosterChangeEngine / notification scheduler
 | `observeCompleted()` | — | Completed operating flights. | Logbook. |
 | `observeFlight(id)` | duty id | Один duty Flow. | Flight Details, MEL navigation. |
 | `loadScheduleFromAssetsIfNeeded()` | — | Если Room пуст, генерирует current month, inserts и schedules alarms. Если есть хотя бы одна запись — ничего не меняет. | App bootstrap. |
-| `refreshBuiltInRosterOnAppUpdate(versionName)` | installed build version | Безопасно seed-ит только пустую БД; при update обновляет version marker и test-generator flag. Не перегенерирует опубликованный current roster. | MainActivity. |
+| `refreshBuiltInRosterOnAppUpdate(versionName)` | installed build version | Безопасно seed-ит только пустую БД и обновляет version marker. Не перегенерирует опубликованный current roster и не сбрасывает permanent one-time generator flag. | MainActivity. |
 | `refreshCompletedFlights(showNotifications)` | publish OS notifications или нет | Применяет due roster change, назначает registration/gate, отмечает arrivals completed и ровно один раз добавляет flight time. | MainActivity, pull-to-refresh, Settings sync. |
 | `registerFlight(id)` | flight id | Назначает aircraft/airport position, propagates registration на paired turnaround и ставит `isRegistered`. | Roster/Flight Details action. |
-| `generateJuneRosterTest()` | — | Legacy name: генерирует фактически `YearMonth.now()+1`, сохраняет current month и заменяет только target month. One-shot через DataStore flag. | Hidden/manual Settings flow. |
+| `generateNextMonthRosterOnce()` | — | До штатной day-27 gate генерирует `YearMonth.now()+1`, только если target rows отсутствуют. После успешной транзакции ставит permanent DataStore flag; update/delete/restart его не сбрасывают. | Пять нажатий по версии в Settings + confirmation. |
 | `deleteNextMonthRosterDraft()` | — | Удаляет только next-month rows и сбрасывает review flags. Current roster сохраняется. | Settings. |
 | `setNextMonthRosterDecision(reviewed, enhancedTarget)` | review и 90h flags | Persist review state; при 90h публикует informational notification. | Calendar review dialog. |
 | `publishExtraDutyForSelectedTarget()` | — | Находит OFF/RESERVE date, добавляет deterministic SIN turnaround с marker `EXTRA-90H-*`. | Messages action. |
 | `addOperationalRosterChange(...)` | date/time/flights/destination/aircraft/registration/pattern/return/replace/instructor | Удаляет только разрешённые rows, строит manual duty, inserts, reschedules alarms и уведомляет. | Hidden Operational Roster Change dialog, Roster, Calendar, History. |
+| `addAircraftDeliveryPlan(request)` | date/flight/type/HS-registration | Атомарно заменяет обычные duty на затронутых датах полной delivery chain; qualification groups защищены. | Simplified Aircraft Delivery form, Roster, Calendar, Flight Details, Fleet. |
 | `simulateRosterChange()` | — | Публикует demo monitoring notification; roster не переписывает. | Developer/testing actions. |
 
 `addOperationalRosterChange` details:
@@ -337,19 +338,11 @@ Route definitions пока не сведены в единую full route table,
 
 `AircraftPool.kt` содержит `FleetAircraft` и static active fleet. `assignFor(aircraftLabel, routeClass, flightId)` нормализует type, не пересекает aircraft families и deterministically выбирает registration. `byRegistration` используется MEL/details.
 
-### Aircraft Delivery — current project status
+### Aircraft Delivery — Crew Portal 3.0
 
-В переданном проекте нет `AircraftDelivery` model/repository/screen, delivery date, pending-delivery state или activation migration. Все entries из `AircraftPool.aircraft` считаются доступными сразу. Поэтому текущая версия не может честно показывать или планировать будущую Aircraft Delivery.
+`data/delivery/AircraftDeliveryPlanner.kt` — единый источник delivery routing. `AircraftDeliveryRequest` принимает дату, номер рейса, type и registration. `build()` детерминированно создаёт BKK-DXB-HAM passenger positioning, затем XFW/EDHI → GYD/DWC/DOH/MCT → BKK. EDDH-EDHI row намеренно отсутствует. Для двух пилотов planner создаёт `CREW_REST` 8-12h; для четырёх — `TECHNICAL_STOP` 2-4h и противоположные operating/passenger roles по лэгам.
 
-Безопасный путь реализации:
-
-1. Добавить `deliveryDate: LocalDate?` и/или typed availability в fleet domain model.
-2. Сделать функцию `availableAircraft(onDate)` единственным фильтром для FleetScreen и `assignFor`.
-3. Передать flight date в assignment, чтобы недоставленный борт не назначался.
-4. Добавить delivery message/notification idempotency state. Если оно persisted — DataStore key или Room entity + migration.
-5. Добавить tests: before delivery unavailable, on/after delivery available, notification publishes once.
-
-Не добавляйте вымышленные delivery dates только в UI: assignment pool и notifications должны читать тот же state.
+`FlightRepository.addAircraftDeliveryPlan` выполняет одну atomic roster replacement. `refreshCompletedFlights` вызывает `FleetRepository.addDeliveredAircraft` только для финального delivery row с `arrivalIata == BKK`, поэтому промежуточное прибытие не активирует борт. `deliveryProcessed` и Room upsert сохраняют idempotency.
 
 ### MEL
 
@@ -442,7 +435,7 @@ UI fields — `OperationalRosterChangeDialog`; validation/callback — `Schedule
 
 ### ...изменить next-month generation date
 
-`FlightRepository.prepareNextMonthRosterIfDue` вычисляет `currentMonth.atEndOfMonth().minusDays(6)`. Её вызывает `NextRosterWorker`, зарегистрированный `NextRosterScheduler` как immediate/daily unique work. При изменении даты сохраните idempotency и не связывайте этот путь с current-month regeneration.
+`FlightRepository.prepareNextMonthRosterIfDue` использует 27-е число текущего месяца. Её вызывает `NextRosterWorker`, зарегистрированный `NextRosterScheduler` как immediate/daily unique work. При изменении даты сохраните idempotency и не связывайте этот путь с current-month regeneration. Одноразовый QA bypass находится отдельно в `generateNextMonthRosterOnce`.
 
 ### ...изменить UI buttons/colors
 
@@ -459,7 +452,7 @@ UI fields — `OperationalRosterChangeDialog`; validation/callback — `Schedule
 
 ### ...добавить Aircraft Delivery
 
-Добавьте type в `AircraftTypeCatalog`, проверьте registration validation в `FleetRepository`, поля dialog в `ScheduleScreen` и completion transition в `FlightRepository.refreshCompletedFlights`. Будущий aircraft не показывается как Active и не включается в assignment pool до фактического arrival delivery flight.
+Добавьте `AircraftTypeSpec`, включите label в `AircraftTypeCatalog.deliveryTypes`, проверьте normalization в `FleetRepository`, performance в `AircraftDeliveryPlanner` и completion transition в `FlightRepository.refreshCompletedFlights`. Будущий aircraft не показывается как Active и не включается в assignment pool до финального BKK arrival.
 
 ## 16. Tests и CI
 
@@ -468,6 +461,7 @@ Unit tests:
 - `AirportTimeTest` — BKK/TAS offsets и unknown-airport fallback;
 - `TashkentRotationFactoryTest` — Friday/Saturday STAY, Sunday operating return, same-Sunday deadhead departure и block credit;
 - `RosterMetricsTest` — monthly duty-type/completion filters.
+- `AircraftDeliveryPlannerTest` — positioning, отсутствие EDDH-EDHI row, stop/rest ranges и чередование роли пользователя.
 
 GitHub workflow выполняет:
 
@@ -526,12 +520,13 @@ Reports и APK публикуются отдельными artifacts. Release wo
 ### Aircraft Delivery / Ferry
 
 - type metadata: `data/fleet/AircraftTypeCatalog.kt`;
+- route/crew/rest rules: `data/delivery/AircraftDeliveryPlanner.kt`;
 - persisted aircraft: `FleetAircraftEntity`, `FleetAircraftDao`, `FleetRepository`;
-- input: `OperationalRosterChangeDialog`;
-- duty creation/completion: `FlightRepository.addOperationalRosterChange`, `buildManualDuty`, `refreshCompletedFlights`;
+- input: simplified delivery branch in `OperationalRosterChangeDialog`;
+- duty creation/completion: `AircraftDeliveryPlanner.build`, `FlightRepository.addAircraftDeliveryPlan`, `refreshCompletedFlights`;
 - display: `FleetScreen` observes Room.
 
-Delivery — однонаправленный operating sector. Registration вводится только suffix; UI показывает неизменяемый `HS-`, repository повторно валидирует полный номер. `A330neo` описан как Airbus A330-941 / Trent 7000 и не нормализуется в A330-300. После arrival `FleetRepository.addDeliveredAircraft` выполняет upsert, затем `deliveryProcessed` делает переход idempotent. До прибытия новый борт в assignment pool не попадает.
+Delivery form показывает только дату, flight number, один из пяти разрешённых типов и suffix после неизменяемого `HS-`. Planner добавляет passenger positioning и два ferry legs. A330-800neo и A330-900neo имеют разные specs и не нормализуются в A330-300. После финального BKK arrival `FleetRepository.addDeliveredAircraft` выполняет upsert, затем `deliveryProcessed` делает переход idempotent. До прибытия новый борт в assignment pool не попадает.
 
 Как добавить новый deliverable aircraft type: добавьте `AircraftTypeSpec` в `AircraftTypeCatalog.types`. UI получает список автоматически. Если требуется особая совместимость маршрутов, обновите `FleetRepository.normalizeLabel/assignFor` и добавьте unit test.
 

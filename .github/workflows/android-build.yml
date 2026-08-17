@@ -53,11 +53,11 @@ jobs:
       - name: Prepare named APK
         run: |
           mkdir -p release
-          cp app/build/outputs/apk/debug/*.apk release/CrewPortal-2.2.10.apk
+          cp app/build/outputs/apk/debug/*.apk release/CrewPortal-3.0.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CrewPortal-2.2.10-apk
-          path: release/CrewPortal-2.2.10.apk
+          name: CrewPortal-3.0-apk
+          path: release/CrewPortal-3.0.apk
           if-no-files-found: error
