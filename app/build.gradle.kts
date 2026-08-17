@@ -16,30 +16,8 @@ android {
         versionName = "2.2.8"
     }
 
-    signingConfigs {
-        getByName("debug") {
-            storeFile = file("crewportal-debug.keystore")
-            storePassword = "crewportal"
-            keyAlias = "crewportaldebug"
-            keyPassword = "crewportal"
-        }
-        val releaseStore = providers.gradleProperty("CREWPORTAL_STORE_FILE").orNull ?: System.getenv("CREWPORTAL_STORE_FILE")
-        val releaseStorePassword = providers.gradleProperty("CREWPORTAL_STORE_PASSWORD").orNull ?: System.getenv("CREWPORTAL_STORE_PASSWORD")
-        val releaseAlias = providers.gradleProperty("CREWPORTAL_KEY_ALIAS").orNull ?: System.getenv("CREWPORTAL_KEY_ALIAS")
-        val releaseKeyPassword = providers.gradleProperty("CREWPORTAL_KEY_PASSWORD").orNull ?: System.getenv("CREWPORTAL_KEY_PASSWORD")
-        if (!releaseStore.isNullOrBlank() && !releaseStorePassword.isNullOrBlank() && !releaseAlias.isNullOrBlank() && !releaseKeyPassword.isNullOrBlank()) {
-            create("release") {
-                storeFile = file(releaseStore)
-                storePassword = releaseStorePassword
-                keyAlias = releaseAlias
-                keyPassword = releaseKeyPassword
-            }
-        }
-    }
-
     buildTypes {
         release {
-            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

@@ -6,7 +6,7 @@
 - Уже опубликованный current month не регенерируется при обновлении приложения или изменении generator rules.
 - Добавлен заполняемый Electronic Pilot Logbook в Flight Details.
 - Добавлен Aircraft Delivery / Ferry с ручной регистрацией `HS-…`, новым типом A330neo и автоматическим добавлением борта в persistent Fleet после прибытия.
-- Выполнен согласованный рефакторинг persistence, roster state, routes, payroll, generator scheduling/time storage и release signing.
+- Выполнен согласованный рефакторинг persistence, roster state, routes, payroll и generator scheduling/time storage.
 - Версия во всех активных metadata/workflows/UI обновлена до `2.2.8`, `versionCode 2208`.
 
 ## Основные добавленные файлы
@@ -78,12 +78,7 @@ Generator стал детерминированным: один month/seed/rules
 
 ## Signing и GitHub
 
-Debug workflow запускает tests/lint/assemble и создаёт `CrewPortal-2.2.8.apk`. Release workflow собирает настоящий `assembleRelease`; debug key для release удалён. Для release нужны GitHub secrets:
-
-- `CREWPORTAL_KEYSTORE_BASE64`
-- `CREWPORTAL_STORE_PASSWORD`
-- `CREWPORTAL_KEY_ALIAS`
-- `CREWPORTAL_KEY_PASSWORD`
+Оба workflow запускают `testDebugUnitTest`, `lintDebug`, `assembleDebug`. `android-build.yml` загружает APK как artifact, а `release-apk.yml` публикует тот же installable debug APK как `CrewPortal-2.2.8.apk` в GitHub Release. В репозитории нет keystore-файлов и паролей; стандартный временный debug key создаёт Android Gradle Plugin на runner автоматически.
 
 ## Проверка
 
@@ -100,4 +95,4 @@ Debug workflow запускает tests/lint/assemble и создаёт `CrewPor
 - Electronic Logbook — local operational record, не сертифицированная регулятором система хранения.
 - Leave compatibility cache всё ещё существует для старых synchronous consumers, хотя source records теперь persist в Room.
 - Generator-specific schedule templates пока остаются в `RosterGenerator`; `RouteCatalog` владеет общими route facts, но не номерами/временем рейсов.
-- Release secrets/keystore намеренно не включены в архив.
+- Публикуемый GitHub APK является debug/testing build, а не Play Store production release.

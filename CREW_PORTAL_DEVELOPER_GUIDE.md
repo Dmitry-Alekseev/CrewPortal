@@ -485,7 +485,7 @@ Reports и APK публикуются отдельными artifacts. Release wo
 - Next-month due-date function запускается immediate/daily WorkManager worker.
 - Payroll — local projection, не authoritative payroll backend.
 - Room 3→4 использует явную migration без destructive fallback; future schema changes требуют новых migrations.
-- Release APK требует secret-backed production keystore; debug key используется только для debug build.
+- GitHub Release публикует installable debug APK и не требует signing secrets; это testing distribution, не Play Store signing.
 - Local Android compile зависит от установленного Android SDK; GitHub CI является подготовленной воспроизводимой build path для этого архива.
 
 ## 18. Safe change checklist
@@ -553,4 +553,4 @@ Payroll policy вынесена из Compose в pure `data/payroll/PayrollCalcul
 
 ### Release signing
 
-Debug build использует local debug keystore. Release больше не подписывается debug key. `app/build.gradle.kts` читает `CREWPORTAL_STORE_FILE`, `CREWPORTAL_STORE_PASSWORD`, `CREWPORTAL_KEY_ALIAS`, `CREWPORTAL_KEY_PASSWORD`. GitHub workflow `release-apk.yml` дополнительно ожидает secret `CREWPORTAL_KEYSTORE_BASE64`, собирает `assembleRelease` и публикует signed APK. Секреты и keystore в архив не входят.
+Проект не содержит keystore-файлов и не требует GitHub signing secrets, `KEYSTORE_BASE64` или паролей. Android Gradle Plugin автоматически создаёт стандартный временный debug key на GitHub runner. `android-build.yml` и `release-apk.yml` собирают `testDebugUnitTest`, `lintDebug`, `assembleDebug`; release workflow переименовывает installable debug APK и прикладывает его к GitHub Release. Такой APK предназначен для тестирования и прямой установки. Для Google Play позднее потребуется отдельная стабильная production-signing схема, но она намеренно не входит в 2.2.8.
