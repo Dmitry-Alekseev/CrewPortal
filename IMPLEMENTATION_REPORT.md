@@ -1,13 +1,16 @@
-# Crew Portal 2.2.8 — итоговый отчёт
+# Crew Portal 2.2.9 — итоговый отчёт
 
 ## Что реализовано
 
 - Сохранена TAS-логика: Thursday outbound → Friday/Saturday STAY → Sunday operating return; Sunday arrival → same-Sunday deadhead return.
 - Уже опубликованный current month не регенерируется при обновлении приложения или изменении generator rules.
+- Route Map переведена на полностью автономный Compose Canvas без tile server/API key; LED теперь имеет встроенные координаты.
+- BKK-LED использует 650/625 минут, BKK-LHR — 760/705 минут; fixed fallback 150/150 заменён distance-based оценкой.
+- STAY heading получает город из AirportDatabase, а hotel остаётся отдельным полем.
 - Добавлен заполняемый Electronic Pilot Logbook в Flight Details.
 - Добавлен Aircraft Delivery / Ferry с ручной регистрацией `HS-…`, новым типом A330neo и автоматическим добавлением борта в persistent Fleet после прибытия.
 - Выполнен согласованный рефакторинг persistence, roster state, routes, payroll и generator scheduling/time storage.
-- Версия во всех активных metadata/workflows/UI обновлена до `2.2.8`, `versionCode 2208`.
+- Версия во всех активных metadata/workflows/UI обновлена до `2.2.9`, `versionCode 2209`.
 
 ## Основные добавленные файлы
 
@@ -21,6 +24,7 @@
 - `data/repository/LeaveRepository.kt`
 - `data/fleet/AircraftTypeCatalog.kt`
 - `data/route/RouteCatalog.kt`
+- `data/airport/AirportGeoDirectory.kt`
 - `data/payroll/PayrollCalculator.kt`
 - `data/roster/NextRosterWorker.kt`
 - `ui/schedule/ElectronicLogbookCard.kt`
@@ -52,7 +56,9 @@ Room schema повышена с 3 до 4. Явная `MIGRATION_3_4`:
 
 Legacy ISO strings остаются airport-local для совместимости UI и прежней БД. Новые `departureEpochMillis`/`arrivalEpochMillis` хранят UTC instant; старые rows backfill-ятся через airport UTC offsets. Arrival calculation по-прежнему переводит departure local → instant → arrival local, поэтому BKK/TAS не складываются как одинаковые часовые зоны.
 
-`RouteCatalog` теперь является общим источником airport/block/hotel данных для Company Routes и manual duties. Generator-specific flight numbers/times остаются в генераторе.
+`RouteCatalog` является общим источником airport/block/hotel данных для Company Routes и manual duties. Explicit company time всегда приоритетен: LED 10h50/10h25, LHR 12h40/11h45. Unknown-but-known airport больше не получает 2h30: fallback рассчитывается по great-circle distance из `AirportGeoDirectory`. Generator-specific flight numbers/times остаются в генераторе.
+
+Route Map не делает сетевых запросов. `OfflineRouteMap` рисует встроенный world outline, coordinate grid, route arc и endpoints через Compose Canvas; osmdroid dependency удалена. LED добавлен в coordinate directory и generated layover routes.
 
 ## Monthly flight time и payroll
 
@@ -78,13 +84,14 @@ Generator стал детерминированным: один month/seed/rules
 
 ## Signing и GitHub
 
-Оба workflow запускают `testDebugUnitTest`, `lintDebug`, `assembleDebug`. `android-build.yml` загружает APK как artifact, а `release-apk.yml` публикует тот же installable debug APK как `CrewPortal-2.2.8.apk`. Debug build подписывается legacy `crewportal-debug.keystore`, который byte-for-byte совпадает с ключом предыдущего архива. Поэтому при одинаковом `applicationId` и повышенном `versionCode 2208` APK предназначен для обновления поверх прежней установки без удаления локальной БД. GitHub signing secrets не нужны.
+Оба workflow запускают `testDebugUnitTest`, `lintDebug`, `assembleDebug`. `android-build.yml` загружает APK как artifact, а `release-apk.yml` публикует installable debug APK как `CrewPortal-2.2.9.apk`. Debug build подписывается legacy `crewportal-debug.keystore`, GitHub signing secrets не нужны. Для согласованного clean-test пользователь удаляет 2.2.8 перед установкой: Android удалит старую локальную БД, а 2.2.9 создаст новую БД и roster текущего Bangkok month на первом запуске.
 
 ## Проверка
 
 - Gradle wrapper: 8.7; AGP 8.5.2; Kotlin 1.9.24; JDK 17.
 - `gradlew help --warning-mode all`: `BUILD SUCCESSFUL`.
-- Active metadata согласованы с `2.2.8/2208`.
+- Active metadata согласованы с `2.2.9/2209`.
+- Добавлен `RouteCatalogTest`: LED/LHR exact block time, LED coordinate и отсутствие fixed 150-minute fallback.
 - Runtime spelling `Rooster`: не найдено.
 - `fallbackToDestructiveMigration`: удалён.
 - Полный `assembleDebug` локально не запускался по прямой просьбе пользователя; Android SDK в локальной среде отсутствует. Архив подготовлен для проверки GitHub Actions.
@@ -92,6 +99,7 @@ Generator стал детерминированным: один month/seed/rules
 ## Известные ограничения
 
 - Результат Android compile/test/lint станет окончательно известен после первого GitHub Actions run.
+- Удаление 2.2.8 и установка APK выполняются пользователем на Android-устройстве; к телефону из рабочей среды доступа нет.
 - Electronic Logbook — local operational record, не сертифицированная регулятором система хранения.
 - Leave compatibility cache всё ещё существует для старых synchronous consumers, хотя source records теперь persist в Room.
 - Generator-specific schedule templates пока остаются в `RosterGenerator`; `RouteCatalog` владеет общими route facts, но не номерами/временем рейсов.

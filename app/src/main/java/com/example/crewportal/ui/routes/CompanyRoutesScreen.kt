@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.data.route.RouteCatalog
+import com.example.crewportal.util.formatMinutes
 
 @Composable
 fun CompanyRoutesScreen(ru: Boolean) {
@@ -42,7 +43,10 @@ fun CompanyRoutesScreen(ru: Boolean) {
                     Text(item.code, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                     Text("Aircraft: ${item.aircraft}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Operation: ${item.operationType}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Block time: ${item.outboundMinutes} / ${item.inboundMinutes} min", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Block time BKK-${item.destinationIata}: ${formatMinutes(item.outboundMinutes)} • ${item.destinationIata}-BKK: ${formatMinutes(item.inboundMinutes)}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

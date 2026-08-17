@@ -140,6 +140,7 @@ object RosterGenerator {
         LayoverRoute("FRA", "EDDF", "Frankfurt", "Frankfurt Main", "TG920", "TG921", "23:20:00", 690, 2, "13:45:00", 675, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("FRA"), "Long-haul augmented crew"),
         LayoverRoute("SVO", "UUEE", "Moscow", "Sheremetyevo Intl", "TG974", "TG975", "21:55:00", 605, 2, "16:20:00", 590, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("SVO"), "Moscow layover"),
         LayoverRoute("LHR", "EGLL", "London", "Heathrow", "TG910", "TG911", "00:55:00", 760, 2, "12:30:00", 705, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("LHR"), "Long-haul augmented crew"),
+        LayoverRoute("LED", "ULLI", "Saint Petersburg", "Pulkovo", "TG986", "TG987", "21:30:00", 650, 2, "15:10:00", 625, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("LED"), "Saint Petersburg layover"),
         LayoverRoute("NRT", "RJAA", "Tokyo", "Narita Intl", "TG642", "TG643", "23:50:00", 360, 2, "11:45:00", 410, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("NRT"), "Tokyo layover"),
         LayoverRoute("ICN", "RKSI", "Seoul", "Incheon Intl", "TG658", "TG659", "23:10:00", 325, 2, "10:50:00", 360, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("ICN"), "Seoul layover")
     )

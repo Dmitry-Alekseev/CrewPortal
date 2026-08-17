@@ -1,6 +1,6 @@
 # Crew Portal Developer Guide / FAQ
 
-Документ описывает проект Crew Portal 2.2.8 в том виде, в котором он находится в этом архиве. Цель — дать новому разработчику карту кода, состояния и business rules, а также показать безопасные точки изменения.
+Документ описывает проект Crew Portal 2.2.9 в том виде, в котором он находится в этом архиве. Цель — дать новому разработчику карту кода, состояния и business rules, а также показать безопасные точки изменения.
 
 ## 1. Быстрый старт
 
@@ -323,13 +323,13 @@ Input: month и полный roster snapshot. Output: `PayslipCalc`.
 - generated turnarounds/layovers: `RosterGenerator.kt`;
 - manual duration fallback: `FlightRepository.manualRoute`;
 - reference-only company list: `CompanyRoutesScreen.kt`;
-- map coordinates: `FlightDetailsScreen.routeMapPoint`.
+- offline map coordinates: `data/airport/AirportGeoDirectory.kt`.
 
 Route definitions пока не сведены в единую full route table, поэтому новый route необходимо согласованно добавить во все нужные consumers. Airports и hotels уже вынесены в shared catalogs.
 
 ### Hotels
 
-`CrewHotelDirectory.kt` — общий source of truth. Generated layovers, manual duties, TAS STAY и Flight Details читают его через `hotelFor(iata)`. Unknown IATA возвращает `Company contracted crew hotel`.
+`CrewHotelDirectory.kt` — общий source of truth. Generated layovers, manual duties, TAS STAY и Flight Details читают его через `hotelFor(iata)`. Unknown IATA возвращает city-specific `Company contracted hotel — <city>`.
 
 ## 12. Fleet, Aircraft Delivery и MEL
 
@@ -386,7 +386,7 @@ Release workflow: `.github/workflows/release-apk.yml`; input version опред�
 ### ...добавить новый аэропорт
 
 1. Добавьте `AirportInfo` в `AirportDatabase.airportList`, особенно правильный `utcOffsetMinutes`.
-2. Если нужен map, добавьте point в `FlightDetailsScreen.routeMapPoint`.
+2. Добавьте offline coordinate в `AirportGeoDirectory`; карта и fallback block-time используют один источник.
 3. Если airport имеет специальные gates/stands, расширьте `AirportAssignmentPool`.
 4. Добавьте timezone test для route с новым airport.
 
@@ -553,4 +553,21 @@ Payroll policy вынесена из Compose в pure `data/payroll/PayrollCalcul
 
 ### Release signing
 
-GitHub signing secrets и `KEYSTORE_BASE64` не нужны. В проект возвращён legacy `app/crewportal-debug.keystore`, полностью совпадающий с ключом предыдущего архива; `app/build.gradle.kts` использует его для debug build. Это сохраняет signing certificate при обновлении до 2.2.8 и позволяет Android оставить прежние Room/DataStore данные. `android-build.yml` и `release-apk.yml` собирают `testDebugUnitTest`, `lintDebug`, `assembleDebug`; release workflow прикладывает этот APK к GitHub Release. Для Google Play позднее потребуется отдельная production-signing схема.
+GitHub signing secrets и `KEYSTORE_BASE64` не нужны. В проект возвращён legacy `app/crewportal-debug.keystore`, полностью совпадающий с ключом предыдущего архива; `app/build.gradle.kts` использует его для debug build. Это сохраняет signing certificate при обновлении. Для согласованного clean-test 2.2.9 пользователь удаляет 2.2.8, поэтому Android очищает прежние Room/DataStore данные, а первый запуск создаёт новую БД текущего Bangkok month. `android-build.yml` и `release-apk.yml` собирают `testDebugUnitTest`, `lintDebug`, `assembleDebug`; release workflow прикладывает APK к GitHub Release. Для Google Play позднее потребуется отдельная production-signing схема.
+
+## 20. Offline maps и route-duration policy в 2.2.9
+
+`data/airport/AirportGeoDirectory.kt` — единый встроенный каталог координат. `FlightDetailsScreen.OfflineRouteMap` рисует нейтральную карту, маршрут и точки вылета/прилёта через Compose Canvas. Запросов к OpenStreetMap/Google Maps, API keys, WebView и tile servers нет; поэтому `Access blocked` не влияет на Route Map. Библиотека osmdroid удалена.
+
+`RouteCatalog.byIata` сначала возвращает явное company value. Для LED это 650/625 минут, для LHR — 760/705 минут. Если airport известен, но явной route entry нет, `estimatedRoute` вычисляет conservative scheduled block из great-circle distance `AirportGeoDirectory.distanceNm`; fixed fallback 150/150 удалён. Company Routes показывает форматированное время отдельно для outbound и inbound.
+
+STAY title не доверяет legacy `departureCity`: Calendar, Roster и Flight Details вызывают `AirportDatabase.cityName(iata, fallback)`. Сам hotel остаётся в `departureAirport`/`arrivalAirport` и `dutyNote`, поэтому location heading и accommodation больше не смешиваются.
+
+Чтобы добавить маршрут с картой:
+
+1. добавьте airport metadata в `AirportDatabase`;
+2. добавьте coordinate в `AirportGeoDirectory`;
+3. для company route добавьте explicit block times в `RouteCatalog`;
+4. для generated rotation добавьте flight-number/time template в `RosterGenerator`;
+5. при layover добавьте hotel в `CrewHotelDirectory`;
+6. добавьте unit test exact block time и наличие coordinate.

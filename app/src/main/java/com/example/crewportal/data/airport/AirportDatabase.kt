@@ -136,6 +136,10 @@ object AirportDatabase {
 
     fun all(): List<AirportInfo> = airportList.sortedBy { it.iata }
 
+    /** Prefer authoritative airport metadata over legacy roster text such as "crew hotel". */
+    fun cityName(iata: String, fallback: String = iata): String =
+        byIata(iata)?.city ?: fallback.ifBlank { iata.uppercase(Locale.ENGLISH) }
+
 
     fun shortAirportName(iata: String, fallbackName: String = ""): String {
         val code = iata.uppercase(Locale.ENGLISH)

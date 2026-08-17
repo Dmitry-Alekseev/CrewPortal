@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.leave.LeavePeriod
 import com.example.crewportal.data.local.FlightEntity
@@ -392,7 +393,7 @@ private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves:
             }
             val visibleDuties = if (leaves.isNotEmpty()) emptyList() else duties
             visibleDuties.forEach { duty ->
-                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") { if (ru) "ВЫХОДНОЙ" else "OFF" } else if (duty.dutyType == "RESERVE") { if (ru) "РЕЗЕРВ" else "RESERVE" } else if (duty.dutyType == "STAY") { if (ru) "ОТДЫХ В ${duty.departureCity.uppercase()}" else "Stay in ${duty.departureCity}" } else duty.dutyType
+                val label = if (duty.dutyType == "FLIGHT") "${duty.flightNumber} ${duty.departureIata}-${duty.arrivalIata}" else if (duty.dutyType == "OFF") { if (ru) "ВЫХОДНОЙ" else "OFF" } else if (duty.dutyType == "RESERVE") { if (ru) "РЕЗЕРВ" else "RESERVE" } else if (duty.dutyType == "STAY") { val city = AirportDatabase.cityName(duty.departureIata, duty.departureCity); if (ru) "ОТДЫХ В ${city.uppercase()}" else "Stay in $city" } else duty.dutyType
                 val chipColor = when (duty.dutyType) {
                     "FLIGHT" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                     "RESERVE" -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)

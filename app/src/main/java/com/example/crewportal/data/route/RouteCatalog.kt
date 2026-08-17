@@ -1,6 +1,7 @@
 package com.example.crewportal.data.route
 
 import com.example.crewportal.data.airport.AirportDatabase
+import com.example.crewportal.data.airport.AirportGeoDirectory
 import com.example.crewportal.data.airport.CrewHotelDirectory
 
 data class RouteDefinition(
@@ -45,7 +46,20 @@ object RouteCatalog {
     fun byIata(iata: String): RouteDefinition {
         val code = iata.uppercase()
         return routes.firstOrNull { it.destinationIata == code }
-            ?: route(code, 150, 150, "Company assigned", "Manual")
+            ?: estimatedRoute(code)
+    }
+
+    /**
+     * Unknown-but-supported airports no longer silently become a 2h30 sector. Estimate a
+     * conservative scheduled block from great-circle distance; explicit catalog values remain
+     * authoritative for every company route (including LED and LHR).
+     */
+    private fun estimatedRoute(iata: String): RouteDefinition {
+        val distanceNm = AirportGeoDirectory.distanceNm("BKK", iata)
+        val stillAirMinutes = distanceNm?.let { ((it / 470.0) * 60.0).toInt() }
+        val outbound = stillAirMinutes?.plus(45)?.coerceIn(75, 900) ?: 360
+        val inbound = stillAirMinutes?.plus(30)?.coerceIn(75, 900) ?: 345
+        return route(iata, outbound, inbound, "Company assigned", "Manual estimate")
     }
 
     private fun route(iata: String, outbound: Int, inbound: Int, aircraft: String, operation: String): RouteDefinition {

@@ -185,14 +185,12 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.2.8", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Added fillable Electronic Pilot Logbook to Flight Details.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Aircraft Delivery supports A330neo and manual HS- registration.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Leave requests now apply to shared roster/calendar leave state.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Profile updated to Line Pilot Instructor with license dated 19 June 2026.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Operational Roster Change can mark a duty as instructor/observer.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Instructor duties show Dmitrii as third crew member, not operating Captain.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Version metadata updated to 2.2.8.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 2.2.9", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Route maps are fully offline and no longer depend on blocked tile servers.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Saint Petersburg and London use authoritative long-haul block times.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Unknown routes use distance-based estimates instead of 2h 30m.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• STAY labels resolve the destination city instead of generic crew-hotel text.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Version metadata updated to 2.2.9.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

@@ -13,10 +13,11 @@ object CrewHotelDirectory {
         "ICN" to "Grand Hyatt Incheon",
         "SIN" to "Crowne Plaza Changi Airport",
         "HKT" to "The Slate Phuket",
-        "KBV" to "Krabi crew hotel",
+        "KBV" to "Sofitel Krabi Phokeethra Golf & Spa Resort",
         "KUL" to "Sama-Sama Hotel KLIA",
         "DPS" to "Hyatt Regency Bali",
         "TAS" to "Hyatt Regency Tashkent",
+        "LED" to "Cosmos Saint-Petersburg Pulkovo Airport Hotel",
         "MNL" to "Conrad Manila",
         "DEL" to "JW Marriott Aerocity",
         "CXR" to "Meliá Vinpearl Cam Ranh Beach Resort",
@@ -26,5 +27,8 @@ object CrewHotelDirectory {
         "MEL" to "Grand Hyatt Melbourne"
     )
 
-    fun hotelFor(iata: String): String = hotels[iata.uppercase()] ?: "Company contracted crew hotel"
+    fun hotelFor(iata: String): String {
+        val code = iata.uppercase()
+        return hotels[code] ?: "Company contracted hotel — ${AirportDatabase.cityName(code, code)}"
+    }
 }

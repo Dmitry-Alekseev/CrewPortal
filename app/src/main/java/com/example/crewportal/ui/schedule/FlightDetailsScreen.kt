@@ -1,11 +1,6 @@
 package com.example.crewportal.ui.schedule
 
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Typeface
-import android.graphics.drawable.BitmapDrawable
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -38,13 +33,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.key
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.data.airport.AirportDatabase
+import com.example.crewportal.data.airport.AirportGeoDirectory
+import com.example.crewportal.data.airport.AirportCoordinate
 import com.example.crewportal.data.airport.AirportInfo
 import com.example.crewportal.data.crew.CrewPool
 import com.example.crewportal.data.local.FlightEntity
@@ -71,13 +70,6 @@ import com.example.crewportal.util.nowAtAirport
 import com.example.crewportal.util.reportDateTime
 import com.example.crewportal.util.shouldShowRegistrationButton
 import kotlinx.coroutines.launch
-import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
-import org.osmdroid.views.CustomZoomButtonsController
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polyline
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,11 +106,11 @@ fun FlightDetailsScreen(
                 Text("${item.departureCity} → ${item.arrivalCity}", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 if (item.dutyType != "FLIGHT") {
-                    InfoCard(when (item.dutyType) { "OFF" -> "Day Off"; "STAY" -> "Stay in ${item.departureCity}"; else -> "${item.dutyType} Details" }) {
+                    InfoCard(when (item.dutyType) { "OFF" -> "Day Off"; "STAY" -> "Stay in ${AirportDatabase.cityName(item.departureIata, item.departureCity)}"; else -> "${item.dutyType} Details" }) {
                         DetailRow("Date", displayDate(item.departureDateTime), displayDaySafe(item.departureDateTime))
                         DetailRow("Time", "${displayTime(item.departureDateTime)}-${displayTime(item.arrivalDateTime)}", "Local time")
                         DetailRow("Location", when (item.dutyType) { "RESERVE", "STAY" -> item.departureAirport; else -> "Not applicable" }, item.departureCity)
-                        DetailRow("Note", item.dutyNote.ifBlank { if (item.dutyType == "OFF") "No assigned duty" else "Hotel reserve at airport crew hotel" }, "Company roster item")
+                        DetailRow("Note", item.dutyNote.ifBlank { if (item.dutyType == "OFF") "No assigned duty" else "Company accommodation / reserve" }, "Company roster item")
                     }
                     return@Column
                 }
@@ -279,82 +271,18 @@ private fun DutyLimitMonitorCard(flight: FlightEntity) {
 
 @Composable
 private fun RouteMapCard(flight: FlightEntity) {
-    val context = LocalContext.current
-    val departurePoint = routeMapPoint(flight.departureIata)
-    val arrivalPoint = routeMapPoint(flight.arrivalIata)
-
-    LaunchedEffect(flight.id) {
-        Configuration.getInstance().userAgentValue = context.packageName
-    }
+    val departurePoint = AirportGeoDirectory.byIata(flight.departureIata)
+    val arrivalPoint = AirportGeoDirectory.byIata(flight.arrivalIata)
 
     InfoCard("Route Map") {
         if (departurePoint == null || arrivalPoint == null) {
             Text(
-                "Route map unavailable for ${flight.departureIata}-${flight.arrivalIata}",
+                "Offline route diagram ${flight.departureIata}-${flight.arrivalIata} • coordinates pending",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             return@InfoCard
         }
-
-        val departureGeo = departurePoint.toGeoPoint()
-        val arrivalGeo = arrivalPoint.toGeoPoint()
-        val centerGeo = GeoPoint(
-            (departurePoint.latitude + arrivalPoint.latitude) / 2.0,
-            (departurePoint.longitude + arrivalPoint.longitude) / 2.0
-        )
-
-        key("${flight.id}-${flight.departureIata}-${flight.arrivalIata}") {
-            AndroidView(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(280.dp),
-                factory = { androidContext ->
-                    Configuration.getInstance().userAgentValue = androidContext.packageName
-                    MapView(androidContext).apply {
-                        setTileSource(TileSourceFactory.MAPNIK)
-                        setMultiTouchControls(true)
-                        zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
-                        minZoomLevel = 2.0
-                        maxZoomLevel = 12.0
-                        controller.setZoom(routeMapZoom(flight.durationMinutes))
-                        controller.setCenter(centerGeo)
-                    }
-                },
-                update = { mapView ->
-                    mapView.overlays.clear()
-
-                    val route = Polyline().apply {
-                        setPoints(listOf(departureGeo, arrivalGeo))
-                        color = android.graphics.Color.rgb(91, 0, 130)
-                        width = 7f
-                        title = "${flight.departureIata}-${flight.arrivalIata}"
-                    }
-
-                    val departureMarker = Marker(mapView).apply {
-                        position = departureGeo
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                        icon = letterMarkerDrawable(mapView.context, "A")
-                        title = "A • ${flight.departureIata}"
-                        snippet = flight.departureCity
-                    }
-
-                    val arrivalMarker = Marker(mapView).apply {
-                        position = arrivalGeo
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                        icon = letterMarkerDrawable(mapView.context, "B")
-                        title = "B • ${flight.arrivalIata}"
-                        snippet = flight.arrivalCity
-                    }
-
-                    mapView.controller.setZoom(routeMapZoom(flight.durationMinutes))
-                    mapView.controller.setCenter(centerGeo)
-                    mapView.overlays.add(route)
-                    mapView.overlays.add(departureMarker)
-                    mapView.overlays.add(arrivalMarker)
-                    mapView.invalidate()
-                }
-            )
-        }
+        OfflineRouteMap(departurePoint, arrivalPoint)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -367,7 +295,7 @@ private fun RouteMapCard(flight: FlightEntity) {
             )
 
             Text(
-                text = "${briefingDistanceNm(flight.durationMinutes)} NM",
+                text = "${AirportGeoDirectory.distanceNm(flight.departureIata, flight.arrivalIata) ?: briefingDistanceNm(flight.durationMinutes)} NM • offline",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -380,83 +308,63 @@ private fun RouteMapCard(flight: FlightEntity) {
     }
 }
 
+@Composable
+private fun OfflineRouteMap(departure: AirportCoordinate, arrival: AirportCoordinate) {
+    val routeColor = MaterialTheme.colorScheme.primary
+    val gridColor = MaterialTheme.colorScheme.outlineVariant
+    val landColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.22f)
+    val backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
 
+    Canvas(Modifier.fillMaxWidth().height(280.dp)) {
+        drawRect(backgroundColor)
+        for (longitude in -120..120 step 60) {
+            val x = ((longitude + 180.0) / 360.0 * size.width).toFloat()
+            drawLine(gridColor, Offset(x, 0f), Offset(x, size.height), 1f)
+        }
+        for (latitude in -60..60 step 30) {
+            val y = ((90.0 - latitude) / 180.0 * size.height).toFloat()
+            drawLine(gridColor, Offset(0f, y), Offset(size.width, y), 1f)
+        }
 
-private fun letterMarkerDrawable(context: Context, letter: String): BitmapDrawable {
-    val size = 84
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.rgb(91, 0, 130)
-        style = Paint.Style.FILL
+        offlineLandShapes.forEach { outline ->
+            val path = Path()
+            outline.forEachIndexed { index, point ->
+                val projected = project(point, size.width, size.height)
+                if (index == 0) path.moveTo(projected.x, projected.y) else path.lineTo(projected.x, projected.y)
+            }
+            path.close()
+            drawPath(path, landColor)
+        }
+
+        val start = project(departure, size.width, size.height)
+        val end = project(arrival, size.width, size.height)
+        val arc = Path().apply {
+            moveTo(start.x, start.y)
+            val control = Offset((start.x + end.x) / 2f, (start.y + end.y) / 2f - size.height * 0.15f)
+            quadraticBezierTo(control.x, control.y, end.x, end.y)
+        }
+        drawPath(arc, routeColor, style = Stroke(width = 6f, cap = StrokeCap.Round))
+        drawCircle(Color.White, radius = 10f, center = start)
+        drawCircle(routeColor, radius = 7f, center = start)
+        drawCircle(Color.White, radius = 10f, center = end)
+        drawCircle(routeColor, radius = 7f, center = end)
     }
-    val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.WHITE
-        style = Paint.Style.STROKE
-        strokeWidth = 5f
-    }
-    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.WHITE
-        textSize = 42f
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        textAlign = Paint.Align.CENTER
-    }
-    val radius = size / 2f - 6f
-    canvas.drawCircle(size / 2f, size / 2f, radius, fill)
-    canvas.drawCircle(size / 2f, size / 2f, radius, stroke)
-    val y = size / 2f - (textPaint.descent() + textPaint.ascent()) / 2f
-    canvas.drawText(letter, size / 2f, y, textPaint)
-    return BitmapDrawable(context.resources, bitmap)
 }
 
 private fun displayDaySafe(dateTime: String): String = com.example.crewportal.util.displayDay(dateTime)
 
-private data class MapPoint(
-    val latitude: Float,
-    val longitude: Float
+private fun project(point: AirportCoordinate, width: Float, height: Float): Offset = Offset(
+    x = (((point.longitude + 180.0) / 360.0) * width).toFloat(),
+    y = (((90.0 - point.latitude) / 180.0) * height).toFloat()
 )
 
-private fun MapPoint.toGeoPoint(): GeoPoint = GeoPoint(latitude.toDouble(), longitude.toDouble())
-
-private fun routeMapZoom(durationMinutes: Int): Double {
-    return when {
-        durationMinutes >= 600 -> 3.0
-        durationMinutes >= 360 -> 4.0
-        durationMinutes >= 180 -> 5.0
-        else -> 6.0
-    }
-}
-
-private fun routeMapPoint(iata: String): MapPoint? {
-    return when (iata.trim().uppercase()) {
-        "BKK" -> MapPoint(13.69f, 100.75f)
-        "HKT" -> MapPoint(8.11f, 98.31f)
-        "CXR" -> MapPoint(11.99f, 109.22f)
-        "SIN" -> MapPoint(1.36f, 103.99f)
-        "HKG" -> MapPoint(22.31f, 113.92f)
-        "IST" -> MapPoint(41.28f, 28.75f)
-        "FRA" -> MapPoint(50.04f, 8.56f)
-        "MEL" -> MapPoint(-37.67f, 144.84f)
-        "CDG" -> MapPoint(49.01f, 2.55f)
-        "NRT" -> MapPoint(35.77f, 140.39f)
-        "KUL" -> MapPoint(2.75f, 101.71f)
-        "DEL" -> MapPoint(28.56f, 77.10f)
-        "CNX" -> MapPoint(18.77f, 98.96f)
-        "SYD" -> MapPoint(-33.94f, 151.18f)
-        "KBV" -> MapPoint(8.10f, 98.99f)
-        "SGN" -> MapPoint(10.82f, 106.66f)
-        "HAN" -> MapPoint(21.22f, 105.81f)
-        "REP" -> MapPoint(13.41f, 103.81f)
-        "DAC" -> MapPoint(23.84f, 90.40f)
-        "MNL" -> MapPoint(14.51f, 121.02f)
-        "TAS" -> MapPoint(41.26f, 69.28f)
-        "SVO" -> MapPoint(55.97f, 37.41f)
-        "LHR" -> MapPoint(51.47f, -0.45f)
-        "ICN" -> MapPoint(37.46f, 126.44f)
-        "DPS" -> MapPoint(-8.75f, 115.17f)
-        else -> null
-    }
-}
+private val offlineLandShapes = listOf(
+    listOf(AirportCoordinate(72.0, -168.0), AirportCoordinate(70.0, -52.0), AirportCoordinate(15.0, -82.0), AirportCoordinate(8.0, -104.0), AirportCoordinate(30.0, -118.0)),
+    listOf(AirportCoordinate(12.0, -81.0), AirportCoordinate(-56.0, -68.0), AirportCoordinate(-20.0, -36.0), AirportCoordinate(8.0, -60.0)),
+    listOf(AirportCoordinate(72.0, -10.0), AirportCoordinate(72.0, 170.0), AirportCoordinate(8.0, 145.0), AirportCoordinate(0.0, 42.0), AirportCoordinate(37.0, -10.0)),
+    listOf(AirportCoordinate(35.0, -17.0), AirportCoordinate(-35.0, 18.0), AirportCoordinate(-35.0, 52.0), AirportCoordinate(12.0, 51.0)),
+    listOf(AirportCoordinate(-10.0, 112.0), AirportCoordinate(-44.0, 113.0), AirportCoordinate(-39.0, 154.0), AirportCoordinate(-12.0, 153.0))
+)
 
 private fun shouldShowAirportAssignment(flight: FlightEntity): Boolean {
     return flight.departureIata == "BKK" || flight.durationMinutes >= 360

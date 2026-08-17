@@ -690,7 +690,7 @@ fun DutyCard(flight: FlightEntity, onClick: (() -> Unit)?) {
     val isStay = flight.dutyType == "STAY"
     val title = when {
         isOff -> "OFF"
-        isStay -> "Stay in ${flight.departureCity}"
+        isStay -> "Stay in ${AirportDatabase.cityName(flight.departureIata, flight.departureCity)}"
         else -> flight.dutyType
     }
     Card(modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable { onClick() } else Modifier), shape = RoundedCornerShape(18.dp), elevation = CardDefaults.cardElevation(2.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {

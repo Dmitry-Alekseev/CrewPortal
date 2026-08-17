@@ -12,11 +12,11 @@ android {
         applicationId = "com.example.crewportal"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2208
-        versionName = "2.2.8"
+        versionCode = 2209
+        versionName = "2.2.9"
     }
 
-    // Keep the legacy Crew Portal certificate so 2.2.8 installs as an update over 2.2.x
+    // Keep the legacy Crew Portal certificate so 2.2.9 can also install as an update over 2.2.x
     // without uninstalling the app or deleting its local Room/DataStore data.
     signingConfigs {
         getByName("debug") {
@@ -84,8 +84,6 @@ dependencies {
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.fragment:fragment-ktx:1.8.5")
     implementation("androidx.core:core:1.13.1")
-
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
 
     testImplementation("junit:junit:4.13.2")
 }

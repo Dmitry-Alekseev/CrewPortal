@@ -1,5 +1,15 @@
 # Crew Portal Changelog
 
+## 2.2.9
+
+- Replaced the online osmdroid tile map with a bundled, offline Compose route map; no map API key or tile-server access is required.
+- Added LED to the offline airport-coordinate source and to generated long-haul layovers.
+- Confirmed authoritative block times: BKK-LED 10h50 / LED-BKK 10h25 and BKK-LHR 12h40 / LHR-BKK 11h45.
+- Replaced the fixed 2h30 unknown-route fallback with a distance-based scheduled-block estimate.
+- Made STAY headings derive the city from airport metadata, preventing legacy `crew hotel` text from becoming the displayed location.
+- Added unit coverage for LED/LHR block time, LED offline coordinates and non-150-minute route fallback.
+- Bumped Android, update and GitHub workflow metadata to 2.2.9 / versionCode 2209.
+
 ## 2.2.8
 
 - Added a fillable, certifiable EASA-style electronic pilot logbook to Flight Details.
