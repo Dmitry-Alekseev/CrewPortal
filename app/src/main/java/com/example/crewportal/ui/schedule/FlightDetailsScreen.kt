@@ -51,9 +51,9 @@ import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.fleet.AircraftPool
 import com.example.crewportal.data.mel.MelDatabase
 import com.example.crewportal.data.repository.FlightRepository
+import com.example.crewportal.data.repository.LogbookRepository
+import com.example.crewportal.data.airport.CrewHotelDirectory
 import com.example.crewportal.ui.theme.SuccessGreen
-import com.example.crewportal.ui.theme.ThaiPurple
-import com.example.crewportal.ui.theme.TextMuted
 import com.example.crewportal.util.alternateFor
 import com.example.crewportal.util.briefingDistanceNm
 import com.example.crewportal.util.canRegister
@@ -82,7 +82,13 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, onBack: () -> Unit, onMelClick: (String) -> Unit) {
+fun FlightDetailsScreen(
+    flightId: String,
+    flightRepository: FlightRepository,
+    logbookRepository: LogbookRepository,
+    onBack: () -> Unit,
+    onMelClick: (String) -> Unit
+) {
     val flight by flightRepository.observeFlight(flightId).collectAsState(initial = null)
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) { flightRepository.refreshCompletedFlights(showNotifications = false) }
@@ -128,6 +134,8 @@ fun FlightDetailsScreen(flightId: String, flightRepository: FlightRepository, on
                     DetailRow("Block Time", formatMinutes(item.durationMinutes), "Scheduled block time")
                     DetailRow("Status", if (item.isCompleted) "Completed" else if (item.isRegistered) "Registered" else "Scheduled", "Company portal synchronized")
                 }
+
+                ElectronicLogbookCard(item, logbookRepository)
 
                 AircraftTechnicalStatusCard(item, onMelClick)
 
@@ -455,21 +463,7 @@ private fun shouldShowAirportAssignment(flight: FlightEntity): Boolean {
 }
 
 private fun layoverHotelFor(iata: String): String {
-    return when (iata.uppercase()) {
-        "BKK" -> "Hyatt Regency Bangkok Suvarnabhumi Airport"
-        "IST" -> "Grand Hyatt Istanbul"
-        "FRA" -> "JW Marriott Hotel Frankfurt"
-        "SIN" -> "Pan Pacific Singapore"
-        "HKT" -> "The Slate Phuket"
-        "CXR" -> "Meliá Vinpearl Cam Ranh Beach Resort"
-        "NRT", "HND" -> "The Prince Gallery Tokyo Kioicho"
-        "LHR" -> "Sofitel London St James"
-        "ZRH" -> "Zurich Marriott Hotel"
-        "MUC" -> "Hilton Munich City"
-        "SYD" -> "Hilton Sydney"
-        "MEL" -> "Grand Hyatt Melbourne"
-        else -> "Company contracted crew hotel"
-    }
+    return CrewHotelDirectory.hotelFor(iata)
 }
 
 @Composable

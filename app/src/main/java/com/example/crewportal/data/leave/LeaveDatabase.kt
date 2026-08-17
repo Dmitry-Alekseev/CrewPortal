@@ -55,6 +55,11 @@ object LeaveDatabase {
         approvedPersonalLeave.add(period)
     }
 
+    fun replacePersistedPersonalLeave(periods: List<LeavePeriod>) {
+        approvedPersonalLeave.clear()
+        approvedPersonalLeave.addAll(periods)
+    }
+
     val closedSickLeaves = emptyList<LeavePeriod>()
 
     fun allApproved(): List<LeavePeriod> = assignedLeave + approvedPersonalLeave + closedSickLeaves

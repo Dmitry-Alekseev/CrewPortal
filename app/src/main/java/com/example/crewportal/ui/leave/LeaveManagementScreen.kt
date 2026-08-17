@@ -44,8 +44,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.leave.LeavePeriod
+import com.example.crewportal.data.repository.LeaveRepository
+import com.example.crewportal.ui.theme.CorporateBlue
 import com.example.crewportal.ui.theme.SuccessGreen
-import com.example.crewportal.ui.theme.ThaiPurple
 import com.example.crewportal.util.formatMinutes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -55,7 +56,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun LeaveManagementScreen() {
+fun LeaveManagementScreen(leaveRepository: LeaveRepository) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     var month by remember { mutableStateOf(YearMonth.now()) }
@@ -120,7 +121,7 @@ fun LeaveManagementScreen() {
                         else -> false
                     }
                     val color = when {
-                        selected -> ThaiPurple.copy(alpha = 0.35f)
+                        selected -> CorporateBlue.copy(alpha = 0.24f)
                         leave?.type == "ANNUAL_LEAVE" -> Color(0xFFFFD54F).copy(alpha = 0.55f)
                         leave?.type == "PERSONAL_LEAVE" -> Color(0xFF4FC3F7).copy(alpha = 0.45f)
                         leave?.type == "SICK_LEAVE" -> Color(0xFFEF5350).copy(alpha = 0.35f)
@@ -169,7 +170,7 @@ fun LeaveManagementScreen() {
                             scope.launch {
                                 snackbar.showSnackbar("Leave request submitted")
                                 delay(1200)
-                                LeaveDatabase.addPersonalLeave(
+                                leaveRepository.addPersonalLeave(
                                     LeavePeriod(
                                         id = "personal-${start}-${end}",
                                         type = "PERSONAL_LEAVE",

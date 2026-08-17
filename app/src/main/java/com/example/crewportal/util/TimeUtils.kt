@@ -63,14 +63,19 @@ fun isAirportLocalNowAtOrAfter(dateTime: String, iata: String?): Boolean {
     return !nowAtAirport(iata).isBefore(parseLocalDateTime(dateTime))
 }
 
+@Suppress("UNUSED_PARAMETER")
 fun reportDateTime(departureDateTime: String, durationMinutes: Int): LocalDateTime {
     return parseLocalDateTime(departureDateTime).minusMinutes(90)
 }
 
 fun dutyEndDateTime(arrivalDateTime: String): LocalDateTime = parseLocalDateTime(arrivalDateTime).plusMinutes(30)
 
+@Suppress("UNUSED_PARAMETER")
 fun dutyMinutes(departureDateTime: String, arrivalDateTime: String, durationMinutes: Int): Int {
-    return Duration.between(reportDateTime(departureDateTime, durationMinutes), dutyEndDateTime(arrivalDateTime)).toMinutes().toInt()
+    // departureDateTime and arrivalDateTime are stored in their respective airport-local clocks.
+    // Block time is the timezone-safe elapsed duration, with 90 minutes report and 30 minutes
+    // post-flight duty added by policy. Keep the timestamp parameters for API compatibility.
+    return durationMinutes + 120
 }
 
 fun restStatus(previousArrival: String?, nextDeparture: String?): String {

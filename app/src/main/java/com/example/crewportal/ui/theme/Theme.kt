@@ -8,37 +8,37 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF4A246F),
+    primary = CorporateBlue,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFE9D9FF),
-    onPrimaryContainer = Color(0xFF221034),
-    secondary = GoldAccent,
-    onSecondary = Color(0xFF211400),
-    background = Color(0xFFF7F4EF),
-    onBackground = Color(0xFF16121C),
-    surface = Color(0xFFFFFCF7),
-    onSurface = Color(0xFF16121C),
-    surfaceVariant = Color(0xFFEDE7DD),
-    onSurfaceVariant = Color(0xFF554E5F),
-    tertiary = Color(0xFF006D77),
-    tertiaryContainer = Color(0xFFD7F4F2)
+    primaryContainer = CorporateBlueLight,
+    onPrimaryContainer = Color(0xFF10263E),
+    secondary = CorporateGraphite,
+    onSecondary = Color.White,
+    background = Color(0xFFF4F6F8),
+    onBackground = Color(0xFF17202A),
+    surface = Color.White,
+    onSurface = Color(0xFF17202A),
+    surfaceVariant = CorporateNeutral,
+    onSurfaceVariant = Color(0xFF4F5B67),
+    tertiary = CorporateBlueAccent,
+    tertiaryContainer = Color(0xFFDCE7F0)
 )
 
 private val DarkColors = darkColorScheme(
-    primary = GoldAccent,
-    onPrimary = Color(0xFF1F1600),
-    primaryContainer = Color(0xFF3C2E13),
-    onPrimaryContainer = Color(0xFFFFE4A3),
-    secondary = Color(0xFFBFA6FF),
-    onSecondary = Color(0xFF1F1236),
-    background = Color(0xFF080A0F),
-    onBackground = Color(0xFFF2EEF7),
-    surface = Color(0xFF121721),
-    onSurface = Color(0xFFF2EEF7),
+    primary = Color(0xFFA9C7E8),
+    onPrimary = Color(0xFF0D1B2A),
+    primaryContainer = Color(0xFF18314F),
+    onPrimaryContainer = Color(0xFFDCE9F6),
+    secondary = Color(0xFFB8C2CC),
+    onSecondary = Color(0xFF18212A),
+    background = Color(0xFF0B1118),
+    onBackground = Color(0xFFE8EDF2),
+    surface = Color(0xFF121A23),
+    onSurface = Color(0xFFE8EDF2),
     surfaceVariant = Color(0xFF202633),
-    onSurfaceVariant = Color(0xFFD8D2E2),
-    tertiary = Color(0xFF8EE8DD),
-    tertiaryContainer = Color(0xFF163A3D)
+    onSurfaceVariant = Color(0xFFC3CCD5),
+    tertiary = Color(0xFF8FB6D9),
+    tertiaryContainer = Color(0xFF203B55)
 )
 
 @Composable

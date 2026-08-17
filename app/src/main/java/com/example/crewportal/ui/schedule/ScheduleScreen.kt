@@ -72,13 +72,15 @@ import com.example.crewportal.R
 import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.airport.AirportInfo
 import com.example.crewportal.data.fleet.AircraftPool
+import com.example.crewportal.data.fleet.AircraftTypeCatalog
 import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.leave.LeavePeriod
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.data.repository.PreferencesRepository
+import com.example.crewportal.data.roster.RosterMetrics
+import com.example.crewportal.ui.theme.CorporateBlue
 import com.example.crewportal.ui.theme.SuccessGreen
-import com.example.crewportal.ui.theme.ThaiPurple
 import com.example.crewportal.util.canRegister
 import com.example.crewportal.util.displayDate
 import com.example.crewportal.util.displayDay
@@ -166,7 +168,7 @@ fun ScheduleScreen(
         OperationalRosterChangeDialog(
             ru = ru,
             onDismiss = { showOperationalChangeDialog = false },
-            onSubmit = { date, reportTime, outboundFlight, destination, aircraft, registration, pattern, returnFlight, returnDate, returnTime, replaceExisting, asInstructor ->
+            onSubmit = { date, reportTime, outboundFlight, destination, aircraft, registration, pattern, returnFlight, returnDate, returnTime, replaceExisting, asInstructor, isAircraftDelivery ->
                 scope.launch {
                     val ok = withContext(Dispatchers.IO) {
                         flightRepository.addOperationalRosterChange(
@@ -181,7 +183,8 @@ fun ScheduleScreen(
                             returnDate = returnDate,
                             returnTime = returnTime,
                             replaceExisting = replaceExisting,
-                            asInstructor = asInstructor
+                            asInstructor = asInstructor,
+                            isAircraftDelivery = isAircraftDelivery
                         )
                     }
                     showOperationalChangeDialog = false
@@ -227,7 +230,7 @@ fun ScheduleScreen(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = { showNextMonthPreview = false },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F3A5F), contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = CorporateBlue, contentColor = Color.White),
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -449,11 +452,14 @@ private fun formatRestMinutes(totalMinutes: Int): String {
 @Composable
 private fun MonthlyProgressCard(flights: List<FlightEntity>, month: YearMonth, selected90: Boolean, ru: Boolean) {
     val monthDate = month.atDay(1)
-    val monthPrefix = monthDate.format(DateTimeFormatter.ofPattern("yyyy-MM"))
     val monthLabel = monthDate.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH))
-    val monthFlights = flights.filter { (it.dutyType == "FLIGHT" || it.dutyType == "SIMULATOR") && it.departureDateTime.startsWith(monthPrefix) && LeaveDatabase.leaveFor(parseLocalDateTime(it.departureDateTime).toLocalDate()) == null }
-    val planned = monthFlights.sumOf { it.durationMinutes }
-    val completed = monthFlights.filter { it.isCompleted }.sumOf { it.durationMinutes }
+    val monthFlights = RosterMetrics.dutiesForMonth(flights, month).filter {
+        it.dutyType in setOf("FLIGHT", "SIMULATOR") &&
+            LeaveDatabase.leaveFor(parseLocalDateTime(it.departureDateTime).toLocalDate()) == null
+    }
+    val countedDutyTypes = setOf("FLIGHT", "SIMULATOR")
+    val planned = RosterMetrics.blockMinutes(monthFlights, month, countedDutyTypes)
+    val completed = RosterMetrics.blockMinutes(monthFlights, month, countedDutyTypes, completedOnly = true)
     val adjustedTarget = LeaveDatabase.adjustedMonthlyTargetMinutes(month)
     val selectedTarget = if (selected90) 90 * 60 else 80 * 60
     val progress = (completed.toFloat() / adjustedTarget.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
@@ -563,7 +569,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                 Text(
                     text = " ${flight.aircraftLabel} ",
                     color = Color.White,
-                    modifier = Modifier.padding(start = 10.dp).background(ThaiPurple.copy(alpha = 0.92f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 2.dp),
+                    modifier = Modifier.padding(start = 10.dp).background(CorporateBlue.copy(alpha = 0.92f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.labelLarge
                 )
                 Spacer(Modifier.weight(1f))
@@ -592,7 +598,7 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1.1f)) {
                     Text(scheduleTimeLine(flight), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                     Text("${displayDate(flight.departureDateTime)} • ${displayDay(flight.departureDateTime)}", color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false)
-                    Text("✈", color = ThaiPurple, style = MaterialTheme.typography.headlineMedium)
+                    Text("✈", color = CorporateBlue, style = MaterialTheme.typography.headlineMedium)
                     Text(formatMinutes(flight.durationMinutes), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Column(Modifier.weight(0.95f), horizontalAlignment = Alignment.End) {
@@ -673,7 +679,7 @@ private fun BriefingLine(flight: FlightEntity, ru: Boolean) {
 
 @Composable
 private fun AirlineBadge(airline: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.background(MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp)).border(1.dp, ThaiPurple.copy(alpha = 0.45f), RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 5.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.background(MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp)).border(1.dp, CorporateBlue.copy(alpha = 0.45f), RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 5.dp)) {
         Image(painter = painterResource(R.drawable.thai_logo), contentDescription = "Thai Airways logo", modifier = Modifier.size(width = 82.dp, height = 28.dp))
     }
 }
@@ -760,7 +766,8 @@ private fun OperationalRosterChangeDialog(
         returnDate: LocalDate?,
         returnTime: String?,
         replaceExisting: Boolean,
-        asInstructor: Boolean
+        asInstructor: Boolean,
+        isAircraftDelivery: Boolean
     ) -> Unit
 ) {
     var selectedDate by remember { mutableStateOf(LocalDate.now().plusDays(2)) }
@@ -776,9 +783,11 @@ private fun OperationalRosterChangeDialog(
     var returnTime by remember { mutableStateOf("12:00") }
     var replaceExisting by remember { mutableStateOf(false) }
     var asInstructor by remember { mutableStateOf(false) }
+    var isAircraftDelivery by remember { mutableStateOf(false) }
+    var deliveryRegistrationSuffix by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
 
-    val aircraftTypes = remember { listOf("A320", "A321neo", "A330-300", "A350-900") }
+    val aircraftTypes = remember { AircraftTypeCatalog.types.map { it.label } }
     val registrationOptions = remember(aircraft) {
         AircraftPool.aircraft
             .filter { it.label == aircraft }
@@ -838,14 +847,54 @@ private fun OperationalRosterChangeDialog(
                     }
                 )
 
-                SimpleDropdownField(
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = isAircraftDelivery,
+                        onCheckedChange = {
+                            isAircraftDelivery = it
+                            pattern = if (it) "DELIVERY" else null
+                            if (it) registration = null
+                        }
+                    )
+                    Text(if (ru) "Перегонка / приёмка нового самолёта" else "Aircraft delivery / ferry flight")
+                }
+
+                if (isAircraftDelivery) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("HS-", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        TextField(
+                            value = deliveryRegistrationSuffix,
+                            onValueChange = { raw ->
+                                deliveryRegistrationSuffix = raw.uppercase(Locale.ENGLISH)
+                                    .filter { it.isLetterOrDigit() }
+                                    .take(6)
+                            },
+                            label = { Text(if (ru) "Бортовой номер" else "Registration suffix") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+                    }
+                    Text(
+                        if (ru) "После прибытия HS-$deliveryRegistrationSuffix будет добавлен в БД флота."
+                        else "After arrival HS-$deliveryRegistrationSuffix will be added to the persistent fleet database.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (!isAircraftDelivery) {
+                    SimpleDropdownField(
                     label = if (ru) "Регистрация" else "Registration",
                     value = registration ?: if (ru) "Random / за 24 часа" else "Random / assigned 24h prior",
                     options = listOf(if (ru) "Random / за 24 часа" else "Random / assigned 24h prior") + registrationOptions,
                     onSelected = { selected ->
                         registration = selected.takeIf { it.startsWith("HS-") }
                     }
-                )
+                    )
+                }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = replaceExisting, onCheckedChange = { replaceExisting = it })
@@ -861,16 +910,16 @@ private fun OperationalRosterChangeDialog(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     Button(
                         onClick = { pattern = "TURNAROUND" },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (pattern == "TURNAROUND") Color(0xFF1F3A5F) else MaterialTheme.colorScheme.surfaceVariant, contentColor = if (pattern == "TURNAROUND") Color.White else MaterialTheme.colorScheme.onSurfaceVariant),
+                        colors = ButtonDefaults.buttonColors(containerColor = if (pattern == "TURNAROUND") CorporateBlue else MaterialTheme.colorScheme.surfaceVariant, contentColor = if (pattern == "TURNAROUND") Color.White else MaterialTheme.colorScheme.onSurfaceVariant),
                         modifier = Modifier.weight(1f)
                     ) { Text("Turnaround") }
                     Button(
                         onClick = { pattern = "LAYOVER" },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (pattern == "LAYOVER") Color(0xFF1F3A5F) else MaterialTheme.colorScheme.surfaceVariant, contentColor = if (pattern == "LAYOVER") Color.White else MaterialTheme.colorScheme.onSurfaceVariant),
+                        colors = ButtonDefaults.buttonColors(containerColor = if (pattern == "LAYOVER") CorporateBlue else MaterialTheme.colorScheme.surfaceVariant, contentColor = if (pattern == "LAYOVER") Color.White else MaterialTheme.colorScheme.onSurfaceVariant),
                         modifier = Modifier.weight(1f)
                     ) { Text("Layover") }
                 }
-                if (pattern != null) {
+                if (pattern != null && !isAircraftDelivery) {
                     Text(if (ru) "3. Рейс обратно" else "3. Return flight", fontWeight = FontWeight.Bold)
                     TextField(value = returnFlight, onValueChange = { returnFlight = it.uppercase(Locale.ENGLISH).take(8) }, label = { Text(if (ru) "Номер рейса обратно" else "Return flight number") }, modifier = Modifier.fillMaxWidth())
                     if (pattern == "LAYOVER") {
@@ -896,29 +945,35 @@ private fun OperationalRosterChangeDialog(
             Button(
                 onClick = {
                     try {
-                        val selectedPattern = pattern ?: throw IllegalArgumentException("Select turnaround or layover")
+                        val selectedPattern = if (isAircraftDelivery) "DELIVERY" else pattern
+                            ?: throw IllegalArgumentException("Select turnaround or layover")
                         val airport = selectedAirport
                             ?: AirportDatabase.search(destinationQuery).firstOrNull()
                             ?: throw IllegalArgumentException("Select destination")
+                        val selectedRegistration = if (isAircraftDelivery) {
+                            require(deliveryRegistrationSuffix.length >= 2)
+                            "HS-$deliveryRegistrationSuffix"
+                        } else registration
                         onSubmit(
                             selectedDate,
                             reportTime,
                             outboundFlight,
                             airport.iata,
                             aircraft,
-                            registration,
+                            selectedRegistration,
                             selectedPattern,
                             returnFlight,
                             if (selectedPattern == "LAYOVER") returnDate else selectedDate,
                             if (selectedPattern == "LAYOVER") returnTime else null,
                             replaceExisting,
-                            asInstructor
+                            asInstructor,
+                            isAircraftDelivery
                         )
                     } catch (_: Exception) {
                         error = if (ru) "Проверьте дату, время, destination и тип duty" else "Check date, time, destination and duty pattern"
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F3A5F), contentColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = CorporateBlue, contentColor = Color.White)
             ) { Text(if (ru) "Отправить" else "Submit") }
         },
         dismissButton = {
@@ -1099,4 +1154,3 @@ private fun parseTimeParts(value: String): Pair<Int, Int> {
 }
 
 private fun formatTime(hour: Int, minute: Int): String = String.format(Locale.ENGLISH, "%02d:%02d", hour, minute)
-

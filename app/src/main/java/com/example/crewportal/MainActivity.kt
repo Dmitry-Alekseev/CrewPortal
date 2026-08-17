@@ -44,13 +44,17 @@ import androidx.fragment.app.FragmentActivity
 import android.widget.Toast
 import com.example.crewportal.data.local.AppDatabase
 import com.example.crewportal.data.remote.WeatherRepository
+import com.example.crewportal.data.roster.NextRosterScheduler
 import com.example.crewportal.data.repository.AuthRepository
 import com.example.crewportal.data.repository.FlightRepository
+import com.example.crewportal.data.repository.FleetRepository
+import com.example.crewportal.data.repository.LeaveRepository
+import com.example.crewportal.data.repository.LogbookRepository
 import com.example.crewportal.data.repository.PreferencesRepository
 import com.example.crewportal.ui.auth.LoginScreen
 import com.example.crewportal.ui.navigation.MainNavigation
+import com.example.crewportal.ui.theme.CorporateBlue
 import com.example.crewportal.ui.theme.CrewPortalTheme
-import com.example.crewportal.ui.theme.ThaiPurple
 import com.example.crewportal.util.NotificationHelper
 import kotlinx.coroutines.delay
 
@@ -67,10 +71,14 @@ class MainActivity : FragmentActivity() {
         val preferencesRepository = PreferencesRepository(applicationContext)
         val authRepository = AuthRepository(preferencesRepository)
         val db = AppDatabase.get(applicationContext)
-        val flightRepository = FlightRepository(applicationContext, db.flightDao(), preferencesRepository)
+        val fleetRepository = FleetRepository(db.fleetAircraftDao())
+        val logbookRepository = LogbookRepository(db.logbookEntryDao())
+        val leaveRepository = LeaveRepository(db.leavePeriodDao())
+        val flightRepository = FlightRepository(applicationContext, db.flightDao(), preferencesRepository, fleetRepository)
         val weatherRepository = WeatherRepository()
 
         NotificationHelper.ensureChannel(applicationContext)
+        NextRosterScheduler.schedule(applicationContext)
         if (Build.VERSION.SDK_INT >= 33) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -86,6 +94,8 @@ class MainActivity : FragmentActivity() {
 
                 LaunchedEffect(Unit) {
                     authRepository.signOut()
+                    fleetRepository.initialize()
+                    leaveRepository.initialize()
                     flightRepository.refreshBuiltInRosterOnAppUpdate(BuildConfig.VERSION_NAME)
                     flightRepository.refreshCompletedFlights(showNotifications = false)
                     delay(1800)
@@ -101,6 +111,9 @@ class MainActivity : FragmentActivity() {
                                 flightRepository = flightRepository,
                                 preferencesRepository = preferencesRepository,
                                 weatherRepository = weatherRepository,
+                                fleetRepository = fleetRepository,
+                                logbookRepository = logbookRepository,
+                                leaveRepository = leaveRepository,
                                 initialRoute = initialDestination,
                                 onLogout = {
                                     authRepository.signOut()
@@ -194,7 +207,7 @@ private fun SyncDialogCard(ru: Boolean) {
         ) {
             CircularProgressIndicator(
                 modifier = Modifier.size(36.dp),
-                color = ThaiPurple,
+                color = CorporateBlue,
                 strokeWidth = 3.dp
             )
             Text(

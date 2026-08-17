@@ -36,8 +36,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.local.FlightEntity
+import com.example.crewportal.data.payroll.PayrollCalculator
 import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.data.repository.PreferencesRepository
 import com.example.crewportal.util.formatMinutes
@@ -45,7 +45,6 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.math.roundToInt
 
 @Composable
 fun PayrollScreen(
@@ -183,7 +182,7 @@ private fun SalaryTab(flights: List<FlightEntity>, ru: Boolean) {
                     )
                 } else {
                     availableMonths.forEach { month ->
-                        val calc = calculatePayslip(month, flights)
+                        val calc = PayrollCalculator.calculate(month, flights)
                         Card(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             modifier = Modifier.fillMaxWidth().clickable { selectedMonth = month }
@@ -199,7 +198,7 @@ private fun SalaryTab(flights: List<FlightEntity>, ru: Boolean) {
         }
     } else {
         val month = selectedMonth!!
-        val calc = calculatePayslip(month, flights)
+        val calc = PayrollCalculator.calculate(month, flights)
         OutlinedButton(onClick = { selectedMonth = null }, modifier = Modifier.fillMaxWidth()) {
             Text(if (ru) "Назад к списку" else "Back to payslips")
         }
@@ -240,86 +239,6 @@ private fun SalaryTab(flights: List<FlightEntity>, ru: Boolean) {
         }
     }
 }
-
-data class PayslipCalc(
-    val blockMinutes: Int,
-    val dutyMinutes: Int,
-    val reserveDays: Int,
-    val leaveDays: Int,
-    val flightPay: Int,
-    val dutyPay: Int,
-    val reservePay: Int,
-    val deadheadPay: Int,
-    val nightPremium: Int,
-    val holidayPremium: Int,
-    val augmentedRestPay: Int,
-    val layoverPay: Int,
-    val leavePay: Int,
-    val unusedLeaveCompensation: Int,
-    val gross: Int,
-    val tax: Int,
-    val provident: Int,
-    val insurance: Int,
-    val welfare: Int,
-    val deductions: Int,
-    val net: Int
-)
-
-private fun calculatePayslip(month: YearMonth, flights: List<FlightEntity>): PayslipCalc {
-    val prefix = "%04d-%02d".format(month.year, month.monthValue)
-    val monthDuties = flights.filter { it.departureDateTime.startsWith(prefix) }
-    val completedFlights = monthDuties.filter { it.dutyType == "FLIGHT" && it.isCompleted }
-    val sourceFlights = completedFlights.ifEmpty { monthDuties.filter { it.dutyType == "FLIGHT" } }
-    val blockMinutes = sourceFlights.sumOf { it.durationMinutes }
-    val dutyMinutes = sourceFlights.count() * 90 + sourceFlights.groupBy { it.departureDateTime.take(10) }.size * 30
-    val reserveDays = monthDuties.count { it.dutyType == "RESERVE" }
-    val leaveDays = LeaveDatabase.leaveDaysInMonth(month)
-    val longHaulMinutes = sourceFlights.filter { it.durationMinutes >= 540 }.sumOf { it.durationMinutes }
-    val layoverDays = monthDuties.count { it.dutyType == "STAY" }
-    val paidGroundMinutes = monthDuties.filter { it.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY") }
-        .sumOf {
-            if (it.durationMinutes > 0) it.durationMinutes
-            else java.time.Duration.between(java.time.LocalDateTime.parse(it.departureDateTime), java.time.LocalDateTime.parse(it.arrivalDateTime)).toMinutes().toInt()
-        }
-
-    val flightPay = ((blockMinutes / 60.0) * 95).roundToInt()
-    val dutyPay = (((dutyMinutes + paidGroundMinutes) / 60.0) * 24).roundToInt()
-    val reservePay = reserveDays * 120
-    val deadheadPay = monthDuties.count { it.dutyType == "DEADHEAD" } * 180
-    val nightPremium = ((sourceFlights.sumOf { nightMinutes(it) } / 60.0) * 95).roundToInt()
-    val holidayPremium = sourceFlights.filter { isHoliday(it.departureDateTime.take(10)) }.sumOf { ((it.durationMinutes / 60.0) * 95 * 1.5).roundToInt() }
-    val augmentedRestPay = ((longHaulMinutes / 2.0 / 60.0) * 95 * 0.75).roundToInt()
-    val layoverPay = layoverDays * 95
-    val dailyLeavePay = 180
-    val leavePay = leaveDays * dailyLeavePay
-    val unusedLeaveCompensation = if (month.monthValue == 1) {
-        val used = 40 - 0 // placeholder until prior-year leave balance exists in persistent state
-        maxOf(0, 40 - used) * dailyLeavePay * 2
-    } else 0
-    val gross = flightPay + dutyPay + reservePay + deadheadPay + nightPremium + holidayPremium + augmentedRestPay + layoverPay + leavePay + unusedLeaveCompensation
-    val tax = (gross * 0.12).roundToInt()
-    val provident = (gross * 0.04).roundToInt()
-    val insurance = if (gross > 0) 90 else 0
-    val welfare = if (gross > 0) 35 else 0
-    val deductions = tax + provident + insurance + welfare
-    val net = gross - deductions
-    return PayslipCalc(blockMinutes, dutyMinutes, reserveDays, leaveDays, flightPay, dutyPay, reservePay, deadheadPay, nightPremium, holidayPremium, augmentedRestPay, layoverPay, leavePay, unusedLeaveCompensation, gross, tax, provident, insurance, welfare, deductions, net)
-}
-
-private fun nightMinutes(flight: FlightEntity): Int {
-    val start = java.time.LocalDateTime.parse(flight.departureDateTime)
-    val end = java.time.LocalDateTime.parse(flight.arrivalDateTime)
-    var cursor = start
-    var minutes = 0
-    while (cursor.isBefore(end)) {
-        val hour = cursor.hour
-        if (hour >= 23 || hour < 6) minutes++
-        cursor = cursor.plusMinutes(1)
-    }
-    return minutes
-}
-
-private fun isHoliday(date: String): Boolean = date.endsWith("01-01") || date.endsWith("04-13") || date.endsWith("04-14") || date.endsWith("12-05") || date.endsWith("12-10")
 
 @Composable
 private fun BonusTab(flights: List<FlightEntity>, ru: Boolean) {

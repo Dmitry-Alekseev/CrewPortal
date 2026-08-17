@@ -1,6 +1,7 @@
 package com.example.crewportal.data.local
 
 import androidx.room.Entity
+import androidx.room.ColumnInfo
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "flights")
@@ -33,5 +34,10 @@ data class FlightEntity(
     val gate: String = "Pending",
     val stand: String = "Pending",
     val terminal: String = "Pending",
-    val airportAssignmentNotified: Boolean = false
+    val airportAssignmentNotified: Boolean = false,
+    @ColumnInfo(defaultValue = "NULL") val departureEpochMillis: Long? = null,
+    @ColumnInfo(defaultValue = "NULL") val arrivalEpochMillis: Long? = null,
+    @ColumnInfo(defaultValue = "0") val isAircraftDelivery: Boolean = false,
+    @ColumnInfo(defaultValue = "''") val deliveryAircraftType: String = "",
+    @ColumnInfo(defaultValue = "0") val deliveryProcessed: Boolean = false
 )

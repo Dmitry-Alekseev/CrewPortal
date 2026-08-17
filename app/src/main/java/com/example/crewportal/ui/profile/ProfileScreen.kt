@@ -31,8 +31,6 @@ import androidx.compose.ui.unit.dp
 import com.example.crewportal.R
 import com.example.crewportal.data.repository.PreferencesRepository
 import com.example.crewportal.ui.theme.SuccessGreen
-import com.example.crewportal.ui.theme.TextMuted
-import com.example.crewportal.ui.theme.ThaiPurple
 import com.example.crewportal.util.formatTotalMinutes
 
 @Composable

@@ -1,6 +1,8 @@
 package com.example.crewportal.data.roster
 
 import com.example.crewportal.data.local.FlightEntity
+import com.example.crewportal.data.airport.CrewHotelDirectory
+import com.example.crewportal.util.arrivalLocalDateTime
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -134,16 +136,15 @@ object RosterGenerator {
     )
 
     private val layoverRoutes = listOf(
-        LayoverRoute("IST", "LTFM", "Istanbul", "Istanbul Airport", "TG935", "TG936", "22:40:00", 605, 2, "10:15:00", 580, "A350", "Airbus A350-941", "Grand Hyatt Istanbul", "Layover, Grand Hyatt Istanbul"),
-        LayoverRoute("FRA", "EDDF", "Frankfurt", "Frankfurt Main", "TG920", "TG921", "23:20:00", 690, 2, "13:45:00", 675, "A350", "Airbus A350-941", "JW Marriott Hotel Frankfurt", "Long-haul augmented crew"),
-        LayoverRoute("SVO", "UUEE", "Moscow", "Sheremetyevo Intl", "TG974", "TG975", "21:55:00", 605, 2, "16:20:00", 590, "A350", "Airbus A350-941", "Hyatt Regency Moscow Petrovsky Park", "Moscow layover"),
-        LayoverRoute("LHR", "EGLL", "London", "Heathrow", "TG910", "TG911", "00:55:00", 760, 2, "12:30:00", 705, "A350", "Airbus A350-941", "Sofitel London Heathrow", "Long-haul augmented crew"),
-        LayoverRoute("NRT", "RJAA", "Tokyo", "Narita Intl", "TG642", "TG643", "23:50:00", 360, 2, "11:45:00", 410, "A330", "Airbus A330-343", "Hilton Tokyo Narita Airport", "Tokyo layover"),
-        LayoverRoute("ICN", "RKSI", "Seoul", "Incheon Intl", "TG658", "TG659", "23:10:00", 325, 2, "10:50:00", 360, "A330", "Airbus A330-343", "Grand Hyatt Incheon", "Seoul layover")
+        LayoverRoute("IST", "LTFM", "Istanbul", "Istanbul Airport", "TG935", "TG936", "22:40:00", 605, 2, "10:15:00", 580, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("IST"), "Istanbul layover"),
+        LayoverRoute("FRA", "EDDF", "Frankfurt", "Frankfurt Main", "TG920", "TG921", "23:20:00", 690, 2, "13:45:00", 675, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("FRA"), "Long-haul augmented crew"),
+        LayoverRoute("SVO", "UUEE", "Moscow", "Sheremetyevo Intl", "TG974", "TG975", "21:55:00", 605, 2, "16:20:00", 590, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("SVO"), "Moscow layover"),
+        LayoverRoute("LHR", "EGLL", "London", "Heathrow", "TG910", "TG911", "00:55:00", 760, 2, "12:30:00", 705, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("LHR"), "Long-haul augmented crew"),
+        LayoverRoute("NRT", "RJAA", "Tokyo", "Narita Intl", "TG642", "TG643", "23:50:00", 360, 2, "11:45:00", 410, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("NRT"), "Tokyo layover"),
+        LayoverRoute("ICN", "RKSI", "Seoul", "Incheon Intl", "TG658", "TG659", "23:10:00", 325, 2, "10:50:00", 360, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("ICN"), "Seoul layover")
     )
 
-    fun generateForMonth(month: YearMonth): List<FlightEntity> {
-        val seed = System.currentTimeMillis() + System.nanoTime() + (month.year * 100L + month.monthValue) * 7919L
+    fun generateForMonth(month: YearMonth, seed: Long = stableSeed(month)): List<FlightEntity> {
         val random = Random(seed)
         val flights = mutableListOf<FlightEntity>()
         val occupied = BooleanArray(month.lengthOfMonth() + 1)
@@ -298,9 +299,9 @@ object RosterGenerator {
         fun addTurnaround(day: Int, route: TurnaroundRoute, outboundTime: String = route.outboundTime) {
             val aircraft = routeAircraftChoice(route, random)
             val outboundDeparture = dt(day, outboundTime)
-            val outboundArrival = outboundDeparture.plusMinutes(route.outboundMinutes.toLong())
+            val outboundArrival = arrivalLocalDateTime(outboundDeparture, "BKK", route.iata, route.outboundMinutes)
             val inboundDeparture = outboundArrival.plusMinutes(route.turnaroundMinutes.toLong())
-            val inboundArrival = inboundDeparture.plusMinutes(route.inboundMinutes.toLong())
+            val inboundArrival = arrivalLocalDateTime(inboundDeparture, route.iata, "BKK", route.inboundMinutes)
             val d = date(day)
             flights += FlightEntity(
                 id = "$d-${route.outboundFlight}-BKK-${route.iata}",
@@ -354,10 +355,10 @@ object RosterGenerator {
 
         fun addLayover(day: Int, route: LayoverRoute) {
             val outboundDeparture = dt(day, route.outboundTime)
-            val outboundArrival = outboundDeparture.plusMinutes(route.outboundMinutes.toLong())
+            val outboundArrival = arrivalLocalDateTime(outboundDeparture, "BKK", route.iata, route.outboundMinutes)
             val returnDay = day + route.returnOffsetDays
             val returnDeparture = dt(returnDay, route.returnTime)
-            val returnArrival = returnDeparture.plusMinutes(route.inboundMinutes.toLong())
+            val returnArrival = arrivalLocalDateTime(returnDeparture, route.iata, "BKK", route.inboundMinutes)
             val d = date(day)
             flights += FlightEntity(
                 id = "$d-${route.outboundFlight}-BKK-${route.iata}",
@@ -437,80 +438,7 @@ object RosterGenerator {
 
 
         fun addTashkentThursdayPattern(day: Int) {
-            val outboundDeparture = dt(day, "09:20:00")
-            val outboundArrival = outboundDeparture.plusMinutes(395)
-            val returnDay = day + 3
-            val returnDeparture = dt(returnDay, "13:45:00")
-            val returnArrival = returnDeparture.plusMinutes(405)
-            val d = date(day)
-            flights += FlightEntity(
-                id = "$d-TG684-BKK-TAS",
-                airline = "THAI",
-                flightNumber = "TG684",
-                aircraftLabel = "A330",
-                aircraftFullName = "Airbus A330-343",
-                registration = "TBA",
-                status = "SCHEDULED",
-                departureIata = "BKK",
-                departureIcao = "VTBS",
-                departureCity = "Bangkok",
-                departureAirport = airportName("BKK"),
-                arrivalIata = "TAS",
-                arrivalIcao = "UTTT",
-                arrivalCity = "Tashkent",
-                arrivalAirport = "Islam Karimov",
-                departureDateTime = outboundDeparture.format(formatter),
-                arrivalDateTime = outboundArrival.format(formatter),
-                durationMinutes = 395,
-                dutyType = "FLIGHT",
-                dutyNote = "Tashkent special rotation"
-            )
-            for (stayDay in (day + 1)..(day + 2)) {
-                flights += FlightEntity(
-                    id = "${date(stayDay)}-STAY-TAS",
-                    airline = "THAI",
-                    flightNumber = "Stay in Tashkent",
-                    aircraftLabel = "STAY",
-                    aircraftFullName = "Layover stay",
-                    registration = "—",
-                    status = "STAY",
-                    departureIata = "TAS",
-                    departureIcao = "UTTT",
-                    departureCity = "Tashkent",
-                    departureAirport = "Hyatt Regency Tashkent",
-                    arrivalIata = "TAS",
-                    arrivalIcao = "UTTT",
-                    arrivalCity = "Tashkent",
-                    arrivalAirport = "Hyatt Regency Tashkent",
-                    departureDateTime = dtString(stayDay, "00:00:00"),
-                    arrivalDateTime = dtString(stayDay, "23:59:00"),
-                    durationMinutes = 0,
-                    dutyType = "STAY",
-                    dutyNote = "Hyatt Regency Tashkent"
-                )
-            }
-            flights += FlightEntity(
-                id = "${date(returnDay)}-TG685-TAS-BKK",
-                airline = "THAI",
-                flightNumber = "TG685",
-                aircraftLabel = "A330",
-                aircraftFullName = "Airbus A330-343",
-                registration = "TBA",
-                status = "SCHEDULED",
-                departureIata = "TAS",
-                departureIcao = "UTTT",
-                departureCity = "Tashkent",
-                departureAirport = "Islam Karimov",
-                arrivalIata = "BKK",
-                arrivalIcao = "VTBS",
-                arrivalCity = "Bangkok",
-                arrivalAirport = airportName("BKK"),
-                departureDateTime = returnDeparture.format(formatter),
-                arrivalDateTime = returnArrival.format(formatter),
-                durationMinutes = 405,
-                dutyType = "FLIGHT",
-                dutyNote = "Tashkent operating return"
-            )
+            flights += TashkentRotationFactory.thursdayStaySundayReturn(month.atDay(day))
             plannedBlock += 800
             recentRouteIatas += "TAS"
             if (recentRouteIatas.size > 5) recentRouteIatas.removeAt(0)
@@ -518,59 +446,20 @@ object RosterGenerator {
         }
 
         fun addTashkentSundayPattern(day: Int) {
-            val outboundDeparture = dt(day, "09:20:00")
-            val outboundArrival = outboundDeparture.plusMinutes(395)
-            val deadheadDeparture = outboundArrival.plusMinutes(125)
-            val deadheadArrival = deadheadDeparture.plusMinutes(405)
-            val d = date(day)
-            flights += FlightEntity(
-                id = "$d-TG684-BKK-TAS",
-                airline = "THAI",
-                flightNumber = "TG684",
-                aircraftLabel = "A330",
-                aircraftFullName = "Airbus A330-343",
-                registration = "TBA",
-                status = "SCHEDULED",
-                departureIata = "BKK",
-                departureIcao = "VTBS",
-                departureCity = "Bangkok",
-                departureAirport = airportName("BKK"),
-                arrivalIata = "TAS",
-                arrivalIcao = "UTTT",
-                arrivalCity = "Tashkent",
-                arrivalAirport = "Islam Karimov",
-                departureDateTime = outboundDeparture.format(formatter),
-                arrivalDateTime = outboundArrival.format(formatter),
-                durationMinutes = 395,
-                dutyType = "FLIGHT",
-                dutyNote = "Tashkent Sunday special rotation"
-            )
-            flights += FlightEntity(
-                id = "$d-TG685-TAS-BKK-DH",
-                airline = "THAI",
-                flightNumber = "Deadhead TG685",
-                aircraftLabel = "POS",
-                aircraftFullName = "Passenger positioning",
-                registration = "—",
-                status = "DEADHEAD",
-                departureIata = "TAS",
-                departureIcao = "UTTT",
-                departureCity = "Tashkent",
-                departureAirport = "Islam Karimov",
-                arrivalIata = "BKK",
-                arrivalIcao = "VTBS",
-                arrivalCity = "Bangkok",
-                arrivalAirport = airportName("BKK"),
-                departureDateTime = deadheadDeparture.format(formatter),
-                arrivalDateTime = deadheadArrival.format(formatter),
-                durationMinutes = 0,
-                dutyType = "DEADHEAD",
-                dutyNote = "Passenger return to Bangkok, no layover"
-            )
+            flights += TashkentRotationFactory.sundaySameDayDeadhead(month.atDay(day))
             plannedBlock += 395
             recentRouteIatas += "TAS"
             if (recentRouteIatas.size > 5) recentRouteIatas.removeAt(0)
             mark(day, 1)
+        }
+
+        fun tashkentThursdayDutyEnd(day: Int): LocalDateTime =
+            arrivalLocalDateTime(dt(day + 3, "13:45:00"), "TAS", "BKK", 405)
+
+        fun tashkentSundayDutyEnd(day: Int): LocalDateTime {
+            val tasArrival = arrivalLocalDateTime(dt(day, "09:20:00"), "BKK", "TAS", 395)
+            val deadheadDeparture = tasArrival.plusMinutes(125)
+            return arrivalLocalDateTime(deadheadDeparture, "TAS", "BKK", 405)
         }
 
         addMandatoryQualificationEvents()
@@ -585,12 +474,12 @@ object RosterGenerator {
             }
             val remaining = targetBlock - plannedBlock
             val dayOfWeek = month.atDay(day).dayOfWeek
-            if ("TAS" !in recentRouteIatas && remaining > 600 && dayOfWeek == java.time.DayOfWeek.THURSDAY && canPlaceDuty(day, 4) && hasMinimumRest(dt(day, "09:20:00"), dt(day + 3, "13:45:00").plusMinutes(405)) && random.nextInt(100) < 30) {
+            if ("TAS" !in recentRouteIatas && remaining > 600 && dayOfWeek == java.time.DayOfWeek.THURSDAY && canPlaceDuty(day, 4) && hasMinimumRest(dt(day, "09:20:00"), tashkentThursdayDutyEnd(day)) && random.nextInt(100) < 30) {
                 addTashkentThursdayPattern(day)
                 day += 5 + random.nextInt(2)
                 continue
             }
-            if ("TAS" !in recentRouteIatas && remaining > 360 && dayOfWeek == java.time.DayOfWeek.SUNDAY && canPlaceDuty(day, 1) && hasMinimumRest(dt(day, "09:20:00"), dt(day, "09:20:00").plusMinutes(925)) && random.nextInt(100) < 18) {
+            if ("TAS" !in recentRouteIatas && remaining > 360 && dayOfWeek == java.time.DayOfWeek.SUNDAY && canPlaceDuty(day, 1) && hasMinimumRest(dt(day, "09:20:00"), tashkentSundayDutyEnd(day)) && random.nextInt(100) < 18) {
                 addTashkentSundayPattern(day)
                 day += 2 + random.nextInt(3)
                 continue
@@ -599,7 +488,12 @@ object RosterGenerator {
             if (allowLayover) {
                 val candidates = layoverRoutes.shuffled(random).filter { route ->
                     val start = dt(day, route.outboundTime)
-                    val end = dt(day + route.returnOffsetDays, route.returnTime).plusMinutes(route.inboundMinutes.toLong())
+                    val end = arrivalLocalDateTime(
+                        dt(day + route.returnOffsetDays, route.returnTime),
+                        route.iata,
+                        "BKK",
+                        route.inboundMinutes
+                    )
                     canPlaceDuty(day, route.spanDays) && route.blockMinutes <= remaining + 240 && hasMinimumRest(start, end)
                 }
                 val preferredCandidates = candidates.filter { it.iata !in recentRouteIatas.takeLast(3) }
@@ -698,4 +592,10 @@ object RosterGenerator {
         "MNL" -> "Ninoy Aquino Intl"
         else -> "$iata Airport"
     }
+
+    /** Same month + ruleset always produces the same reviewable roster. */
+    private fun stableSeed(month: YearMonth): Long =
+        (month.year * 100L + month.monthValue) * 7_919L + GENERATOR_RULESET_VERSION
+
+    private const val GENERATOR_RULESET_VERSION = 2_208L
 }

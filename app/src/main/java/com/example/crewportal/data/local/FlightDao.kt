@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -29,6 +30,12 @@ interface FlightDao {
     @Query("DELETE FROM flights")
     suspend fun clearAll()
 
+    @Transaction
+    suspend fun replaceAll(flights: List<FlightEntity>) {
+        clearAll()
+        insertAll(flights)
+    }
+
     @Query("DELETE FROM flights WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>)
 
@@ -49,4 +56,10 @@ interface FlightDao {
 
     @Query("UPDATE flights SET isCompleted = 1, isFlightTimeAdded = 1 WHERE id = :id")
     suspend fun markCompletedAndAdded(id: String)
+
+    @Query("UPDATE flights SET deliveryProcessed = 1 WHERE id = :id")
+    suspend fun markDeliveryProcessed(id: String)
+
+    @Query("UPDATE flights SET departureEpochMillis = :departure, arrivalEpochMillis = :arrival WHERE id = :id")
+    suspend fun updateUtcInstants(id: String, departure: Long, arrival: Long)
 }

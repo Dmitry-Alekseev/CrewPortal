@@ -41,10 +41,13 @@ import com.example.crewportal.data.leave.LeavePeriod
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.data.repository.PreferencesRepository
+import com.example.crewportal.ui.theme.CorporateBlue
+import com.example.crewportal.ui.theme.CorporateGraphite
 import com.example.crewportal.util.displayMonth
 import com.example.crewportal.util.displayTime
 import com.example.crewportal.util.formatMinutes
 import com.example.crewportal.util.parseLocalDateTime
+import com.example.crewportal.util.nowAtAirport
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.launch
@@ -56,7 +59,7 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
     val nextPrepared by preferencesRepository.nextMonthRosterPrepared.collectAsState(initial = false)
     val nextReviewed by preferencesRepository.nextMonthRosterReviewed.collectAsState(initial = false)
     val ru = language == "ru"
-    val today = LocalDate.now()
+    val today = nowAtAirport("BKK").toLocalDate()
     val currentMonth = YearMonth.from(today)
     var showTargetDialog by remember { mutableStateOf(false) }
     var viewGeneratedMonth by remember { mutableStateOf(false) }
@@ -117,7 +120,13 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
             if (canPreviewNextMonth && !viewGeneratedMonth) {
                 Spacer(Modifier.height(10.dp))
                 CorporateButton(onClick = { viewGeneratedMonth = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (ru) "Показать следующий месяц" else "Show next month")
+                    Text(
+                        if (ru) {
+                            if (nextReviewed) "Показать следующий ростер" else "Показать новый ростер"
+                        } else {
+                            if (nextReviewed) "Show next roster" else "Show new roster"
+                        }
+                    )
                 }
             } else if (canPreviewNextMonth && viewGeneratedMonth) {
                 Column(modifier = Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -144,7 +153,7 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
         if (canPreviewNextMonth && !nextReviewed && viewGeneratedMonth) {
             item {
                 CorporateButton(onClick = { showTargetDialog = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (ru) "Я ознакомился с графиком" else "I have reviewed this roster")
+                    Text(if (ru) "Я ознакомился с ростером" else "I have reviewed the roster")
                 }
             }
         }
@@ -155,7 +164,7 @@ fun CalendarScreen(flightRepository: FlightRepository, preferencesRepository: Pr
 private fun CorporateButton(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
     Button(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F3A5F), contentColor = Color.White),
+        colors = ButtonDefaults.buttonColors(containerColor = CorporateBlue, contentColor = Color.White),
         shape = RoundedCornerShape(14.dp),
         modifier = modifier,
         content = content
@@ -210,7 +219,7 @@ private fun CalendarSegment(
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(15.dp)
-    val color = if (selected) Color(0xFF52627A) else Color.Transparent
+    val color = if (selected) CorporateGraphite else Color.Transparent
     val contentColor = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     Surface(
         modifier = modifier
@@ -304,7 +313,7 @@ private fun CalendarGridCell(
     val hasReserve = duties.any { it.dutyType == "RESERVE" }
     val hasOff = duties.any { it.dutyType == "OFF" }
     val hasLeave = leaves.isNotEmpty()
-    val today = date == LocalDate.now()
+    val today = date == nowAtAirport("BKK").toLocalDate()
     val containerColor = when {
         hasLeave -> Color(0xFF4FC3F7).copy(alpha = 0.22f)
         hasFlight -> MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
@@ -356,7 +365,7 @@ private fun CalendarGridCell(
 
 @Composable
 private fun CalendarDayCard(date: LocalDate, duties: List<FlightEntity>, leaves: List<LeavePeriod>, ru: Boolean) {
-    val isPast = date.isBefore(LocalDate.now())
+    val isPast = date.isBefore(nowAtAirport("BKK").toLocalDate())
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth()) {

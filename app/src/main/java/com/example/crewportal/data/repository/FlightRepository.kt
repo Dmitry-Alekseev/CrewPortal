@@ -2,14 +2,16 @@ package com.example.crewportal.data.repository
 
 import android.content.Context
 import com.example.crewportal.data.airport.AirportAssignmentPool
-import com.example.crewportal.data.airport.AirportDatabase
-import com.example.crewportal.data.fleet.AircraftPool
+import com.example.crewportal.data.fleet.AircraftTypeCatalog
 import com.example.crewportal.data.local.FlightDao
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.roster.RosterGenerator
 import com.example.crewportal.data.roster.RosterChangeEngine
+import com.example.crewportal.data.route.RouteCatalog
 import com.example.crewportal.util.NotificationHelper
 import com.example.crewportal.util.RosterNotificationScheduler
+import com.example.crewportal.util.arrivalLocalDateTime
+import com.example.crewportal.util.airportLocalEpochMillis
 import com.example.crewportal.util.canRegister
 import com.example.crewportal.util.hasArrived
 import com.example.crewportal.util.nowAtAirport
@@ -26,7 +28,8 @@ import org.json.JSONObject
 class FlightRepository(
     private val context: Context,
     private val flightDao: FlightDao,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val fleetRepository: FleetRepository
 ) {
     fun observeFlights(): Flow<List<FlightEntity>> = flightDao.observeAll()
     fun observeCompleted(): Flow<List<FlightEntity>> = flightDao.observeCompleted()
@@ -34,12 +37,16 @@ class FlightRepository(
 
     suspend fun loadScheduleFromAssetsIfNeeded() {
         if (flightDao.count() > 0) return
-        val currentMonthRoster = RosterGenerator.generateForMonth(YearMonth.now())
-        flightDao.insertAll(currentMonthRoster)
+        val currentMonthRoster = RosterGenerator.generateForMonth(currentBangkokMonth())
+        flightDao.insertAll(normalizeInstants(currentMonthRoster))
         RosterNotificationScheduler.scheduleRoster(context, currentMonthRoster)
     }
 
     suspend fun refreshBuiltInRosterOnAppUpdate(versionName: String) {
+        // Seed only a genuinely empty installation. Any existing row means the published local
+        // roster is authoritative and must not be regenerated for a newer generator/TAS ruleset.
+        loadScheduleFromAssetsIfNeeded()
+        backfillUtcInstants()
         val installedVersion = preferencesRepository.installedAppVersion.first()
         if (installedVersion != versionName) {
             // App updates must never overwrite or hide the active local/generated roster.
@@ -50,12 +57,12 @@ class FlightRepository(
         }
 
         restoreGeneratedRosterStateIfNeeded()
-        // Crew Portal 2.1.x: do not auto-generate the next roster on app start/update.
-        // The hidden 5-tap flow remains the only manual test trigger.
+        // Daily WorkManager scheduling calls prepareNextMonthRosterIfDue(). The date gate and
+        // existence check below make that background operation idempotent.
     }
 
     private suspend fun restoreGeneratedRosterStateIfNeeded() {
-        val nextMonth = YearMonth.from(LocalDate.now()).plusMonths(1)
+        val nextMonth = currentBangkokMonth().plusMonths(1)
         val prefix = "%04d-%02d".format(nextMonth.year, nextMonth.monthValue)
         val hasGeneratedNextMonth = flightDao.getAllOnce().any { it.departureDateTime.startsWith(prefix) }
 
@@ -64,8 +71,8 @@ class FlightRepository(
         }
     }
 
-    private suspend fun prepareNextMonthRosterIfDue() {
-        val today = LocalDate.now()
+    suspend fun prepareNextMonthRosterIfDue() {
+        val today = nowAtAirport("BKK").toLocalDate()
         val currentMonth = YearMonth.from(today)
         val triggerDate = currentMonth.atEndOfMonth().minusDays(6)
         if (today.isBefore(triggerDate)) return
@@ -76,7 +83,7 @@ class FlightRepository(
         val alreadyGenerated = snapshot.any { it.departureDateTime.startsWith(prefix) }
         if (!alreadyGenerated) {
             val generated = RosterGenerator.generateForMonth(nextMonth)
-            flightDao.insertAll(generated)
+            flightDao.insertAll(normalizeInstants(generated))
             RosterNotificationScheduler.scheduleRoster(context, snapshot + generated)
             preferencesRepository.resetNextMonthRosterDecision()
             preferencesRepository.setNextMonthRosterPrepared(true)
@@ -96,9 +103,9 @@ class FlightRepository(
     }
 
     private suspend fun loadScheduleFromAssets(clearExisting: Boolean, preserveExistingState: Boolean = false) {
-        val generated = RosterGenerator.generateForMonth(YearMonth.now())
-        if (clearExisting) flightDao.clearAll()
-        flightDao.insertAll(generated)
+        val generated = RosterGenerator.generateForMonth(currentBangkokMonth())
+        if (clearExisting) flightDao.replaceAll(normalizeInstants(generated))
+        else flightDao.insertAll(normalizeInstants(generated))
         RosterNotificationScheduler.scheduleRoster(context, generated)
     }
 
@@ -115,7 +122,6 @@ class FlightRepository(
 
     private suspend fun loadScheduleFromJson(json: String, clearExisting: Boolean, preserveExistingState: Boolean) {
         val existingById = if (preserveExistingState) flightDao.getAllOnce().associateBy { it.id } else emptyMap()
-        if (clearExisting) flightDao.clearAll()
         val root = JSONObject(json)
         val array = root.getJSONArray("flights")
         val flights = buildList {
@@ -178,7 +184,8 @@ class FlightRepository(
                 )
             }
         }
-        flightDao.insertAll(flights)
+        if (clearExisting) flightDao.replaceAll(normalizeInstants(flights))
+        else flightDao.insertAll(normalizeInstants(flights))
         RosterNotificationScheduler.scheduleRoster(context, flights)
     }
 
@@ -198,12 +205,16 @@ class FlightRepository(
         )
     }
 
+    /**
+     * Advances persisted roster state in one pass: optional roster change, aircraft/airport
+     * assignment, completion, then one-time flight-time credit. Every transition is guarded by
+     * flags on [FlightEntity], so repeated refreshes remain idempotent.
+     */
     suspend fun refreshCompletedFlights(showNotifications: Boolean = false) {
         val initialSnapshot = flightDao.getAllOnce()
-        val automaticChange = RosterChangeEngine.applyChangeIfDue(initialSnapshot)
+        val automaticChange = RosterChangeEngine.applyChangeIfDue(initialSnapshot, nowAtAirport("BKK").toLocalDate())
         val rosterSnapshot = if (automaticChange != null) {
-            flightDao.clearAll()
-            flightDao.insertAll(automaticChange.updatedRoster)
+            flightDao.replaceAll(normalizeInstants(automaticChange.updatedRoster))
             RosterNotificationScheduler.scheduleRoster(context, automaticChange.updatedRoster)
             if (showNotifications) {
                 NotificationHelper.show(
@@ -260,19 +271,35 @@ class FlightRepository(
                     )
                 }
             }
+            if (flight.isAircraftDelivery && !flight.deliveryProcessed && hasArrived(flight.arrivalDateTime, flight.arrivalIata)) {
+                fleetRepository.addDeliveredAircraft(
+                    registration = flight.registration,
+                    aircraftLabel = flight.deliveryAircraftType.ifBlank { flight.aircraftLabel },
+                    sourceFlightId = flight.id,
+                    deliveredAtEpochMillis = flight.arrivalEpochMillis ?: System.currentTimeMillis()
+                )
+                flightDao.markDeliveryProcessed(flight.id)
+                if (showNotifications) {
+                    NotificationHelper.show(
+                        context,
+                        "Aircraft added to fleet",
+                        "${flight.registration} • ${flight.deliveryAircraftType.ifBlank { flight.aircraftLabel }} is now active in the airline fleet database.",
+                        flight.id.hashCode() + 40_000
+                    )
+                }
+            }
         }
     }
 
     suspend fun generateJuneRosterTest() {
         if (preferencesRepository.secretRosterGeneratorUsed.first()) return
-        val targetMonth = YearMonth.now().plusMonths(1)
+        val targetMonth = currentBangkokMonth().plusMonths(1)
         val generated = RosterGenerator.generateForMonth(targetMonth)
         val prefix = "%04d-%02d".format(targetMonth.year, targetMonth.monthValue)
         val current = flightDao.getAllOnce()
         val preserved = current.filterNot { it.departureDateTime.startsWith(prefix) }
         val merged = (preserved + generated).sortedBy { it.departureDateTime }
-        flightDao.clearAll()
-        flightDao.insertAll(merged)
+        flightDao.replaceAll(normalizeInstants(merged))
         RosterNotificationScheduler.scheduleRoster(context, merged)
         preferencesRepository.setNextMonthRosterPrepared(true)
         preferencesRepository.setNextMonthRosterDecision(reviewed = false, enhancedTarget = false)
@@ -287,12 +314,11 @@ class FlightRepository(
 
 
     suspend fun deleteNextMonthRosterDraft() {
-        val targetMonth = YearMonth.now().plusMonths(1)
+        val targetMonth = currentBangkokMonth().plusMonths(1)
         val prefix = "%04d-%02d".format(targetMonth.year, targetMonth.monthValue)
         val current = flightDao.getAllOnce()
         val preserved = current.filterNot { it.departureDateTime.startsWith(prefix) }
-        flightDao.clearAll()
-        flightDao.insertAll(preserved)
+        flightDao.replaceAll(normalizeInstants(preserved))
         RosterNotificationScheduler.scheduleRoster(context, preserved)
         preferencesRepository.resetNextMonthRosterDecision()
         preferencesRepository.setNextMonthRosterPrepared(false)
@@ -352,7 +378,7 @@ class FlightRepository(
             returnTime = null,
             note = "90h additional duty • Operational roster change • $marker"
         )
-        flightDao.insertAll(extra)
+        flightDao.insertAll(normalizeInstants(extra))
         val updated = flightDao.getAllOnce()
         RosterNotificationScheduler.scheduleRoster(context, updated)
         NotificationHelper.show(
@@ -364,6 +390,11 @@ class FlightRepository(
         return true
     }
 
+    /**
+     * Replaces eligible duties on the affected dates and persists a manual turnaround/layover.
+     * [replaceExisting] authorizes removal of operating duties; otherwise only OFF/RESERVE/STAY
+     * records are replaced. [asInstructor] changes the crew note consumed by crew presentation.
+     */
     suspend fun addOperationalRosterChange(
         date: LocalDate,
         reportTime: String,
@@ -376,7 +407,8 @@ class FlightRepository(
         returnDate: LocalDate?,
         returnTime: String?,
         replaceExisting: Boolean,
-        asInstructor: Boolean = false
+        asInstructor: Boolean = false,
+        isAircraftDelivery: Boolean = false
     ): Boolean {
         val normalizedPattern = pattern.uppercase()
         val affectedDates = mutableSetOf(date)
@@ -392,8 +424,12 @@ class FlightRepository(
         val removable = existing.filter { item ->
             val itemDate = parseLocalDateTime(item.departureDateTime).toLocalDate()
             itemDate in affectedDates && (replaceExisting || item.dutyType in setOf("OFF", "RESERVE", "STAY"))
-        }.map { it.id }
-        if (removable.isNotEmpty()) flightDao.deleteByIds(removable)
+        }.mapTo(mutableSetOf()) { it.id }
+        if (isAircraftDelivery) {
+            require(registration != null && FleetRepository.HS_REGISTRATION.matches(registration.uppercase())) {
+                "Aircraft delivery registration must use HS- prefix"
+            }
+        }
         val created = buildManualDuty(
             date = date,
             reportTime = reportTime,
@@ -405,15 +441,18 @@ class FlightRepository(
             returnFlight = returnFlight.ifBlank { "TG998" },
             returnDate = returnDate ?: date.plusDays(if (normalizedPattern == "LAYOVER") 1L else 0L),
             returnTime = returnTime?.takeIf { it.isNotBlank() },
-            note = "Manual operational roster change" + if (asInstructor) " • Line pilot instructor / observer" else ""
+            note = "Manual operational roster change" + if (asInstructor) " • Line pilot instructor / observer" else "",
+            isAircraftDelivery = isAircraftDelivery
         )
-        flightDao.insertAll(created)
+        val merged = (existing.filterNot { it.id in removable } + created).sortedBy { it.departureDateTime }
+        flightDao.replaceAll(normalizeInstants(merged))
         val updated = flightDao.getAllOnce()
         RosterNotificationScheduler.scheduleRoster(context, updated)
         NotificationHelper.show(
             context,
             "Operational roster change",
-            "${outboundFlight.ifBlank { "TG999" }} BKK-${destinationIata.uppercase()} was added/changed and is now visible in Roster and Calendar.",
+            if (isAircraftDelivery) "Aircraft delivery ${registration.orEmpty()} BKK-${destinationIata.uppercase()} was added. The aircraft joins Fleet after arrival."
+            else "${outboundFlight.ifBlank { "TG999" }} BKK-${destinationIata.uppercase()} was added/changed and is now visible in Roster and Calendar.",
             ("manual-${date}-${outboundFlight}-${destinationIata}").hashCode()
         )
         return true
@@ -429,40 +468,19 @@ class FlightRepository(
         val hotel: String
     )
 
-    private fun manualRoute(iata: String): ManualRoute = when (iata.uppercase()) {
-        "HKT" -> ManualRoute("HKT", "VTSP", "Phuket", "Phuket Intl", 85, 90, "Thai Airways layover hotel Phuket")
-        "KBV" -> ManualRoute("KBV", "VTSG", "Krabi", "Krabi Intl", 80, 85, "Krabi crew hotel")
-        "SIN" -> ManualRoute("SIN", "WSSS", "Singapore", "Changi Intl", 150, 150, "Crowne Plaza Changi Airport")
-        "KUL" -> ManualRoute("KUL", "WMKK", "Kuala Lumpur", "KLIA", 145, 145, "Sama-Sama Hotel KLIA")
-        "DPS" -> ManualRoute("DPS", "WADD", "Denpasar", "Ngurah Rai Intl", 260, 265, "Hyatt Regency Bali")
-        "TAS" -> ManualRoute("TAS", "UTTT", "Tashkent", "Islam Karimov", 395, 405, "Hyatt Regency Tashkent")
-        "MNL" -> ManualRoute("MNL", "RPLL", "Manila", "Ninoy Aquino Intl", 200, 205, "Conrad Manila")
-        "DEL" -> ManualRoute("DEL", "VIDP", "Delhi", "Indira Gandhi Intl", 265, 260, "JW Marriott Aerocity")
-        else -> {
-            val code = iata.uppercase()
-            val airport = AirportDatabase.byIata(code) ?: AirportDatabase.search(code).firstOrNull()
-            if (airport != null) {
-                ManualRoute(
-                    airport.iata,
-                    airport.icao,
-                    airport.city,
-                    AirportDatabase.shortAirportName(airport.iata, airport.name),
-                    150,
-                    150,
-                    "${airport.city} crew hotel"
-                )
-            } else {
-                ManualRoute(code, "", code, "$code Airport", 150, 150, "$code crew hotel")
-            }
-        }
+    private fun manualRoute(iata: String): ManualRoute = RouteCatalog.byIata(iata).let { route ->
+        ManualRoute(
+            route.destinationIata,
+            route.destinationIcao,
+            route.destinationCity,
+            route.destinationAirport,
+            route.outboundMinutes,
+            route.inboundMinutes,
+            route.hotel
+        )
     }
 
-    private fun aircraftFullName(label: String): String = when {
-        label.contains("A321", ignoreCase = true) -> "Airbus A321-251NX"
-        label.contains("A330", ignoreCase = true) -> "Airbus A330-343"
-        label.contains("A350", ignoreCase = true) -> "Airbus A350-941"
-        else -> "Airbus A320-214"
-    }
+    private fun aircraftFullName(label: String): String = AircraftTypeCatalog.byLabel(label).fullName
 
     private fun buildManualDuty(
         date: LocalDate,
@@ -475,12 +493,13 @@ class FlightRepository(
         returnFlight: String,
         returnDate: LocalDate,
         returnTime: String?,
-        note: String
+        note: String,
+        isAircraftDelivery: Boolean = false
     ): List<FlightEntity> {
         val route = manualRoute(destinationIata)
         val report = LocalDateTime.of(date, LocalTime.parse(if (reportTime.length == 5) "$reportTime:00" else reportTime))
         val outDeparture = report.plusMinutes(90)
-        val outArrival = outDeparture.plusMinutes(route.outboundMinutes.toLong())
+        val outArrival = arrivalLocalDateTime(outDeparture, "BKK", route.iata, route.outboundMinutes)
         val reg = registration ?: "TBA"
         val full = aircraftFullName(aircraftLabel)
         val outbound = FlightEntity(
@@ -503,8 +522,11 @@ class FlightRepository(
             arrivalDateTime = outArrival.toString(),
             durationMinutes = route.outboundMinutes,
             dutyType = "FLIGHT",
-            dutyNote = note + if (pattern == "LAYOVER") " • Layover" else " • Turnaround"
+            dutyNote = if (isAircraftDelivery) "$note • Aircraft Delivery / Ferry" else note + if (pattern == "LAYOVER") " • Layover" else " • Turnaround",
+            isAircraftDelivery = isAircraftDelivery,
+            deliveryAircraftType = if (isAircraftDelivery) aircraftLabel else ""
         )
+        if (isAircraftDelivery) return listOf(outbound)
         val returnDeparture = if (pattern == "LAYOVER") {
             val time = returnTime?.let { if (it.length == 5) "$it:00" else it } ?: "12:00:00"
             LocalDateTime.of(returnDate, LocalTime.parse(time))
@@ -528,7 +550,7 @@ class FlightRepository(
             arrivalCity = "Bangkok",
             arrivalAirport = "Suvarnabhumi Intl",
             departureDateTime = returnDeparture.toString(),
-            arrivalDateTime = returnDeparture.plusMinutes(route.inboundMinutes.toLong()).toString(),
+            arrivalDateTime = arrivalLocalDateTime(returnDeparture, route.iata, "BKK", route.inboundMinutes).toString(),
             durationMinutes = route.inboundMinutes,
             dutyType = "FLIGHT",
             dutyNote = note + if (pattern == "LAYOVER") " • Return after layover" else " • Turnaround return"
@@ -639,8 +661,8 @@ class FlightRepository(
             flight.durationMinutes >= 180 || flight.aircraftLabel.startsWith("A330") -> "MEDIUM"
             else -> "SHORT"
         }
-        val assigned = AircraftPool.assignFor(flight.aircraftLabel, routeClass, flight.id)
-        flightDao.assignRegistration(flight.id, assigned.registration)
+        val assigned = fleetRepository.assignFor(flight.aircraftLabel, routeClass, flight.id)
+        if (assigned != null) flightDao.assignRegistration(flight.id, assigned.registration)
     }
 
     private suspend fun normalizeSameDutyAircraftRegistrations(roster: List<FlightEntity>) {
@@ -671,5 +693,28 @@ class FlightRepository(
         return minutesBetween <= 12 * 60 &&
             ((first.arrivalIata == second.departureIata && first.departureIata == second.arrivalIata) ||
                 (second.arrivalIata == first.departureIata && second.departureIata == first.arrivalIata))
+    }
+
+    private fun currentBangkokMonth(): YearMonth = YearMonth.from(nowAtAirport("BKK"))
+
+    private fun normalizeInstants(flights: List<FlightEntity>): List<FlightEntity> = flights.map { flight ->
+        flight.copy(
+            departureEpochMillis = flight.departureEpochMillis
+                ?: airportLocalEpochMillis(flight.departureDateTime, flight.departureIata),
+            arrivalEpochMillis = flight.arrivalEpochMillis
+                ?: airportLocalEpochMillis(flight.arrivalDateTime, flight.arrivalIata)
+        )
+    }
+
+    private suspend fun backfillUtcInstants() {
+        flightDao.getAllOnce()
+            .filter { it.departureEpochMillis == null || it.arrivalEpochMillis == null }
+            .forEach { flight ->
+                val departure = airportLocalEpochMillis(flight.departureDateTime, flight.departureIata)
+                val arrival = airportLocalEpochMillis(flight.arrivalDateTime, flight.arrivalIata)
+                if (departure != null && arrival != null) {
+                    flightDao.updateUtcInstants(flight.id, departure, arrival)
+                }
+            }
     }
 }

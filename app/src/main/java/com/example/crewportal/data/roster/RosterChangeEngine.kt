@@ -1,6 +1,7 @@
 package com.example.crewportal.data.roster
 
 import com.example.crewportal.data.local.FlightEntity
+import com.example.crewportal.util.arrivalLocalDateTime
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
@@ -18,6 +19,11 @@ data class RosterChangeResult(
 object RosterChangeEngine {
     private val formatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
+    /**
+     * Deterministically publishes only the number of changes scheduled up to [today]. It changes
+     * future, unregistered turnaround sectors and returns a complete replacement snapshot; the
+     * repository owns the database transaction-like clear/insert and notification side effects.
+     */
     fun applyChangeIfDue(roster: List<FlightEntity>, today: LocalDate = LocalDate.now()): RosterChangeResult? {
         val month = YearMonth.from(today)
         val monthPrefix = "%04d-%02d".format(month.year, month.monthValue)
@@ -37,9 +43,9 @@ object RosterChangeEngine {
         if (possibleOffSwapDay != null && abs((outbound.id + month + "off-swap").hashCode()) % 3 == 0) {
             val reason = changeReason(month, oldDepartureDate.dayOfMonth)
             val newOutboundDepartureSwap = LocalDateTime.parse("${possibleOffSwapDay}T${replacement.outboundTime}", formatter)
-            val newOutboundArrivalSwap = newOutboundDepartureSwap.plusMinutes(replacement.outboundMinutes.toLong())
+            val newOutboundArrivalSwap = arrivalLocalDateTime(newOutboundDepartureSwap, "BKK", replacement.iata, replacement.outboundMinutes)
             val newInboundDepartureSwap = newOutboundArrivalSwap.plusMinutes(replacement.turnaroundMinutes.toLong())
-            val newInboundArrivalSwap = newInboundDepartureSwap.plusMinutes(replacement.inboundMinutes.toLong())
+            val newInboundArrivalSwap = arrivalLocalDateTime(newInboundDepartureSwap, replacement.iata, "BKK", replacement.inboundMinutes)
             val offDuty = outbound.copy(
                 id = "${oldDepartureDate}-OFF-ROSTER-CHANGE",
                 flightNumber = "OFF",
@@ -133,9 +139,9 @@ object RosterChangeEngine {
         }
 
         val newOutboundDeparture = LocalDateTime.parse("${departureDate}T${replacement.outboundTime}", formatter)
-        val newOutboundArrival = newOutboundDeparture.plusMinutes(replacement.outboundMinutes.toLong())
+        val newOutboundArrival = arrivalLocalDateTime(newOutboundDeparture, "BKK", replacement.iata, replacement.outboundMinutes)
         val newInboundDeparture = newOutboundArrival.plusMinutes(replacement.turnaroundMinutes.toLong())
-        val newInboundArrival = newInboundDeparture.plusMinutes(replacement.inboundMinutes.toLong())
+        val newInboundArrival = arrivalLocalDateTime(newInboundDeparture, replacement.iata, "BKK", replacement.inboundMinutes)
 
         val newOutbound = outbound.copy(
             id = "${departureDate}-${replacement.outboundFlight}-BKK-${replacement.iata}",

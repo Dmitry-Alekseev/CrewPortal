@@ -13,23 +13,24 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.crewportal.data.fleet.AircraftPool
-import com.example.crewportal.ui.theme.TextMuted
-import com.example.crewportal.ui.theme.ThaiPurple
+import com.example.crewportal.data.repository.FleetRepository
 
 @Composable
-fun FleetScreen() {
-    val fleet = AircraftPool.aircraft.groupBy { it.label }
+fun FleetScreen(fleetRepository: FleetRepository) {
+    val aircraftList by fleetRepository.observeFleet().collectAsState(initial = emptyList())
+    val fleet = aircraftList.groupBy { it.label }
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Text("Airbus Fleet", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Local operational aircraft database", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Persistent operational aircraft database • delivered aircraft appear automatically", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         fleet.forEach { (type, aircraft) ->
             item { Text(type, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }

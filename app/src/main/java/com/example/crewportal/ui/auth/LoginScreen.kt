@@ -44,6 +44,8 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.example.crewportal.data.repository.AuthRepository
 import com.example.crewportal.data.repository.PreferencesRepository
+import com.example.crewportal.ui.theme.CorporateBlueAccent
+import com.example.crewportal.ui.theme.CorporateGraphite
 import kotlinx.coroutines.launch
 
 @Composable
@@ -63,8 +65,8 @@ fun LoginScreen(
     var rememberMe by remember(remembered) { mutableStateOf(remembered) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    val accent = Color(0xFF52627A)
-    val accentDark = Color(0xFF334155)
+    val accent = CorporateBlueAccent
+    val accentDark = CorporateGraphite
     val softBackground = Color(0xFFF5F6F8)
 
     Surface(modifier = Modifier.fillMaxSize(), color = softBackground) {

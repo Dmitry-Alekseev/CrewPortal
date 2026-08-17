@@ -33,6 +33,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.data.repository.FlightRepository
 import com.example.crewportal.data.repository.PreferencesRepository
+import com.example.crewportal.ui.theme.CorporateBlue
+import com.example.crewportal.ui.theme.CorporateBlueAccent
+import com.example.crewportal.ui.theme.CorporateBlueLight
 import com.example.crewportal.util.parseLocalDateTime
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -47,8 +50,6 @@ private data class CompanyMessageUi(
     val date: LocalDateTime
 )
 
-private val CorporateBlue = Color(0xFF1F3A5F)
-private val CorporateAccent = Color(0xFF2F5F88)
 private val DeleteRed = Color(0xFF8B2F2F)
 
 @Composable
@@ -208,7 +209,7 @@ private fun UnreadMessageCard(message: CompanyMessageUi, ru: Boolean, onAcknowle
         Spacer(Modifier.height(8.dp))
         Button(
             onClick = onAcknowledge,
-            colors = ButtonDefaults.buttonColors(containerColor = CorporateAccent, contentColor = Color.White),
+            colors = ButtonDefaults.buttonColors(containerColor = CorporateBlueAccent, contentColor = Color.White),
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(if (ru) "Ознакомился" else "Acknowledge")
@@ -236,7 +237,7 @@ private fun MessageCardBase(message: CompanyMessageUi, unread: Boolean = false, 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = if (unread) Color(0xFFEAF2F8) else MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = if (unread) CorporateBlueLight else MaterialTheme.colorScheme.surface)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             MessageHeader(message, selectedPrefix = "")
@@ -259,7 +260,7 @@ private fun MessageHeader(message: CompanyMessageUi, selectedPrefix: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Column(Modifier.weight(1f)) {
             Text(selectedPrefix + message.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(message.category, style = MaterialTheme.typography.labelMedium, color = CorporateAccent)
+            Text(message.category, style = MaterialTheme.typography.labelMedium, color = CorporateBlueAccent)
         }
         Text(
             message.date.format(DateTimeFormatter.ofPattern("dd MMM • HH:mm", Locale.ENGLISH)).uppercase(Locale.ENGLISH),

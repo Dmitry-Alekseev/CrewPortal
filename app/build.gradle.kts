@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.crewportal"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2206
-        versionName = "2.2.6"
+        versionCode = 2208
+        versionName = "2.2.8"
     }
 
     signingConfigs {
@@ -23,11 +23,23 @@ android {
             keyAlias = "crewportaldebug"
             keyPassword = "crewportal"
         }
+        val releaseStore = providers.gradleProperty("CREWPORTAL_STORE_FILE").orNull ?: System.getenv("CREWPORTAL_STORE_FILE")
+        val releaseStorePassword = providers.gradleProperty("CREWPORTAL_STORE_PASSWORD").orNull ?: System.getenv("CREWPORTAL_STORE_PASSWORD")
+        val releaseAlias = providers.gradleProperty("CREWPORTAL_KEY_ALIAS").orNull ?: System.getenv("CREWPORTAL_KEY_ALIAS")
+        val releaseKeyPassword = providers.gradleProperty("CREWPORTAL_KEY_PASSWORD").orNull ?: System.getenv("CREWPORTAL_KEY_PASSWORD")
+        if (!releaseStore.isNullOrBlank() && !releaseStorePassword.isNullOrBlank() && !releaseAlias.isNullOrBlank() && !releaseKeyPassword.isNullOrBlank()) {
+            create("release") {
+                storeFile = file(releaseStore)
+                storePassword = releaseStorePassword
+                keyAlias = releaseAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -56,6 +68,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.ui:ui")
@@ -84,4 +97,6 @@ dependencies {
     implementation("androidx.core:core:1.13.1")
 
     implementation("org.osmdroid:osmdroid-android:6.1.20")
+
+    testImplementation("junit:junit:4.13.2")
 }

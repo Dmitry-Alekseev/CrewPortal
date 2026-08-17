@@ -18,8 +18,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.crewportal.data.messages.CompanyMessages
 import com.example.crewportal.data.repository.FlightRepository
-import com.example.crewportal.ui.theme.TextMuted
-import com.example.crewportal.ui.theme.ThaiPurple
 import com.example.crewportal.util.canRegister
 import com.example.crewportal.util.shouldShowRegistrationButton
 import com.example.crewportal.util.displayDate

@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version, for example 2.2.6"
+        description: "Release version, for example 2.2.8"
         required: true
+        default: "2.2.8"
         type: string
 
 permissions:
@@ -30,17 +31,30 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: 8.7
 
-      - name: Build debug APK
-        run: gradle assembleDebug --warning-mode all
+      - name: Restore release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.CREWPORTAL_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || (echo "Missing CREWPORTAL_KEYSTORE_BASE64" && exit 1)
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/crewportal-release.jks"
+
+      - name: Test, lint and build signed release APK
+        env:
+          CREWPORTAL_STORE_FILE: ${{ runner.temp }}/crewportal-release.jks
+          CREWPORTAL_STORE_PASSWORD: ${{ secrets.CREWPORTAL_STORE_PASSWORD }}
+          CREWPORTAL_KEY_ALIAS: ${{ secrets.CREWPORTAL_KEY_ALIAS }}
+          CREWPORTAL_KEY_PASSWORD: ${{ secrets.CREWPORTAL_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          test -n "$CREWPORTAL_STORE_PASSWORD" -a -n "$CREWPORTAL_KEY_ALIAS" -a -n "$CREWPORTAL_KEY_PASSWORD"
+          ./gradlew testDebugUnitTest lintRelease assembleRelease --warning-mode all
 
       - name: Prepare release files
         run: |
           VERSION="${{ inputs.version }}"
           mkdir -p release
-          cp app/build/outputs/apk/debug/*.apk "release/CrewPortal-${VERSION}.apk"
+          cp app/build/outputs/apk/release/*.apk "release/CrewPortal-${VERSION}.apk"
           if [ -f update/app_update.json ]; then
             cp update/app_update.json release/app_update.json
           fi

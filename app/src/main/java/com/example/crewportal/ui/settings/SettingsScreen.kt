@@ -37,13 +37,12 @@ import com.example.crewportal.BuildConfig
 import com.example.crewportal.data.repository.PreferencesRepository
 import com.example.crewportal.data.update.AppUpdateInfo
 import com.example.crewportal.data.update.UpdateRepository
+import com.example.crewportal.ui.theme.CorporateBlue
+import com.example.crewportal.ui.theme.CorporateBlueAccent
+import com.example.crewportal.ui.theme.CorporateNeutral
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-private val CorporateBlue = Color(0xFF1F3A5F)
-private val CorporateAccent = Color(0xFF2F5F88)
-private val NeutralButton = Color(0xFFE9E5DF)
 
 @Composable
 fun SettingsScreen(
@@ -79,7 +78,7 @@ fun SettingsScreen(
                         updateRepository.openDownload(info.apkUrl)
                         updateInfo = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = CorporateAccent, contentColor = Color.White)
+                    colors = ButtonDefaults.buttonColors(containerColor = CorporateBlueAccent, contentColor = Color.White)
                 ) { Text(if (ru) "Скачать APK" else "Download APK") }
             },
             dismissButton = { TextButton(onClick = { updateInfo = null }) { Text(if (ru) "Позже" else "Later") } }
@@ -107,7 +106,7 @@ fun SettingsScreen(
                     Button(
                         onClick = { scope.launch { preferencesRepository.setAppLanguage("en") } },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (language == "en") CorporateBlue else NeutralButton,
+                            containerColor = if (language == "en") CorporateBlue else CorporateNeutral,
                             contentColor = if (language == "en") Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                         modifier = Modifier.weight(1f)
@@ -116,7 +115,7 @@ fun SettingsScreen(
                     Button(
                         onClick = { scope.launch { preferencesRepository.setAppLanguage("ru") } },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (language == "ru") CorporateBlue else NeutralButton,
+                            containerColor = if (language == "ru") CorporateBlue else CorporateNeutral,
                             contentColor = if (language == "ru") Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                         modifier = Modifier.weight(1f)
@@ -166,7 +165,7 @@ fun SettingsScreen(
                             snackbarHostState.showSnackbar(if (ru) "Локальный ростер обновлён" else "Local roster refreshed")
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = NeutralButton, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                    colors = ButtonDefaults.buttonColors(containerColor = CorporateNeutral, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                     modifier = Modifier.fillMaxWidth()
                 ) { Text(if (ru) "Обновить статусы" else "Refresh status") }
 
@@ -180,29 +179,31 @@ fun SettingsScreen(
                             else -> updateInfo = info
                         }
                     }
-                }, colors = ButtonDefaults.buttonColors(containerColor = CorporateAccent, contentColor = Color.White), modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Проверить обновления приложения" else "Check app updates") }
+                }, colors = ButtonDefaults.buttonColors(containerColor = CorporateBlueAccent, contentColor = Color.White), modifier = Modifier.fillMaxWidth()) { Text(if (ru) "Проверить обновления приложения" else "Check app updates") }
             }
         }
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.2.6", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Change Log — 2.2.8", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Added fillable Electronic Pilot Logbook to Flight Details.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Aircraft Delivery supports A330neo and manual HS- registration.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Leave requests now apply to shared roster/calendar leave state.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Profile updated to Line Pilot Instructor with license dated 19 June 2026.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Operational Roster Change can mark a duty as instructor/observer.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("• Instructor duties show Dmitrii as third crew member, not operating Captain.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Version metadata updated to 2.2.6.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Version metadata updated to 2.2.8.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
         Button(
             onClick = { scope.launch { flightRepository.simulateRosterChange() } },
-            colors = ButtonDefaults.buttonColors(containerColor = NeutralButton, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+            colors = ButtonDefaults.buttonColors(containerColor = CorporateNeutral, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
             modifier = Modifier.fillMaxWidth()
         ) { Text(if (ru) "Имитировать изменение ростера" else "Simulate Roster Change") }
         Button(
             onClick = { scope.launch { onLogout() } },
-            colors = ButtonDefaults.buttonColors(containerColor = NeutralButton, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+            colors = ButtonDefaults.buttonColors(containerColor = CorporateNeutral, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
             modifier = Modifier.fillMaxWidth()
         ) { Text(if (ru) "Выйти" else "Sign Out") }
     }

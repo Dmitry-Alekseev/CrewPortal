@@ -56,6 +56,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.crewportal.data.remote.WeatherRepository
 import com.example.crewportal.data.repository.FlightRepository
+import com.example.crewportal.data.repository.FleetRepository
+import com.example.crewportal.data.repository.LeaveRepository
+import com.example.crewportal.data.repository.LogbookRepository
 import com.example.crewportal.data.repository.PreferencesRepository
 import com.example.crewportal.ui.calendar.CalendarScreen
 import com.example.crewportal.ui.fleet.FleetScreen
@@ -100,6 +103,9 @@ fun MainNavigation(
     flightRepository: FlightRepository,
     preferencesRepository: PreferencesRepository,
     weatherRepository: WeatherRepository,
+    fleetRepository: FleetRepository,
+    logbookRepository: LogbookRepository,
+    leaveRepository: LeaveRepository,
     initialRoute: String? = null,
     onLogout: suspend () -> Unit
 ) {
@@ -178,6 +184,7 @@ fun MainNavigation(
                 FlightDetailsScreen(
                     flightId = entry.arguments?.getString("flightId").orEmpty(),
                     flightRepository = flightRepository,
+                    logbookRepository = logbookRepository,
                     onBack = { navController.popBackStack() },
                     onMelClick = { navController.navigate("mel/$it") }
                 )
@@ -190,13 +197,13 @@ fun MainNavigation(
             composable(Screen.Calendar.route) { CalendarScreen(flightRepository, preferencesRepository, onDutyClick = { navController.navigate("details/$it") }) }
             composable(Screen.Weather.route) { WeatherScreen(weatherRepository, preferencesRepository) }
             composable(Screen.Messages.route) { MessagesScreen(flightRepository = flightRepository, preferencesRepository = preferencesRepository, ru = ru) }
-            composable(Screen.Fleet.route) { FleetScreen() }
+            composable(Screen.Fleet.route) { FleetScreen(fleetRepository) }
             composable(Screen.Alerts.route) { NotificationsScreen(flightRepository) }
             composable(Screen.Profile.route) { ProfileScreen(preferencesRepository) }
             composable(Screen.Contacts.route) { CompanyContactsScreen() }
             composable(Screen.AirportInfo.route) { AirportInfoScreen() }
             composable(Screen.RosterHistory.route) { RosterChangeHistoryScreen(flightRepository) }
-            composable(Screen.Leave.route) { LeaveManagementScreen() }
+            composable(Screen.Leave.route) { LeaveManagementScreen(leaveRepository) }
             composable(Screen.Payroll.route) { PayrollScreen(flightRepository, preferencesRepository, ru = ru) }
             composable(Screen.CompanyRoutes.route) { CompanyRoutesScreen(ru = ru) }
             composable(Screen.Settings.route) {

@@ -16,62 +16,33 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-
-private data class CompanyRoute(val route: String, val code: String, val aircraft: String, val type: String)
-
-private val routes = listOf(
-    CompanyRoute("Bangkok — Phuket", "BKK-HKT", "A320 Family", "Domestic"),
-    CompanyRoute("Bangkok — Chiang Mai", "BKK-CNX", "A320 Family", "Domestic"),
-    CompanyRoute("Bangkok — Krabi", "BKK-KBV", "A320 Family", "Domestic"),
-    CompanyRoute("Bangkok — Nha Trang", "BKK-CXR", "A321neo", "Regional"),
-    CompanyRoute("Bangkok — Singapore", "BKK-SIN", "A321neo / A350", "Regional"),
-    CompanyRoute("Bangkok — Kuala Lumpur", "BKK-KUL", "A321neo", "Regional"),
-    CompanyRoute("Bangkok — Ho Chi Minh City", "BKK-SGN", "A321neo", "Regional"),
-    CompanyRoute("Bangkok — Hanoi", "BKK-HAN", "A321neo", "Regional"),
-    CompanyRoute("Bangkok — Hong Kong", "BKK-HKG", "A330 / A350", "Regional"),
-    CompanyRoute("Bangkok — Taipei", "BKK-TPE", "A330 / A350", "Regional"),
-    CompanyRoute("Bangkok — Tokyo Narita", "BKK-NRT", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Tokyo Haneda", "BKK-HND", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Osaka", "BKK-KIX", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Seoul", "BKK-ICN", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Delhi", "BKK-DEL", "A330 / A350", "Medium"),
-    CompanyRoute("Bangkok — Mumbai", "BKK-BOM", "A330 / A350", "Medium"),
-    CompanyRoute("Bangkok — Dubai", "BKK-DXB", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Istanbul", "BKK-IST", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Frankfurt", "BKK-FRA", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Munich", "BKK-MUC", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Zurich", "BKK-ZRH", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — London", "BKK-LHR", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Paris", "BKK-CDG", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Sydney", "BKK-SYD", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Melbourne", "BKK-MEL", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Perth", "BKK-PER", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Auckland", "BKK-AKL", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Tashkent", "BKK-TAS", "A330", "Long-haul"),
-    CompanyRoute("Bangkok — Saint Petersburg", "BKK-LED", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Moscow Sheremetyevo", "BKK-SVO", "A350", "Long-haul"),
-    CompanyRoute("Bangkok — Novosibirsk", "BKK-OVB", "A330 / A350", "Long-haul"),
-    CompanyRoute("Bangkok — Yekaterinburg", "BKK-SVX", "A330 / A350", "Long-haul"),
-    CompanyRoute("Bangkok — Ulan-Ude", "BKK-UUD", "A330", "Long-haul"),
-    CompanyRoute("Bangkok — Vladivostok", "BKK-VVO", "A330", "Long-haul"),
-    CompanyRoute("Bangkok — Irkutsk", "BKK-IKT", "A330", "Long-haul"),
-    CompanyRoute("Bangkok — Khabarovsk", "BKK-KHV", "A330", "Long-haul")
-)
+import com.example.crewportal.data.route.RouteCatalog
 
 @Composable
 fun CompanyRoutesScreen(ru: Boolean) {
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         item {
             Text(if (ru) "Маршрутная сеть" else "Company Routes", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text(if (ru) "Маршрутная сеть экипажного портала" else "Company route network available in Crew Portal", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                if (ru) "Единый справочник маршрутов Crew Portal" else "Shared Crew Portal route catalog",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-        items(routes) { item ->
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+        items(RouteCatalog.routes, key = { it.destinationIata }) { item ->
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(item.route, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(item.displayName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Text(item.code, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                     Text("Aircraft: ${item.aircraft}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Operation: ${item.type}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Operation: ${item.operationType}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Block time: ${item.outboundMinutes} / ${item.inboundMinutes} min", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
