@@ -11,7 +11,7 @@ Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus 
 - Room migration 3→4 preserves roster data and adds persistent fleet, leave, logbook and UTC instant state.
 - Roster replacement is transactional, generation deterministic, and next-month publication runs through WorkManager.
 - Payroll policy and common route metadata have dedicated non-UI sources of truth.
-- GitHub builds and releases require no signing secrets; the release workflow publishes the installable debug APK for testing.
+- GitHub builds require no signing secrets and reuse the legacy certificate so 2.2.8 can update the installed app without clearing local data.
 - Leave Management now applies approved personal leave to shared leave state.
 - Profile shows Dmitrii Alekseev as Line Pilot Instructor.
 - Line Pilot Instructor license added with issue date 19 June 2026.

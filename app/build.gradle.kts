@@ -16,6 +16,17 @@ android {
         versionName = "2.2.8"
     }
 
+    // Keep the legacy Crew Portal certificate so 2.2.8 installs as an update over 2.2.x
+    // without uninstalling the app or deleting its local Room/DataStore data.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("crewportal-debug.keystore")
+            storePassword = "crewportal"
+            keyAlias = "crewportaldebug"
+            keyPassword = "crewportal"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

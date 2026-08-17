@@ -78,7 +78,7 @@ Generator стал детерминированным: один month/seed/rules
 
 ## Signing и GitHub
 
-Оба workflow запускают `testDebugUnitTest`, `lintDebug`, `assembleDebug`. `android-build.yml` загружает APK как artifact, а `release-apk.yml` публикует тот же installable debug APK как `CrewPortal-2.2.8.apk` в GitHub Release. В репозитории нет keystore-файлов и паролей; стандартный временный debug key создаёт Android Gradle Plugin на runner автоматически.
+Оба workflow запускают `testDebugUnitTest`, `lintDebug`, `assembleDebug`. `android-build.yml` загружает APK как artifact, а `release-apk.yml` публикует тот же installable debug APK как `CrewPortal-2.2.8.apk`. Debug build подписывается legacy `crewportal-debug.keystore`, который byte-for-byte совпадает с ключом предыдущего архива. Поэтому при одинаковом `applicationId` и повышенном `versionCode 2208` APK предназначен для обновления поверх прежней установки без удаления локальной БД. GitHub signing secrets не нужны.
 
 ## Проверка
 

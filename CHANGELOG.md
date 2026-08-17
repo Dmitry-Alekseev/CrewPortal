@@ -6,7 +6,7 @@
 - Added Aircraft Delivery / Ferry with manual `HS-` registration and automatic persistent fleet enrollment after arrival, including A330neo.
 - Added safe Room 3→4 migration, persisted fleet/leave/logbook records, UTC instant backfill, atomic roster replacement and typed duty values.
 - Made roster generation deterministic, connected next-month WorkManager scheduling and extracted payroll policy from Compose UI.
-- GitHub release workflow publishes the installable debug APK without signing secrets or external passwords.
+- GitHub release workflow reuses the legacy certificate without signing secrets, allowing an in-place update that preserves local app data.
 
 - Corrected TAS timezone handling and isolated the two TAS rotation patterns behind tested business logic.
 - Thursday TAS rotations now explicitly contain Friday/Saturday STAY and Sunday operating return; Sunday arrivals use a same-Sunday deadhead departure.

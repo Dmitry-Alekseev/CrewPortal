@@ -3,6 +3,7 @@
   "versionCode": 2208,
   "apkUrl": "https://github.com/Dmitry-Alekseev/CrewPortal/releases/download/2.2.8/CrewPortal-2.2.8.apk",
   "changelog": [
+    "GitHub APK reuses the legacy Crew Portal certificate so it can update the installed app without clearing local data",
     "Added a fillable and certifiable EASA-style electronic pilot logbook to Flight Details",
     "Aircraft Delivery / Ferry now supports A330neo, manual HS- registration and persistent fleet enrollment after arrival",
     "Added safe Room 3-to-4 migration, transactional roster replacement, deterministic generation and next-month WorkManager scheduling",
@@ -17,6 +18,7 @@
     "Version metadata, update metadata, workflows and APK naming updated to CrewPortal-2.2.8.apk"
   ],
   "changelogRu": [
+    "GitHub APK использует прежний сертификат Crew Portal, поэтому обновляется поверх установленного приложения без очистки локальной БД",
     "Добавлен заполняемый и заверяемый EASA-style электронный logbook во вкладке рейса",
     "Aircraft Delivery / Ferry поддерживает A330neo, ручную регистрацию HS- и добавление борта в persistent Fleet после прибытия",
     "Добавлены безопасная Room migration 3→4, транзакционная замена ростера, детерминированный generator и WorkManager следующего месяца",
