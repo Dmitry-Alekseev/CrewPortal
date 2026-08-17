@@ -86,7 +86,7 @@ dependencies {
     implementation("androidx.core:core:1.13.1")
 
     // Public vector basemap; OpenFreeMap's hosted style needs no API key.
-    implementation("org.maplibre.gl:android-sdk:13.4.1")
+    implementation("org.maplibre.gl:android-sdk:12.3.1")
 
     testImplementation("junit:junit:4.13.2")
 }
