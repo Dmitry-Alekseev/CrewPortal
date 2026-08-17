@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
@@ -25,6 +26,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -43,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.example.crewportal.data.repository.AuthRepository
+import com.example.crewportal.R
 import com.example.crewportal.data.repository.PreferencesRepository
 import com.example.crewportal.ui.theme.CorporateBlueAccent
 import com.example.crewportal.ui.theme.CorporateGraphite
@@ -67,9 +71,7 @@ fun LoginScreen(
 
     val accent = CorporateBlueAccent
     val accentDark = CorporateGraphite
-    val softBackground = Color(0xFFF5F6F8)
-
-    Surface(modifier = Modifier.fillMaxSize(), color = softBackground) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -89,6 +91,12 @@ fun LoginScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Image(
+                        painter = painterResource(R.drawable.app_icon_v3),
+                        contentDescription = null,
+                        modifier = Modifier.size(92.dp)
+                    )
+                    Spacer(Modifier.height(14.dp))
                     Text(
                         text = "Crew Portal",
                         style = MaterialTheme.typography.headlineLarge,

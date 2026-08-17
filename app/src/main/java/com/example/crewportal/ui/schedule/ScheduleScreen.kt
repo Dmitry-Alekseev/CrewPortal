@@ -71,6 +71,7 @@ import androidx.compose.ui.unit.sp
 import com.example.crewportal.R
 import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.airport.AirportInfo
+import com.example.crewportal.data.delivery.AircraftDeliveryRequest
 import com.example.crewportal.data.fleet.AircraftPool
 import com.example.crewportal.data.fleet.AircraftTypeCatalog
 import com.example.crewportal.data.leave.LeaveDatabase
@@ -171,21 +172,32 @@ fun ScheduleScreen(
             onSubmit = { date, reportTime, outboundFlight, destination, aircraft, registration, pattern, returnFlight, returnDate, returnTime, replaceExisting, asInstructor, isAircraftDelivery ->
                 scope.launch {
                     val ok = withContext(Dispatchers.IO) {
-                        flightRepository.addOperationalRosterChange(
-                            date = date,
-                            reportTime = reportTime,
-                            outboundFlight = outboundFlight,
-                            destinationIata = destination,
-                            aircraftLabel = aircraft,
-                            registration = registration,
-                            pattern = pattern,
-                            returnFlight = returnFlight,
-                            returnDate = returnDate,
-                            returnTime = returnTime,
-                            replaceExisting = replaceExisting,
-                            asInstructor = asInstructor,
-                            isAircraftDelivery = isAircraftDelivery
-                        )
+                        if (isAircraftDelivery) {
+                            flightRepository.addAircraftDeliveryPlan(
+                                AircraftDeliveryRequest(
+                                    deliveryDate = date,
+                                    deliveryFlightNumber = outboundFlight,
+                                    aircraftLabel = aircraft,
+                                    registration = requireNotNull(registration)
+                                )
+                            )
+                        } else {
+                            flightRepository.addOperationalRosterChange(
+                                date = date,
+                                reportTime = reportTime,
+                                outboundFlight = outboundFlight,
+                                destinationIata = destination,
+                                aircraftLabel = aircraft,
+                                registration = registration,
+                                pattern = pattern,
+                                returnFlight = returnFlight,
+                                returnDate = returnDate,
+                                returnTime = returnTime,
+                                replaceExisting = replaceExisting,
+                                asInstructor = asInstructor,
+                                isAircraftDelivery = false
+                            )
+                        }
                     }
                     showOperationalChangeDialog = false
                     snackbarHostState.showSnackbar(if (ok) { if (ru) "Оперативное изменение внесено" else "Operational roster change added" } else { if (ru) "Не удалось внести изменение" else "Unable to add change" })
@@ -208,14 +220,28 @@ fun ScheduleScreen(
         item {
             SnackbarHost(hostState = snackbarHostState)
             Spacer(Modifier.height(12.dp))
-            Text(if (ru) "Ростер" else "Roster", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            CompanySyncLine(ru = ru, onSecretTap = {
-                hiddenOperationalTapCount += 1
-                if (hiddenOperationalTapCount >= 5) {
-                    hiddenOperationalTapCount = 0
-                    showOperationalChangeDialog = true
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(0.dp)
+            ) {
+                Column(Modifier.padding(horizontal = 18.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(if (ru) "Мой ростер" else "My Roster", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(
+                        targetMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", if (ru) Locale.forLanguageTag("ru") else Locale.ENGLISH)).replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.72f)
+                    )
+                    CompanySyncLine(ru = ru, onSecretTap = {
+                        hiddenOperationalTapCount += 1
+                        if (hiddenOperationalTapCount >= 5) {
+                            hiddenOperationalTapCount = 0
+                            showOperationalChangeDialog = true
+                        }
+                    })
                 }
-            })
+            }
             Spacer(Modifier.height(10.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -702,6 +728,9 @@ fun DutyCard(flight: FlightEntity, onClick: (() -> Unit)?) {
     val title = when {
         isOff -> "OFF"
         isStay -> "Stay in ${AirportDatabase.cityName(flight.departureIata, flight.departureCity)}"
+        flight.dutyType == "DEADHEAD" -> "Passenger • ${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}"
+        flight.dutyType == "CREW_REST" -> "Crew rest • ${AirportDatabase.cityName(flight.departureIata, flight.departureCity)}"
+        flight.dutyType == "TECHNICAL_STOP" -> "Technical stop • ${flight.departureIata}"
         flight.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY") -> flight.flightNumber
         else -> flight.dutyType
     }
@@ -714,7 +743,10 @@ fun DutyCard(flight: FlightEntity, onClick: (() -> Unit)?) {
             }
             Text("${displayDate(flight.departureDateTime)} • ${displayTime(flight.departureDateTime)}-${displayTime(flight.arrivalDateTime)}")
             Text(flight.dutyNote.ifBlank { if (isOff) "Day off" else if (isStay) "Layover stay" else "Hotel standby duty" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (!isOff) Text("Location: ${if (isStay || flight.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY")) flight.departureAirport else airportShortName(flight.departureIata, flight.departureAirport)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!isOff) Text(
+                "Location: ${if (flight.dutyType == "DEADHEAD") "${flight.departureIata} → ${flight.arrivalIata}" else if (isStay || flight.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY", "CREW_REST", "TECHNICAL_STOP")) flight.departureAirport else airportShortName(flight.departureIata, flight.departureAirport)}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -799,7 +831,7 @@ private fun OperationalRosterChangeDialog(
     var deliveryRegistrationSuffix by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
 
-    val aircraftTypes = remember { AircraftTypeCatalog.types.map { it.label } }
+    val aircraftTypes = if (isAircraftDelivery) AircraftTypeCatalog.deliveryTypes else AircraftTypeCatalog.types.map { it.label }
     val registrationOptions = remember(aircraft) {
         AircraftPool.aircraft
             .filter { it.label == aircraft }
@@ -814,49 +846,10 @@ private fun OperationalRosterChangeDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(if (ru) "1. Рейс туда" else "1. Outbound flight", fontWeight = FontWeight.Bold)
-
                 OperationalDatePickerField(
                     label = if (ru) "Дата" else "Date",
                     date = selectedDate,
                     onDateChange = { selectedDate = it }
-                )
-
-                OperationalTimePickerField(
-                    label = if (ru) "Время явки" else "Report time",
-                    value = reportTime,
-                    onValueChange = { reportTime = it }
-                )
-
-                TextField(
-                    value = outboundFlight,
-                    onValueChange = { outboundFlight = it.uppercase(Locale.ENGLISH).take(8) },
-                    label = { Text(if (ru) "Номер рейса туда" else "Outbound flight number") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                AirportIcaoAutocompleteField(
-                    ru = ru,
-                    query = destinationQuery,
-                    selectedAirport = selectedAirport,
-                    onQueryChange = {
-                        destinationQuery = it
-                        selectedAirport = null
-                    },
-                    onAirportSelected = { airport ->
-                        selectedAirport = airport
-                        destinationQuery = "${airport.icao} • ${airport.city} / ${airportShortName(airport.iata, airport.name)}"
-                    }
-                )
-
-                SimpleDropdownField(
-                    label = if (ru) "Тип самолёта" else "Aircraft type",
-                    value = aircraft,
-                    options = aircraftTypes,
-                    onSelected = {
-                        aircraft = it
-                        registration = null
-                    }
                 )
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -865,13 +858,34 @@ private fun OperationalRosterChangeDialog(
                         onCheckedChange = {
                             isAircraftDelivery = it
                             pattern = if (it) "DELIVERY" else null
-                            if (it) registration = null
+                            if (it) {
+                                aircraft = "A330-900neo"
+                                registration = null
+                            }
                         }
                     )
                     Text(if (ru) "Перегонка / приёмка нового самолёта" else "Aircraft delivery / ferry flight")
                 }
 
                 if (isAircraftDelivery) {
+                    Text(
+                        if (ru) "Укажите только основные данные — позиционирование и маршрут EDHI → промежуточный аэропорт → BKK будут рассчитаны автоматически."
+                        else "Enter only the core data. Passenger positioning and EDHI → intermediate airport → BKK will be planned automatically.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    TextField(
+                        value = outboundFlight,
+                        onValueChange = { outboundFlight = it.uppercase(Locale.ENGLISH).take(8) },
+                        label = { Text(if (ru) "Номер перегоночного рейса" else "Delivery flight number") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    SimpleDropdownField(
+                        label = if (ru) "Тип нового самолёта" else "New aircraft type",
+                        value = aircraft,
+                        options = aircraftTypes,
+                        onSelected = { aircraft = it }
+                    )
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -891,63 +905,90 @@ private fun OperationalRosterChangeDialog(
                         )
                     }
                     Text(
-                        if (ru) "После прибытия HS-$deliveryRegistrationSuffix будет добавлен в БД флота."
-                        else "After arrival HS-$deliveryRegistrationSuffix will be added to the persistent fleet database.",
+                        if (ru) "После финального прибытия в BKK борт HS-$deliveryRegistrationSuffix будет добавлен во флот. Переезд EDDH → EDHI в ростере не показывается."
+                        else "After final arrival in BKK, HS-$deliveryRegistrationSuffix joins Fleet. The EDDH → EDHI transfer is intentionally not shown.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                }
-
-                if (!isAircraftDelivery) {
-                    SimpleDropdownField(
-                    label = if (ru) "Регистрация" else "Registration",
-                    value = registration ?: if (ru) "Random / за 24 часа" else "Random / assigned 24h prior",
-                    options = listOf(if (ru) "Random / за 24 часа" else "Random / assigned 24h prior") + registrationOptions,
-                    onSelected = { selected ->
-                        registration = selected.takeIf { it.startsWith("HS-") }
-                    }
+                } else {
+                    Text(if (ru) "1. Рейс туда" else "1. Outbound flight", fontWeight = FontWeight.Bold)
+                    OperationalTimePickerField(
+                        label = if (ru) "Время явки" else "Report time",
+                        value = reportTime,
+                        onValueChange = { reportTime = it }
                     )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = replaceExisting, onCheckedChange = { replaceExisting = it })
-                    Text(if (ru) "Заменить существующие duty в эти даты" else "Replace existing duties on affected dates")
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = asInstructor, onCheckedChange = { asInstructor = it })
-                    Text(if (ru) "Лечу как line pilot instructor / проверяющий" else "Operate as line pilot instructor / observer")
-                }
-
-                Text(if (ru) "2. Тип duty" else "2. Duty pattern", fontWeight = FontWeight.Bold)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    Button(
-                        onClick = { pattern = "TURNAROUND" },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (pattern == "TURNAROUND") CorporateBlue else MaterialTheme.colorScheme.surfaceVariant, contentColor = if (pattern == "TURNAROUND") Color.White else MaterialTheme.colorScheme.onSurfaceVariant),
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Turnaround") }
-                    Button(
-                        onClick = { pattern = "LAYOVER" },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (pattern == "LAYOVER") CorporateBlue else MaterialTheme.colorScheme.surfaceVariant, contentColor = if (pattern == "LAYOVER") Color.White else MaterialTheme.colorScheme.onSurfaceVariant),
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Layover") }
-                }
-                if (pattern != null && !isAircraftDelivery) {
-                    Text(if (ru) "3. Рейс обратно" else "3. Return flight", fontWeight = FontWeight.Bold)
-                    TextField(value = returnFlight, onValueChange = { returnFlight = it.uppercase(Locale.ENGLISH).take(8) }, label = { Text(if (ru) "Номер рейса обратно" else "Return flight number") }, modifier = Modifier.fillMaxWidth())
-                    if (pattern == "LAYOVER") {
-                        OperationalDatePickerField(
-                            label = if (ru) "Дата обратного рейса" else "Return date",
-                            date = returnDate,
-                            onDateChange = { returnDate = it }
-                        )
-                        OperationalTimePickerField(
-                            label = if (ru) "Время вылета обратно" else "Return departure time",
-                            value = returnTime,
-                            onValueChange = { returnTime = it }
-                        )
-                        Text(if (ru) "Отель/STAY будет подобран автоматически по destination." else "Layover hotel/STAY will be selected automatically by destination.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    } else {
-                        Text(if (ru) "Оборот будет рассчитан автоматически около 1–1.5h." else "Turnaround time will be calculated automatically around 1–1.5h.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    TextField(
+                        value = outboundFlight,
+                        onValueChange = { outboundFlight = it.uppercase(Locale.ENGLISH).take(8) },
+                        label = { Text(if (ru) "Номер рейса туда" else "Outbound flight number") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    AirportIcaoAutocompleteField(
+                        ru = ru,
+                        query = destinationQuery,
+                        selectedAirport = selectedAirport,
+                        onQueryChange = {
+                            destinationQuery = it
+                            selectedAirport = null
+                        },
+                        onAirportSelected = { airport ->
+                            selectedAirport = airport
+                            destinationQuery = "${airport.icao} • ${airport.city} / ${airportShortName(airport.iata, airport.name)}"
+                        }
+                    )
+                    SimpleDropdownField(
+                        label = if (ru) "Тип самолёта" else "Aircraft type",
+                        value = aircraft,
+                        options = aircraftTypes,
+                        onSelected = {
+                            aircraft = it
+                            registration = null
+                        }
+                    )
+                    SimpleDropdownField(
+                        label = if (ru) "Регистрация" else "Registration",
+                        value = registration ?: if (ru) "Random / за 24 часа" else "Random / assigned 24h prior",
+                        options = listOf(if (ru) "Random / за 24 часа" else "Random / assigned 24h prior") + registrationOptions,
+                        onSelected = { selected -> registration = selected.takeIf { it.startsWith("HS-") } }
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = replaceExisting, onCheckedChange = { replaceExisting = it })
+                        Text(if (ru) "Заменить существующие duty в эти даты" else "Replace existing duties on affected dates")
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = asInstructor, onCheckedChange = { asInstructor = it })
+                        Text(if (ru) "Лечу как line pilot instructor / проверяющий" else "Operate as line pilot instructor / observer")
+                    }
+                    Text(if (ru) "2. Тип duty" else "2. Duty pattern", fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = { pattern = "TURNAROUND" },
+                            colors = ButtonDefaults.buttonColors(containerColor = if (pattern == "TURNAROUND") CorporateBlue else MaterialTheme.colorScheme.surfaceVariant, contentColor = if (pattern == "TURNAROUND") Color.White else MaterialTheme.colorScheme.onSurfaceVariant),
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Turnaround") }
+                        Button(
+                            onClick = { pattern = "LAYOVER" },
+                            colors = ButtonDefaults.buttonColors(containerColor = if (pattern == "LAYOVER") CorporateBlue else MaterialTheme.colorScheme.surfaceVariant, contentColor = if (pattern == "LAYOVER") Color.White else MaterialTheme.colorScheme.onSurfaceVariant),
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Layover") }
+                    }
+                    if (pattern != null) {
+                        Text(if (ru) "3. Рейс обратно" else "3. Return flight", fontWeight = FontWeight.Bold)
+                        TextField(value = returnFlight, onValueChange = { returnFlight = it.uppercase(Locale.ENGLISH).take(8) }, label = { Text(if (ru) "Номер рейса обратно" else "Return flight number") }, modifier = Modifier.fillMaxWidth())
+                        if (pattern == "LAYOVER") {
+                            OperationalDatePickerField(
+                                label = if (ru) "Дата обратного рейса" else "Return date",
+                                date = returnDate,
+                                onDateChange = { returnDate = it }
+                            )
+                            OperationalTimePickerField(
+                                label = if (ru) "Время вылета обратно" else "Return departure time",
+                                value = returnTime,
+                                onValueChange = { returnTime = it }
+                            )
+                            Text(if (ru) "Отель/STAY будет подобран автоматически по destination." else "Layover hotel/STAY will be selected automatically by destination.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        } else {
+                            Text(if (ru) "Оборот будет рассчитан автоматически около 1–1.5h." else "Turnaround time will be calculated automatically around 1–1.5h.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
                 if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error)
@@ -959,7 +1000,7 @@ private fun OperationalRosterChangeDialog(
                     try {
                         val selectedPattern = if (isAircraftDelivery) "DELIVERY" else pattern
                             ?: throw IllegalArgumentException("Select turnaround or layover")
-                        val airport = selectedAirport
+                        val airport = if (isAircraftDelivery) null else selectedAirport
                             ?: AirportDatabase.search(destinationQuery).firstOrNull()
                             ?: throw IllegalArgumentException("Select destination")
                         val selectedRegistration = if (isAircraftDelivery) {
@@ -970,7 +1011,7 @@ private fun OperationalRosterChangeDialog(
                             selectedDate,
                             reportTime,
                             outboundFlight,
-                            airport.iata,
+                            airport?.iata ?: "BKK",
                             aircraft,
                             selectedRegistration,
                             selectedPattern,
@@ -982,7 +1023,9 @@ private fun OperationalRosterChangeDialog(
                             isAircraftDelivery
                         )
                     } catch (_: Exception) {
-                        error = if (ru) "Проверьте дату, время, destination и тип duty" else "Check date, time, destination and duty pattern"
+                        error = if (isAircraftDelivery) {
+                            if (ru) "Проверьте дату, номер рейса, тип ВС и регистрацию HS-" else "Check date, flight number, aircraft type and HS- registration"
+                        } else if (ru) "Проверьте дату, время, destination и тип duty" else "Check date, time, destination and duty pattern"
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = CorporateBlue, contentColor = Color.White)

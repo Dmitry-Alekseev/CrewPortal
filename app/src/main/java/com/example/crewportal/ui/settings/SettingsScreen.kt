@@ -59,7 +59,37 @@ fun SettingsScreen(
     var updateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
     var updateChecked by remember { mutableStateOf(false) }
     var versionTapCount by remember { mutableStateOf(0) }
+    var showOneTimeGeneratorConfirmation by remember { mutableStateOf(false) }
     val secretUsed by preferencesRepository.secretRosterGeneratorUsed.collectAsState(initial = false)
+
+    if (showOneTimeGeneratorConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showOneTimeGeneratorConfirmation = false },
+            title = { Text(if (ru) "Сгенерировать следующий месяц?" else "Generate next month?") },
+            text = {
+                Text(
+                    if (ru) "Это одноразовый тестовый запуск до штатной даты. После успешной генерации скрытая команда навсегда отключится на этом устройстве."
+                    else "This is a one-time early QA run before the normal generation date. After success, the hidden command is permanently disabled on this device."
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showOneTimeGeneratorConfirmation = false
+                    scope.launch {
+                        val generated = withContext(Dispatchers.IO) { flightRepository.generateNextMonthRosterOnce() }
+                        snackbarHostState.showSnackbar(
+                            if (generated) {
+                                if (ru) "Следующий месяц сгенерирован; команда отключена" else "Next month generated; one-time command disabled"
+                            } else {
+                                if (ru) "Команда уже использована или ростер существует" else "Command already used or next roster already exists"
+                            }
+                        )
+                    }
+                }) { Text(if (ru) "Сгенерировать" else "Generate") }
+            },
+            dismissButton = { TextButton(onClick = { showOneTimeGeneratorConfirmation = false }) { Text(if (ru) "Отмена" else "Cancel") } }
+        )
+    }
     
     if (updateInfo != null) {
         val info = updateInfo!!
@@ -136,11 +166,9 @@ fun SettingsScreen(
                             versionTapCount = 0
                             scope.launch {
                                 if (secretUsed) {
-                                    flightRepository.deleteNextMonthRosterDraft()
-                                    snackbarHostState.showSnackbar(if (ru) "Черновик следующего месяца удалён" else "Next month draft deleted")
+                                    snackbarHostState.showSnackbar(if (ru) "Одноразовая команда уже использована" else "One-time command has already been used")
                                 } else {
-                                    flightRepository.generateJuneRosterTest()
-                                    snackbarHostState.showSnackbar(if (ru) "Ростер следующего месяца сгенерирован" else "Next month roster generated")
+                                    showOneTimeGeneratorConfirmation = true
                                 }
                             }
                         }
@@ -185,12 +213,12 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 2.2.10", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Route maps use the public OpenFreeMap vector basemap without an API key.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Medical, simulator and line-check validity dates now use a six-month cycle.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Generator reserves linked training/check events before ordinary flights.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Route times are persisted from directional five-minute min/max ranges.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Version metadata updated to 2.2.10.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 3.0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Modern corporate design system and new Crew Portal icon.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Aircraft Delivery now plans BKK-DXB-HAM positioning and EDHI-stop-BKK ferry legs.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Two-pilot plans receive 8-12h rest; four-pilot plans show the user's role by leg.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• A330-800neo, A330-900neo, A350-900, A320neo and A321neo delivery types are supported.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Five taps on the version can generate next month once for QA.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

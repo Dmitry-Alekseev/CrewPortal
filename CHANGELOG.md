@@ -1,5 +1,16 @@
 # Crew Portal Changelog
 
+## 3.0
+
+- Introduced a modern Material 3 corporate design system, updated navigation surfaces and a new aviation launcher icon.
+- Reduced Aircraft Delivery input to date, delivery flight number, supported new-aircraft type and manual `HS-` registration suffix.
+- Added deterministic BKK-DXB-HAM passenger positioning based on a public Emirates timetable reference and EDHI/XFW-intermediate-BKK ferry planning without an EDDH-EDHI roster row.
+- Added GYD, DWC, DOH and MCT delivery stops, correct airport metadata/time zones and route-map coordinates.
+- Added 8-12h midpoint rest for two-pilot delivery crews and 2-4h fuel stops with explicit per-leg operating/passenger roles for four-pilot crews.
+- Split A330-800neo, A330-900neo, A350-900, A320neo and A321neo into distinct deliverable fleet types; activation occurs only after final BKK arrival.
+- Made the five-tap next-month QA generator truly one-time: confirmation is required, the flag is written only after success and app updates/draft deletion cannot reset it.
+- Updated Android, update and GitHub workflow metadata to 3.0 / versionCode 3000 and retained the legacy update certificate.
+
 ## 2.2.10
 
 - Replaced the placeholder gray route diagram with OpenFreeMap's public Liberty vector basemap through MapLibre; no API key or signing secret is required.

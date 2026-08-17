@@ -64,10 +64,12 @@ class FleetRepository(private val dao: FleetAircraftDao) {
         val HS_REGISTRATION = Regex("^HS-[A-Z0-9]{2,6}$")
 
         private fun normalizeLabel(label: String): String = when {
-            label.equals("A330neo", true) || label.contains("A330-9", true) -> "A330neo"
+            label.contains("A330-8", true) -> "A330-800neo"
+            label.equals("A330neo", true) || label.contains("A330-9", true) -> "A330-900neo"
             label.startsWith("A350", true) -> "A350-900"
             label.startsWith("A330", true) -> "A330-300"
             label.startsWith("A321", true) -> "A321neo"
+            label.contains("NEO", true) && label.startsWith("A320", true) -> "A320neo"
             label.startsWith("A320", true) -> "A320"
             else -> label
         }

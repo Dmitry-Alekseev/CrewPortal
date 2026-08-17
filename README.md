@@ -1,10 +1,19 @@
 # Crew Portal
 
-Version: 2.2.10
+Version: 3.0
 
 Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus pilot workflow.
 
-## Version 2.2.10 highlights
+## Version 3.0 highlights
+
+- Modern Material 3 corporate design system, refreshed navigation and a new aviation launcher icon.
+- Simplified Aircraft Delivery form: delivery date, flight number, aircraft type and manual `HS-` suffix only.
+- Automatic BKK-DXB-HAM passenger positioning followed by EDHI/XFW-intermediate-BKK ferry planning; EDDH-EDHI is intentionally omitted from roster rows.
+- Delivery technical stops use GYD, DWC, DOH or MCT. Two-pilot crews receive deterministic 8-12h rest; four-pilot crews receive a 2-4h stop and an explicit operating/passenger role on each leg.
+- Deliverable types are distinct: A330-800neo, A330-900neo, A350-900, A320neo and A321neo. The aircraft joins persistent Fleet only after final BKK arrival.
+- Five taps on the application version expose a confirmed, permanently one-time early next-month generation command for QA.
+
+## Existing platform capabilities
 
 - Route maps use an interactive OpenFreeMap vector basemap through MapLibre; no API key is required.
 - Qualifications have one shared source of truth: completed and next-due dates appear identically in Profile and Documents & Qualifications.
@@ -14,7 +23,7 @@ Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus 
 - STAY headings always resolve the airport city; legacy crew-hotel text cannot become the location title.
 
 - Fillable EASA-style electronic pilot logbook is embedded in Flight Details with draft and certify/lock states.
-- Aircraft Delivery / Ferry supports A330neo and manual `HS-` registration, then adds the aircraft to the persistent fleet after arrival.
+- Aircraft Delivery / Ferry supports manual `HS-` registration and persistent fleet enrollment.
 - Room migration 3→4 preserves roster data and adds persistent fleet, leave, logbook and UTC instant state.
 - Roster replacement is transactional, generation deterministic, and next-month publication runs through WorkManager.
 - Payroll policy and common route metadata have dedicated non-UI sources of truth.
@@ -30,4 +39,4 @@ Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus 
 - `CREW_PORTAL_DEVELOPER_GUIDE.md` documents architecture, state, business rules and safe extension points.
 - GitHub Android CI uses the checked-in Gradle 8.7 wrapper and runs unit tests, lint and `assembleDebug`.
 
-APK artifact name: `CrewPortal-2.2.10.apk`
+APK artifact name: `CrewPortal-3.0.apk`
