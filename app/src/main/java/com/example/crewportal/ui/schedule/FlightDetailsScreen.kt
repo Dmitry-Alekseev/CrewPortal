@@ -44,6 +44,7 @@ import com.example.crewportal.data.airport.AirportGeoDirectory
 import com.example.crewportal.data.airport.AirportCoordinate
 import com.example.crewportal.data.airport.AirportInfo
 import com.example.crewportal.data.crew.CrewPool
+import com.example.crewportal.data.crew.InstructorRole
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.fleet.AircraftPool
 import com.example.crewportal.data.mel.MelDatabase
@@ -103,9 +104,11 @@ fun FlightDetailsScreen(
         } else {
             val longHaul = item.durationMinutes >= 360
             val augmentedCrew = item.durationMinutes > 10 * 60 || item.dutyNote.contains("4 pilots", ignoreCase = true)
-            val userAsInstructor = item.lineCheckRole == "INSTRUCTOR" || item.dutyNote.contains("Line pilot instructor", ignoreCase = true)
+            val userAsInstructor = InstructorRole.isInstructor(item.lineCheckRole) || item.dutyNote.contains("Line pilot instructor", ignoreCase = true)
+            val userAsObserver = InstructorRole.isObserver(item.lineCheckRole) || item.lineCheckRole == "INSTRUCTOR"
+            val userAsCaptainInstructor = InstructorRole.isCaptainInstructor(item.lineCheckRole)
             val deliveryPassenger = item.isAircraftDelivery && !item.flightTimeCreditEligible
-            val crew = CrewPool.forFlight(item.id, augmentedCrew, userAsInstructor || deliveryPassenger)
+            val crew = CrewPool.forFlight(item.id, augmentedCrew, userAsObserver || deliveryPassenger)
             val fuel = estimatedFuel(item.durationMinutes, item.aircraftLabel)
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -156,7 +159,9 @@ fun FlightDetailsScreen(
                     }
                 }
 
-                ElectronicLogbookCard(item, logbookRepository)
+                // Instructor/checking sectors are supervision records, not the user's personal
+                // operating logbook entries. Active captain instructors are hidden as requested too.
+                if (!userAsInstructor) ElectronicLogbookCard(item, logbookRepository)
 
                 AircraftTechnicalStatusCard(item, onMelClick)
 
@@ -214,12 +219,14 @@ fun FlightDetailsScreen(
                     if (item.isAircraftDelivery) {
                         DetailRow("Your Delivery Role", if (deliveryPassenger) "Passenger / in-flight rest" else "Operating pilot", item.dutyNote)
                     }
-                    DetailRow("Captain", crew.captain, "Operating commander")
+                    DetailRow("Captain", crew.captain, if (userAsCaptainInstructor) "Operating commander • Captain instructor" else "Operating commander")
                     DetailRow("First Officer", crew.firstOfficer, "Operating pilot")
                     if (crew.reliefCaptain != null) DetailRow("Relief Captain", crew.reliefCaptain, "Augmented crew")
                     if (crew.reliefFirstOfficer != null) DetailRow("Relief First Officer", crew.reliefFirstOfficer, "Augmented crew")
-                    if (userAsInstructor) {
+                    if (userAsObserver) {
                         DetailRow("Line Pilot Instructor", "Dmitrii Alekseev", "Observer / checking pilot, not operating commander")
+                    } else if (userAsCaptainInstructor) {
+                        DetailRow("Instructor Role", "Dmitrii Alekseev", "Captain instructor • active operating commander")
                     } else if (item.dutyNote.contains("Line Check", ignoreCase = true)) {
                         DetailRow("Line Instructor", CrewPool.lineInstructorForFlight(item.id), "Line check supervision")
                     }

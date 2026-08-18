@@ -5,6 +5,7 @@ import android.util.Log
 import com.example.crewportal.data.airport.AirportAssignmentPool
 import com.example.crewportal.data.delivery.AircraftDeliveryPlanner
 import com.example.crewportal.data.delivery.AircraftDeliveryRequest
+import com.example.crewportal.data.crew.InstructorRole
 import com.example.crewportal.data.fleet.AircraftTypeCatalog
 import com.example.crewportal.data.local.FlightDao
 import com.example.crewportal.data.local.FlightEntity
@@ -55,6 +56,9 @@ class FlightRepository(
         // roster is authoritative and must not be regenerated for a newer generator/TAS ruleset.
         loadScheduleFromAssetsIfNeeded()
         backfillUtcInstants()
+        // Presentation-only cleanup for already published 3.0 rows; no date, time, pairing or
+        // completion state is regenerated or replaced.
+        flightDao.normalizeLegacyTashkentLabels()
         val installedVersion = preferencesRepository.installedAppVersion.first()
         if (installedVersion != versionName) {
             // App updates must never overwrite or hide the active local/generated roster.
@@ -350,6 +354,42 @@ class FlightRepository(
     }
 
     /**
+     * Makes persisted approved leave authoritative over published and generated roster rows.
+     * Any future duty whose local calendar span intersects leave is removed; Leave remains in its
+     * own Room table and is rendered by Roster/Calendar as the single source of truth. This also
+     * makes monthly block and payroll recalculate from the rewritten roster immediately.
+     */
+    suspend fun reconcileRosterWithApprovedLeave(showNotification: Boolean = false): Int {
+        val approved = LeaveDatabase.allApproved()
+        if (approved.isEmpty()) return 0
+        val today = nowAtAirport("BKK").toLocalDate()
+        val snapshot = flightDao.getAllOnce()
+        val removable = snapshot.filter { duty ->
+            if (duty.isCompleted) return@filter false
+            val dutyStart = parseLocalDateTime(duty.departureDateTime).toLocalDate()
+            val dutyEnd = parseLocalDateTime(duty.arrivalDateTime).toLocalDate()
+            if (dutyEnd.isBefore(today)) return@filter false
+            approved.any { leave ->
+                !dutyEnd.isBefore(leave.start) && !dutyStart.isAfter(leave.end)
+            }
+        }.map { it.id }
+        if (removable.isEmpty()) return 0
+
+        flightDao.deleteByIds(removable)
+        val updated = flightDao.getAllOnce()
+        RosterNotificationScheduler.scheduleRoster(context, updated)
+        if (showNotification) {
+            NotificationHelper.show(
+                context,
+                "Approved leave added to roster",
+                "Crew Planning replaced ${removable.size} conflicting roster item(s). Monthly target and payroll have been recalculated.",
+                2_310_005
+            )
+        }
+        return removable.size
+    }
+
+    /**
      * Applies a complete Airbus delivery plan as one roster state transition. Ordinary generated
      * duties on affected dates are replaced automatically because the simplified 3.0 form has no
      * replacement switch. Qualification groups remain protected and make the operation fail
@@ -484,7 +524,8 @@ class FlightRepository(
     /**
      * Replaces eligible duties on the affected dates and persists a manual turnaround/layover.
      * [replaceExisting] authorizes removal of operating duties; otherwise only OFF/RESERVE/STAY
-     * records are replaced. [asInstructor] changes the crew note consumed by crew presentation.
+     * records are replaced. [instructorRole] distinguishes an operating captain instructor from
+     * a third-seat instructor/observer without changing the persisted Room format.
      */
     suspend fun addOperationalRosterChange(
         date: LocalDate,
@@ -498,7 +539,7 @@ class FlightRepository(
         returnDate: LocalDate?,
         returnTime: String?,
         replaceExisting: Boolean,
-        asInstructor: Boolean = false,
+        instructorRole: String = InstructorRole.NONE,
         isAircraftDelivery: Boolean = false
     ): Boolean {
         val normalizedPattern = pattern.uppercase()
@@ -538,7 +579,10 @@ class FlightRepository(
             returnFlight = returnFlight.ifBlank { "TG998" },
             returnDate = returnDate ?: date.plusDays(if (normalizedPattern == "LAYOVER") 1L else 0L),
             returnTime = returnTime?.takeIf { it.isNotBlank() },
-            note = "Manual operational roster change" + if (asInstructor) " • Line pilot instructor / observer" else "",
+            note = listOf("Manual operational roster change", InstructorRole.note(instructorRole))
+                .filter { it.isNotBlank() }
+                .joinToString(" • "),
+            instructorRole = instructorRole,
             isAircraftDelivery = isAircraftDelivery
         )
         val merged = (existing.filterNot { it.id in removable } + created).sortedBy { it.departureDateTime }
@@ -591,6 +635,7 @@ class FlightRepository(
         returnDate: LocalDate,
         returnTime: String?,
         note: String,
+        instructorRole: String = InstructorRole.NONE,
         isAircraftDelivery: Boolean = false,
         rosterSource: String = "OPERATIONAL_CHANGE"
     ): List<FlightEntity> {
@@ -600,7 +645,7 @@ class FlightRepository(
         val outArrival = arrivalLocalDateTime(outDeparture, "BKK", route.iata, route.outboundMinutes)
         val reg = registration ?: "TBA"
         val full = aircraftFullName(aircraftLabel)
-        val instructorObserver = note.contains("Line pilot instructor", ignoreCase = true)
+        val instructorObserver = InstructorRole.isObserver(instructorRole)
         val source = if (isAircraftDelivery) "DELIVERY" else rosterSource
         val outbound = FlightEntity(
             id = "${date}-${outboundFlight}-BKK-${route.iata}-MANUAL",
@@ -626,7 +671,7 @@ class FlightRepository(
             isAircraftDelivery = isAircraftDelivery,
             deliveryAircraftType = if (isAircraftDelivery) aircraftLabel else "",
             rosterSource = source,
-            lineCheckRole = if (instructorObserver) "INSTRUCTOR" else "",
+            lineCheckRole = instructorRole,
             flightTimeCreditEligible = !instructorObserver
         )
         if (isAircraftDelivery) return listOf(outbound)
@@ -658,7 +703,7 @@ class FlightRepository(
             dutyType = "FLIGHT",
             dutyNote = note + if (pattern == "LAYOVER") " • Return after layover" else " • Turnaround return",
             rosterSource = source,
-            lineCheckRole = if (instructorObserver) "INSTRUCTOR" else "",
+            lineCheckRole = instructorRole,
             flightTimeCreditEligible = !instructorObserver
         )
         if (pattern != "LAYOVER") return listOf(outbound, returnLeg)

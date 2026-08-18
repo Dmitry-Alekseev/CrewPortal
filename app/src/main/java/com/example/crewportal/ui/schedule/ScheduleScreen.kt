@@ -72,6 +72,7 @@ import com.example.crewportal.R
 import com.example.crewportal.data.airport.AirportDatabase
 import com.example.crewportal.data.airport.AirportInfo
 import com.example.crewportal.data.delivery.AircraftDeliveryRequest
+import com.example.crewportal.data.crew.InstructorRole
 import com.example.crewportal.data.fleet.AircraftPool
 import com.example.crewportal.data.fleet.AircraftTypeCatalog
 import com.example.crewportal.data.leave.LeaveDatabase
@@ -169,7 +170,7 @@ fun ScheduleScreen(
         OperationalRosterChangeDialog(
             ru = ru,
             onDismiss = { showOperationalChangeDialog = false },
-            onSubmit = { date, reportTime, outboundFlight, destination, aircraft, registration, pattern, returnFlight, returnDate, returnTime, replaceExisting, asInstructor, isAircraftDelivery ->
+            onSubmit = { date, reportTime, outboundFlight, destination, aircraft, registration, pattern, returnFlight, returnDate, returnTime, replaceExisting, instructorRole, isAircraftDelivery ->
                 scope.launch {
                     val ok = withContext(Dispatchers.IO) {
                         if (isAircraftDelivery) {
@@ -194,7 +195,7 @@ fun ScheduleScreen(
                                 returnDate = returnDate,
                                 returnTime = returnTime,
                                 replaceExisting = replaceExisting,
-                                asInstructor = asInstructor,
+                                instructorRole = instructorRole,
                                 isAircraftDelivery = false
                             )
                         }
@@ -253,18 +254,13 @@ fun ScheduleScreen(
             if (nextMonthHasRoster) {
                 Spacer(Modifier.height(8.dp))
                 if (showNextMonthPreview) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = { showNextMonthPreview = false },
-                            colors = ButtonDefaults.buttonColors(containerColor = CorporateBlue, contentColor = Color.White),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(if (ru) "Показать текущий месяц" else "Show current month")
-                        }
-                        OutlinedButton(onClick = { showNextMonthPreview = true }, enabled = false, shape = RoundedCornerShape(14.dp), modifier = Modifier.weight(1f)) {
-                            Text(if (ru) "Следующий месяц" else "Next month")
-                        }
+                    Button(
+                        onClick = { showNextMonthPreview = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = CorporateBlue, contentColor = Color.White),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (ru) "Вернуться к предыдущему месяцу" else "Back to previous month")
                     }
                 } else {
                     OutlinedButton(onClick = { showNextMonthPreview = true }, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
@@ -669,8 +665,17 @@ fun FlightCard(flight: FlightEntity, onClick: () -> Unit, flightRepository: Flig
                 }
             }
             Spacer(Modifier.height(8.dp))
-            if (flight.dutyNote.contains("Line pilot instructor", ignoreCase = true)) {
-                Text(if (ru) "Line pilot instructor / проверяющий — third crew member" else "Line pilot instructor / observer — third crew member", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+            when {
+                InstructorRole.isCaptainInstructor(flight.lineCheckRole) -> Text(
+                    if (ru) "КВС-инструктор — активный командир" else "Captain instructor — operating commander",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                InstructorRole.isObserver(flight.lineCheckRole) -> Text(
+                    if (ru) "Line pilot instructor / наблюдатель — третий член экипажа" else "Line pilot instructor / observer — third crew member",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
             BriefingLine(flight = flight, ru = ru)
             airportAssignmentLine(flight).takeIf { it.isNotBlank() }?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -810,7 +815,7 @@ private fun OperationalRosterChangeDialog(
         returnDate: LocalDate?,
         returnTime: String?,
         replaceExisting: Boolean,
-        asInstructor: Boolean,
+        instructorRole: String,
         isAircraftDelivery: Boolean
     ) -> Unit
 ) {
@@ -826,7 +831,7 @@ private fun OperationalRosterChangeDialog(
     var returnDate by remember { mutableStateOf(LocalDate.now().plusDays(3)) }
     var returnTime by remember { mutableStateOf("12:00") }
     var replaceExisting by remember { mutableStateOf(false) }
-    var asInstructor by remember { mutableStateOf(false) }
+    var instructorRole by remember { mutableStateOf(InstructorRole.NONE) }
     var isAircraftDelivery by remember { mutableStateOf(false) }
     var deliveryRegistrationSuffix by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
@@ -954,10 +959,25 @@ private fun OperationalRosterChangeDialog(
                         Checkbox(checked = replaceExisting, onCheckedChange = { replaceExisting = it })
                         Text(if (ru) "Заменить существующие duty в эти даты" else "Replace existing duties on affected dates")
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = asInstructor, onCheckedChange = { asInstructor = it })
-                        Text(if (ru) "Лечу как line pilot instructor / проверяющий" else "Operate as line pilot instructor / observer")
-                    }
+                    val regularCaptainLabel = if (ru) "КВС без отметки" else "Captain"
+                    val captainInstructorLabel = if (ru) "КВС-инструктор (активный)" else "Captain instructor (operating)"
+                    val observerInstructorLabel = if (ru) "Инструктор-наблюдатель (третье лицо)" else "Instructor observer (third seat)"
+                    SimpleDropdownField(
+                        label = if (ru) "Моя роль" else "My role",
+                        value = when {
+                            InstructorRole.isCaptainInstructor(instructorRole) -> captainInstructorLabel
+                            InstructorRole.isObserver(instructorRole) -> observerInstructorLabel
+                            else -> regularCaptainLabel
+                        },
+                        options = listOf(regularCaptainLabel, captainInstructorLabel, observerInstructorLabel),
+                        onSelected = { selected ->
+                            instructorRole = when (selected) {
+                                captainInstructorLabel -> InstructorRole.CAPTAIN_INSTRUCTOR
+                                observerInstructorLabel -> InstructorRole.OBSERVER_INSTRUCTOR
+                                else -> InstructorRole.NONE
+                            }
+                        }
+                    )
                     Text(if (ru) "2. Тип duty" else "2. Duty pattern", fontWeight = FontWeight.Bold)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         Button(
@@ -1019,7 +1039,7 @@ private fun OperationalRosterChangeDialog(
                             if (selectedPattern == "LAYOVER") returnDate else selectedDate,
                             if (selectedPattern == "LAYOVER") returnTime else null,
                             replaceExisting,
-                            asInstructor,
+                            instructorRole,
                             isAircraftDelivery
                         )
                     } catch (_: Exception) {

@@ -73,7 +73,7 @@ class MainActivity : FragmentActivity() {
         val db = AppDatabase.get(applicationContext)
         val fleetRepository = FleetRepository(db.fleetAircraftDao())
         val logbookRepository = LogbookRepository(db.logbookEntryDao())
-        val leaveRepository = LeaveRepository(db.leavePeriodDao())
+        val leaveRepository = LeaveRepository(applicationContext, db.leavePeriodDao())
         val flightRepository = FlightRepository(applicationContext, db.flightDao(), preferencesRepository, fleetRepository)
         val weatherRepository = WeatherRepository()
 
@@ -95,7 +95,7 @@ class MainActivity : FragmentActivity() {
                 LaunchedEffect(Unit) {
                     authRepository.signOut()
                     fleetRepository.initialize()
-                    leaveRepository.initialize()
+                    leaveRepository.initialize(scheduleExistingApprovalSync = true)
                     flightRepository.refreshBuiltInRosterOnAppUpdate(BuildConfig.VERSION_NAME)
                     flightRepository.refreshCompletedFlights(showNotifications = false)
                     delay(1800)

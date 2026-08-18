@@ -16,7 +16,7 @@ class TashkentRotationFactoryTest {
         assertEquals(listOf(DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY), rotation.map { LocalDateTime.parse(it.departureDateTime).dayOfWeek })
         assertEquals(listOf("2026-08-07", "2026-08-08"), rotation.filter { it.dutyType == "STAY" }.map { it.departureDateTime.take(10) })
         assertEquals("TG685", rotation.last().flightNumber)
-        assertEquals("Tashkent operating return", rotation.last().dutyNote)
+        assertEquals("Scheduled flight", rotation.last().dutyNote)
         assertEquals("2026-08-09T22:30:00", rotation.last().arrivalDateTime)
         assertEquals(800, rotation.filter { it.dutyType == "FLIGHT" }.sumOf { it.durationMinutes })
     }

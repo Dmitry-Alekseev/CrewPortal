@@ -26,7 +26,7 @@ internal object TashkentRotationFactory {
         val returnArrival = arrivalLocalDateTime(returnDeparture, "TAS", "BKK", INBOUND_MINUTES)
 
         return buildList {
-            add(operatingOutbound(outboundDeparture, outboundArrival, "Tashkent special rotation"))
+            add(operatingOutbound(outboundDeparture, outboundArrival))
             add(stay(thursday.plusDays(1)))
             add(stay(thursday.plusDays(2)))
             add(operatingReturn(returnDeparture, returnArrival))
@@ -42,7 +42,7 @@ internal object TashkentRotationFactory {
         val deadheadArrival = arrivalLocalDateTime(deadheadDeparture, "TAS", "BKK", INBOUND_MINUTES)
 
         return listOf(
-            operatingOutbound(outboundDeparture, outboundArrival, "Tashkent Sunday special rotation"),
+            operatingOutbound(outboundDeparture, outboundArrival),
             FlightEntity(
                 id = "${sunday}-TG685-TAS-BKK-DH",
                 airline = "THAI",
@@ -70,8 +70,7 @@ internal object TashkentRotationFactory {
 
     private fun operatingOutbound(
         departure: LocalDateTime,
-        arrival: LocalDateTime,
-        note: String
+        arrival: LocalDateTime
     ) = FlightEntity(
         id = "${departure.toLocalDate()}-TG684-BKK-TAS",
         airline = "THAI",
@@ -92,7 +91,7 @@ internal object TashkentRotationFactory {
         arrivalDateTime = arrival.format(formatter),
         durationMinutes = OUTBOUND_MINUTES,
         dutyType = "FLIGHT",
-        dutyNote = note
+        dutyNote = "Scheduled flight"
     )
 
     private fun operatingReturn(departure: LocalDateTime, arrival: LocalDateTime) = FlightEntity(
@@ -115,7 +114,7 @@ internal object TashkentRotationFactory {
         arrivalDateTime = arrival.format(formatter),
         durationMinutes = INBOUND_MINUTES,
         dutyType = "FLIGHT",
-        dutyNote = "Tashkent operating return"
+        dutyNote = "Scheduled flight"
     )
 
     private fun stay(date: LocalDate) = FlightEntity(

@@ -14,6 +14,8 @@ data class FleetAircraft(
 )
 
 object AircraftPool {
+    // Active Airbus registrations reconciled on 18 Aug 2026 against Plane Finder's THA fleet
+    // database and the Thailand CAAT register; A321neo cabin data is confirmed by Thai Airways.
     val aircraft = listOf(
         // Airbus A320 family — active narrow-body pool.
         FleetAircraft("HS-TXA", "A320", "Airbus A320-214", "SHORT", "C12 / Y144", "CFM56-5B4/3", "13y"),
@@ -38,26 +40,23 @@ object AircraftPool {
         FleetAircraft("HS-TXU", "A320", "Airbus A320-232", "SHORT", "C12 / Y144", "IAE V2527-A5", "9y"),
 
         // Airbus A321neo — TO-series only.
-        FleetAircraft("HS-TOA", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y175", "CFM LEAP-1A32", "0y"),
-        FleetAircraft("HS-TOB", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y175", "CFM LEAP-1A32", "0y"),
-        FleetAircraft("HS-TOD", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y175", "CFM LEAP-1A32", "0y"),
-        FleetAircraft("HS-TOE", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y175", "CFM LEAP-1A32", "0y"),
-        FleetAircraft("HS-TOF", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y175", "CFM LEAP-1A32", "0y"),
+        FleetAircraft("HS-TOA", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y159", "CFM LEAP-1A32", "0y"),
+        FleetAircraft("HS-TOB", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y159", "CFM LEAP-1A32", "0y"),
+        FleetAircraft("HS-TOD", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y159", "CFM LEAP-1A32", "0y"),
+        FleetAircraft("HS-TOE", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y159", "CFM LEAP-1A32", "0y"),
+        FleetAircraft("HS-TOF", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y159", "CFM LEAP-1A32", "0y"),
+        FleetAircraft("HS-TOG", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y159", "CFM LEAP-1A32", "0y"),
+        FleetAircraft("HS-TOI", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y159", "CFM LEAP-1A32", "0y"),
+        FleetAircraft("HS-TOJ", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y159", "CFM LEAP-1A32", "0y"),
+        FleetAircraft("HS-TOL", "A321neo", "Airbus A321-251NX", "SHORT / MEDIUM", "C16 / Y159", "CFM LEAP-1A32", "0y"),
 
-        // Airbus A330-300 — active assignment pool. HS-TEW deliberately excluded.
-        FleetAircraft("HS-TBC", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "15y"),
-        FleetAircraft("HS-TBD", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "15y"),
-        FleetAircraft("HS-TBE", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "15y"),
-        FleetAircraft("HS-TBF", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "15y"),
-        FleetAircraft("HS-TBG", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "15y"),
+        // Airbus A330-300 — current active assignment pool.
         FleetAircraft("HS-TEN", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "14y"),
         FleetAircraft("HS-TEO", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "14y"),
         FleetAircraft("HS-TEP", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "14y"),
-        FleetAircraft("HS-TER", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "13y"),
-        FleetAircraft("HS-TES", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "13y"),
-        FleetAircraft("HS-TET", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "13y"),
-        FleetAircraft("HS-TEU", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "12y"),
         FleetAircraft("HS-TEV", "A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "12y"),
+        FleetAircraft("HS-TEW", "A330-300", "Airbus A330-343E", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "12y"),
+        FleetAircraft("HS-TEX", "A330-300", "Airbus A330-343E", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "12y"),
 
         // Airbus A350-900.
         FleetAircraft("HS-THB", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "9y"),
@@ -75,13 +74,14 @@ object AircraftPool {
         FleetAircraft("HS-THO", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "6y"),
         FleetAircraft("HS-THP", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "6y"),
         FleetAircraft("HS-THQ", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "5y"),
+        FleetAircraft("HS-THR", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "5y"),
         FleetAircraft("HS-THS", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "5y"),
         FleetAircraft("HS-THT", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "5y"),
         FleetAircraft("HS-THU", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "4y"),
         FleetAircraft("HS-THV", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "4y"),
+        FleetAircraft("HS-THX", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "3y"),
         FleetAircraft("HS-THY", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "3y"),
-        FleetAircraft("HS-THZ", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "3y"),
-        FleetAircraft("HS-TXI", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "0y")
+        FleetAircraft("HS-THZ", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "3y")
     )
 
     fun assignFor(aircraftLabel: String, routeClass: String, flightId: String): FleetAircraft {

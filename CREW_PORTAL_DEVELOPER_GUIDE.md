@@ -1,6 +1,6 @@
 # Crew Portal Developer Guide / FAQ
 
-Документ описывает проект Crew Portal 3.0. Цель — дать новому разработчику карту кода, состояния и business rules, а также показать безопасные точки изменения.
+Документ описывает проект Crew Portal 3.0.1. Цель — дать новому разработчику карту кода, состояния и business rules, а также показать безопасные точки изменения.
 
 ## 1. Быстрый старт
 
@@ -112,7 +112,7 @@ RosterGenerator / RosterChangeEngine / notification scheduler
 
 ### Static/in-memory sources
 
-`AirportDatabase`, `AircraftPool`, `CrewPool`, `MelDatabase`, `CompanyMessages` — Kotlin catalogs. `LeaveDatabase` также держит mutable approved personal leave только в памяти процесса; это не Room/DataStore persistence.
+`AirportDatabase`, `AircraftPool`, `CrewPool`, `MelDatabase`, `CompanyMessages` — Kotlin catalogs. `LeaveDatabase` — reactive compatibility cache; authoritative personal leave хранится в Room `leave_periods` и восстанавливается `LeaveRepository`.
 
 ## 5. Repositories и важные функции
 
@@ -131,9 +131,10 @@ RosterGenerator / RosterChangeEngine / notification scheduler
 | `registerFlight(id)` | flight id | Назначает aircraft/airport position, propagates registration на paired turnaround и ставит `isRegistered`. | Roster/Flight Details action. |
 | `generateNextMonthRosterOnce()` | — | До штатной day-27 gate генерирует `YearMonth.now()+1`, только если target rows отсутствуют. После успешной транзакции ставит permanent DataStore flag; update/delete/restart его не сбрасывают. | Пять нажатий по версии в Settings + confirmation. |
 | `deleteNextMonthRosterDraft()` | — | Удаляет только next-month rows и сбрасывает review flags. Current roster сохраняется. | Settings. |
+| `reconcileRosterWithApprovedLeave(showNotification)` | notification flag | Удаляет non-completed future duty, пересекающие persisted approved leave; reschedules notifications. | LeaveRosterSyncWorker, Roster, Calendar, Payroll. |
 | `setNextMonthRosterDecision(reviewed, enhancedTarget)` | review и 90h flags | Persist review state; при 90h публикует informational notification. | Calendar review dialog. |
 | `publishExtraDutyForSelectedTarget()` | — | Находит OFF/RESERVE date, добавляет deterministic SIN turnaround с marker `EXTRA-90H-*`. | Messages action. |
-| `addOperationalRosterChange(...)` | date/time/flights/destination/aircraft/registration/pattern/return/replace/instructor | Удаляет только разрешённые rows, строит manual duty, inserts, reschedules alarms и уведомляет. | Hidden Operational Roster Change dialog, Roster, Calendar, History. |
+| `addOperationalRosterChange(...)` | date/time/flights/destination/aircraft/registration/pattern/return/replace/instructorRole | Удаляет только разрешённые rows, строит manual duty, inserts, reschedules alarms и уведомляет. | Hidden Operational Roster Change dialog, Roster, Calendar, History. |
 | `addAircraftDeliveryPlan(request)` | date/flight/type/HS-registration | Атомарно заменяет обычные duty на затронутых датах полной delivery chain; qualification groups защищены. | Simplified Aircraft Delivery form, Roster, Calendar, Flight Details, Fleet. |
 | `simulateRosterChange()` | — | Публикует demo monitoring notification; roster не переписывает. | Developer/testing actions. |
 
@@ -142,7 +143,7 @@ RosterGenerator / RosterChangeEngine / notification scheduler
 - `pattern`: `TURNAROUND` или `LAYOVER`;
 - `replaceExisting=false`: удаляются только `OFF`, `RESERVE`, `STAY` на affected dates;
 - `replaceExisting=true`: caller явно разрешает заменить operating rows;
-- `asInstructor=true`: добавляет marker `Line pilot instructor / observer`, который читает crew presentation;
+- `instructorRole`: `""`, `CAPTAIN_INSTRUCTOR` или `INSTRUCTOR_OBSERVER`; общий mapping находится в `data/crew/InstructorRole.kt`;
 - route info идёт через `manualRoute`, airport fallback — через `AirportDatabase`, hotel — через `CrewHotelDirectory`;
 - arrivals рассчитываются `arrivalLocalDateTime`.
 
@@ -352,10 +353,10 @@ Route definitions пока не сведены в единую full route table,
 
 - `ProfileScreen.kt` отображает DataStore total/type minutes и static qualifications/profile details.
 - `LeaveDatabase.kt` объединяет assigned, approved personal и closed sick periods; `adjustedMonthlyTargetMinutes` уменьшает 80h target пропорционально leave days.
-- `LeaveManagementScreen.kt` изменяет in-memory LeaveDatabase.
+- `LeaveManagementScreen.kt` сохраняет approved request через `LeaveRepository`; `LeaveRosterSyncWorker` примерно через пять минут физически удаляет конфликтующие future roster rows.
 - `LogbookScreen.kt` читает completed flights из Room.
 
-Если leave должен переживать process death/device restart, переносите periods в Room с migration; текущий mutable object этого не обеспечивает.
+`LeaveRosterSyncScheduler` использует unique one-time WorkManager с initial delay 5 минут, поэтому закрытие экрана или process death не теряет применение отпуска.
 
 ## 14. Version/update system
 
@@ -532,7 +533,7 @@ Delivery form показывает только дату, flight number, оди�
 
 ### Leave, payroll, routes и duty types
 
-Approved personal leave сохраняется через `LeaveRepository`/`LeavePeriodDao`; при старте cache `LeaveDatabase` восстанавливается для совместимости существующих synchronous consumers.
+Approved personal leave сохраняется через `LeaveRepository`/`LeavePeriodDao`; при старте cache `LeaveDatabase` восстанавливается для совместимости synchronous consumers. Для изменения approval delay правьте только `APPROVAL_DELAY_MINUTES` в `LeaveRosterSyncWorker.kt`.
 
 Payroll policy вынесена из Compose в pure `data/payroll/PayrollCalculator.kt`. Меняйте rates и формулы там; `PayrollScreen` только выбирает месяц и отображает `PayslipCalc`.
 

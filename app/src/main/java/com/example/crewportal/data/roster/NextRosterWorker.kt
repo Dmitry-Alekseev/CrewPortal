@@ -23,7 +23,7 @@ class NextRosterWorker(appContext: Context, params: WorkerParameters) : Coroutin
         fleet.initialize()
         // WorkManager can start in a fresh process, so load the same persisted leave source
         // used by the UI before generating a roster. Approved leave always wins over duty.
-        LeaveRepository(db.leavePeriodDao()).initialize()
+        LeaveRepository(applicationContext, db.leavePeriodDao()).initialize()
         FlightRepository(applicationContext, db.flightDao(), preferences, fleet).prepareNextMonthRosterIfDue()
     }.fold(onSuccess = { Result.success() }, onFailure = { Result.retry() })
 }
