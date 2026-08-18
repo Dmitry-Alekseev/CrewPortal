@@ -10,6 +10,9 @@ class FleetRepository(private val dao: FleetAircraftDao) {
     fun observeFleet(): Flow<List<FleetAircraftEntity>> = dao.observeAll()
 
     suspend fun initialize() {
+        // Keep user-delivered aircraft (sourceFlightId != null), but reconcile bundled seed rows
+        // with the current active Airbus register so retired registrations stop being assigned.
+        dao.deleteRetiredSeedAircraft(AircraftPool.aircraft.map { it.registration })
         dao.insertSeed(AircraftPool.aircraft.map { item ->
             FleetAircraftEntity(
                 item.registration, item.label, item.fullName, item.routeClass,

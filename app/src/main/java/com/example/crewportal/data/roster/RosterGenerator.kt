@@ -2,6 +2,7 @@ package com.example.crewportal.data.roster
 
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.airport.CrewHotelDirectory
+import com.example.crewportal.data.crew.InstructorRole
 import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.qualification.PilotQualificationSchedule
 import com.example.crewportal.data.qualification.ScheduledQualificationDay
@@ -355,7 +356,14 @@ object RosterGenerator {
             val inboundArrival = arrivalLocalDateTime(inboundDeparture, route.iata, "BKK", inboundMinutes)
             val d = date(day)
             val lineCheck = lineCheckEvent != null
-            val lineCheckNote = if (lineCheck) "Line Check • Line pilot instructor / observer" else "Turnaround duty"
+            // Alternate assignments on each six-month cycle: active captain instructor, then
+            // third-seat instructor/observer. The result is deterministic for roster review.
+            val instructorRole = lineCheckEvent?.let { event ->
+                val halfYearIndex = event.date.year * 2 + if (event.date.monthValue <= 6) 0 else 1
+                if (halfYearIndex % 2 == 0) InstructorRole.CAPTAIN_INSTRUCTOR else InstructorRole.OBSERVER_INSTRUCTOR
+            }.orEmpty()
+            val instructorObserver = InstructorRole.isObserver(instructorRole)
+            val lineCheckNote = if (lineCheck) "Line Check • ${InstructorRole.note(instructorRole)}" else "Turnaround duty"
             flights += FlightEntity(
                 id = "$d-${route.outboundFlight}-BKK-${route.iata}",
                 airline = "THAI",
@@ -380,8 +388,8 @@ object RosterGenerator {
                 eventGroupId = lineCheckEvent?.eventGroupId.orEmpty(),
                 eventDayIndex = lineCheckEvent?.dayIndex ?: 0,
                 eventTotalDays = lineCheckEvent?.totalDays ?: 0,
-                lineCheckRole = lineCheckEvent?.lineCheckRole.orEmpty(),
-                flightTimeCreditEligible = !lineCheck
+                lineCheckRole = instructorRole,
+                flightTimeCreditEligible = !instructorObserver
             )
             flights += FlightEntity(
                 id = "$d-${route.inboundFlight}-${route.iata}-BKK",
@@ -403,14 +411,14 @@ object RosterGenerator {
                 arrivalDateTime = inboundArrival.format(formatter),
                 durationMinutes = inboundMinutes,
                 dutyType = "FLIGHT",
-                dutyNote = if (lineCheck) "Line Check return • Line pilot instructor / observer" else "Turnaround return",
+                dutyNote = if (lineCheck) "Line Check return • ${InstructorRole.note(instructorRole)}" else "Turnaround return",
                 eventGroupId = lineCheckEvent?.eventGroupId.orEmpty(),
                 eventDayIndex = lineCheckEvent?.dayIndex ?: 0,
                 eventTotalDays = lineCheckEvent?.totalDays ?: 0,
-                lineCheckRole = lineCheckEvent?.lineCheckRole.orEmpty(),
-                flightTimeCreditEligible = !lineCheck
+                lineCheckRole = instructorRole,
+                flightTimeCreditEligible = !instructorObserver
             )
-            if (!lineCheck) plannedBlock += outboundMinutes + inboundMinutes
+            if (!instructorObserver) plannedBlock += outboundMinutes + inboundMinutes
             recentRouteIatas += route.iata
             if (recentRouteIatas.size > 5) recentRouteIatas.removeAt(0)
             mark(day, 1)
@@ -683,5 +691,5 @@ object RosterGenerator {
     private fun stableSeed(month: YearMonth): Long =
         (month.year * 100L + month.monthValue) * 7_919L + GENERATOR_RULESET_VERSION
 
-    private const val GENERATOR_RULESET_VERSION = 2_210L
+    private const val GENERATOR_RULESET_VERSION = 3_001L
 }

@@ -1,10 +1,10 @@
 # Crew Portal
 
-Version: 3.0
+Version: 3.0.1
 
 Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus pilot workflow.
 
-## Version 3.0 highlights
+## Version 3.0.1 highlights
 
 - Modern Material 3 corporate design system, refreshed navigation and a new aviation launcher icon.
 - Simplified Aircraft Delivery form: delivery date, flight number, aircraft type and manual `HS-` suffix only.
@@ -39,4 +39,4 @@ Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus 
 - `CREW_PORTAL_DEVELOPER_GUIDE.md` documents architecture, state, business rules and safe extension points.
 - GitHub Android CI uses the checked-in Gradle 8.7 wrapper and runs unit tests, lint and `assembleDebug`.
 
-APK artifact name: `CrewPortal-3.0.apk`
+APK artifact name: `CrewPortal-3.0.1.apk`

@@ -20,6 +20,9 @@ interface FleetAircraftDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertSeed(aircraft: List<FleetAircraftEntity>)
 
+    @Query("DELETE FROM fleet_aircraft WHERE sourceFlightId IS NULL AND registration NOT IN (:activeRegistrations)")
+    suspend fun deleteRetiredSeedAircraft(activeRegistrations: List<String>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(aircraft: FleetAircraftEntity)
 }

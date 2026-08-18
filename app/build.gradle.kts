@@ -12,11 +12,11 @@ android {
         applicationId = "com.example.crewportal"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3000
-        versionName = "3.0"
+        versionCode = 3001
+        versionName = "3.0.1"
     }
 
-    // Keep the legacy Crew Portal certificate so 3.0 can install as an update over 2.2.x
+    // Keep the legacy Crew Portal certificate so 3.0.1 can install over earlier builds
     // without uninstalling the app or deleting its local Room/DataStore data.
     signingConfigs {
         getByName("debug") {

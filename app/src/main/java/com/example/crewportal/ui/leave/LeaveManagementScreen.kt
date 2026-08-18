@@ -48,7 +48,6 @@ import com.example.crewportal.data.repository.LeaveRepository
 import com.example.crewportal.ui.theme.CorporateBlue
 import com.example.crewportal.ui.theme.SuccessGreen
 import com.example.crewportal.util.formatMinutes
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
@@ -168,8 +167,6 @@ fun LeaveManagementScreen(leaveRepository: LeaveRepository) {
                             scope.launch { snackbar.showSnackbar("Leave must be requested at least 7 days before start") }
                         } else {
                             scope.launch {
-                                snackbar.showSnackbar("Leave request submitted")
-                                delay(1200)
                                 leaveRepository.addPersonalLeave(
                                     LeavePeriod(
                                         id = "personal-${start}-${end}",
@@ -181,7 +178,7 @@ fun LeaveManagementScreen(leaveRepository: LeaveRepository) {
                                         note = "Approved by crew planning"
                                     )
                                 )
-                                snackbar.showSnackbar("Leave request approved")
+                                snackbar.showSnackbar("Leave approved. Roster will update within about 5 minutes")
                             }
                         }
                     },

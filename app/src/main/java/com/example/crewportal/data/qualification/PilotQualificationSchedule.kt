@@ -85,7 +85,7 @@ object PilotQualificationSchedule {
             dutyType = "LINE_CHECK",
             title = "Line Check",
             note = "Line check on an operating pairing",
-            lineCheckRole = "INSTRUCTOR"
+            lineCheckRole = "INSTRUCTOR_ASSIGNMENT"
         ))
         addAll(recurringSingleDay(month, LocalDate.of(2026, 10, 6), 6, "SAFETY", "SEP Land", "Safety & Emergency Procedures — Land"))
         addAll(recurringSingleDay(month, LocalDate.of(2026, 10, 8), 6, "SAFETY", "SEP Water", "Safety & Emergency Procedures — Water"))

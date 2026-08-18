@@ -213,12 +213,12 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 3.0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Modern corporate design system and new Crew Portal icon.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Aircraft Delivery now plans BKK-DXB-HAM positioning and EDHI-stop-BKK ferry legs.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Two-pilot plans receive 8-12h rest; four-pilot plans show the user's role by leg.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• A330-800neo, A330-900neo, A350-900, A320neo and A321neo delivery types are supported.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Five taps on the version can generate next month once for QA.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 3.0.1", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Approved leave rewrites conflicting roster duties after about five minutes.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Next-month preview now shows only the return-to-previous-month action.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Instructor observer and operating captain instructor are separate roles; instructor e-logbook is hidden.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Tashkent flights use ordinary flight labels.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Active Thai Airways Airbus registrations were reconciled, including nine A321neo aircraft.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

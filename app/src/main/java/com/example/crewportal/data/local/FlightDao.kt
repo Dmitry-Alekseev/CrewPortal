@@ -62,4 +62,11 @@ interface FlightDao {
 
     @Query("UPDATE flights SET departureEpochMillis = :departure, arrivalEpochMillis = :arrival WHERE id = :id")
     suspend fun updateUtcInstants(id: String, departure: Long, arrival: Long)
+
+    @Query("""
+        UPDATE flights SET dutyNote = 'Scheduled flight'
+        WHERE dutyType = 'FLIGHT'
+          AND (dutyNote LIKE 'Tashkent%rotation' OR dutyNote = 'Tashkent operating return')
+    """)
+    suspend fun normalizeLegacyTashkentLabels()
 }

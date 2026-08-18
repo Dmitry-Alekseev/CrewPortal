@@ -1,5 +1,15 @@
 # Crew Portal Changelog
 
+## 3.0.1
+
+- Approved personal leave now schedules a durable five-minute WorkManager reconciliation that removes conflicting future roster rows and immediately updates monthly target/payroll sources.
+- Next-month generation continues to load persisted approved leave before placing flights, reserve, qualifications or other duties.
+- Removed the unavailable extra-next-month button and special Tashkent rotation labels.
+- Added distinct regular Captain, operating Captain Instructor and third-seat Instructor Observer assignments for manual and generated duties.
+- Instructor sectors no longer show the electronic logbook; active Captain Instructor block time remains credited.
+- Reconciled the bundled active Thai Airways Airbus fleet with open registers, including all nine listed A321neo registrations.
+- Updated Android and release metadata to 3.0.1 / versionCode 3001.
+
 ## 3.0
 
 - Introduced a modern Material 3 corporate design system, updated navigation surfaces and a new aviation launcher icon.

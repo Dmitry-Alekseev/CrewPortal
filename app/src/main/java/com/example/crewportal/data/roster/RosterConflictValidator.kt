@@ -1,5 +1,6 @@
 package com.example.crewportal.data.roster
 
+import com.example.crewportal.data.crew.InstructorRole
 import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.util.airportLocalEpochMillis
@@ -25,8 +26,11 @@ object RosterConflictValidator {
             val lineRows = rows.filter { it.lineCheckRole.isNotBlank() }
             if (lineRows.isNotEmpty()) {
                 if (lineRows.any { it.dutyType != "FLIGHT" }) add("Line Check $groupId is not attached to an operating flight")
-                if (lineRows.any { it.lineCheckRole == "INSTRUCTOR" && it.flightTimeCreditEligible }) {
-                    add("Instructor Line Check $groupId incorrectly receives operating block credit")
+                if (lineRows.any { InstructorRole.isObserver(it.lineCheckRole) && it.flightTimeCreditEligible }) {
+                    add("Observer instructor Line Check $groupId incorrectly receives operating block credit")
+                }
+                if (lineRows.any { InstructorRole.isCaptainInstructor(it.lineCheckRole) && !it.flightTimeCreditEligible }) {
+                    add("Captain instructor Line Check $groupId is missing operating block credit")
                 }
             }
         }

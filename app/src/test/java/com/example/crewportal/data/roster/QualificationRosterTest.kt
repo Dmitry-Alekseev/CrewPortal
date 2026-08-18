@@ -1,5 +1,6 @@
 package com.example.crewportal.data.roster
 
+import com.example.crewportal.data.crew.InstructorRole
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
@@ -27,7 +28,7 @@ class QualificationRosterTest {
     fun `medical is two days and instructor line check has no operating credit`() {
         val roster = RosterGenerator.generateForMonth(YearMonth.of(2026, 8))
         val medical = roster.filter { it.dutyType == "MEDICAL" }.sortedBy { it.eventDayIndex }
-        val lineCheck = roster.filter { it.lineCheckRole == "INSTRUCTOR" }
+        val lineCheck = roster.filter { InstructorRole.isObserver(it.lineCheckRole) }
 
         assertEquals(listOf(1, 2), medical.map { it.eventDayIndex })
         assertEquals(1, medical.map { it.eventGroupId }.distinct().size)
@@ -35,6 +36,16 @@ class QualificationRosterTest {
         assertTrue(lineCheck.isNotEmpty())
         assertTrue(lineCheck.all { it.dutyType == "FLIGHT" && !it.flightTimeCreditEligible })
         assertTrue(RosterConflictValidator.errors(YearMonth.of(2026, 8), roster).isEmpty())
+    }
+
+    @Test
+    fun `next line check cycle can assign operating captain instructor with block credit`() {
+        val roster = RosterGenerator.generateForMonth(YearMonth.of(2027, 2))
+        val lineCheck = roster.filter { InstructorRole.isCaptainInstructor(it.lineCheckRole) }
+
+        assertTrue(lineCheck.isNotEmpty())
+        assertTrue(lineCheck.all { it.dutyType == "FLIGHT" && it.flightTimeCreditEligible })
+        assertTrue(RosterConflictValidator.errors(YearMonth.of(2027, 2), roster).isEmpty())
     }
 
     private fun date(value: String): LocalDate = LocalDateTime.parse(value).toLocalDate()
