@@ -15,13 +15,14 @@ data class FuelEstimate(
 
 fun estimatedFuel(durationMinutes: Int, aircraftLabel: String): FuelEstimate {
     val burnPerHour = when {
+        aircraftLabel.startsWith("A380") -> 11_500
         aircraftLabel.startsWith("A350") -> 5800
         aircraftLabel.startsWith("A330") -> 5200
         aircraftLabel.startsWith("A321") -> 2700
         else -> 2500
     }
     val trip = ((durationMinutes / 60.0) * burnPerHour).roundToInt()
-    val taxi = if (durationMinutes >= 360) 900 else 450
+    val taxi = if (aircraftLabel.startsWith("A380")) 1_500 else if (durationMinutes >= 360) 900 else 450
     val contingency = (trip * 0.05).roundToInt()
     val alternate = when {
         durationMinutes >= 360 -> 3200

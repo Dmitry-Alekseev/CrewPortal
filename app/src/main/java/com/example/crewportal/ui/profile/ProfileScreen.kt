@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.example.crewportal.R
 import com.example.crewportal.data.repository.PreferencesRepository
 import com.example.crewportal.data.qualification.PilotQualificationSchedule
+import com.example.crewportal.data.qualification.A380QualificationPolicy
 import com.example.crewportal.ui.theme.SuccessGreen
 import com.example.crewportal.util.formatTotalMinutes
 import java.time.LocalDate
@@ -44,6 +45,7 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
     val a320Minutes by preferencesRepository.a320Minutes.collectAsState(initial = 180000)
     val a330Minutes by preferencesRepository.a330Minutes.collectAsState(initial = 36000)
     val a350Minutes by preferencesRepository.a350Minutes.collectAsState(initial = 24000)
+    val a380Minutes by preferencesRepository.a380Minutes.collectAsState(initial = 0)
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -92,6 +94,9 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
             QualificationRow("Airbus A320 Family", "Issued: 16 May 2022", "Time on type: ${formatTotalMinutes(a320Minutes)}", "VALID")
             QualificationRow("Airbus A330", "Issued: 11 February 2025", "Time on type: ${formatTotalMinutes(a330Minutes)}", "VALID")
             QualificationRow("Airbus A350", "Issued: 28 September 2025", "Time on type: ${formatTotalMinutes(a350Minutes)}", "VALID")
+            if (A380QualificationPolicy.hasTypeRating()) {
+                QualificationRow("Airbus A380", "Issued after final check: 31 October 2026", "Time on type: ${formatTotalMinutes(a380Minutes)}", "VALID")
+            }
         }
 
         InfoCard("Documents & Qualifications") {

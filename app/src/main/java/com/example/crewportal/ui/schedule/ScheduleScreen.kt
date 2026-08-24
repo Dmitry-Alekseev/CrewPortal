@@ -516,7 +516,7 @@ private fun TodayDutyCard(flights: List<FlightEntity>, onDutyClick: (String) -> 
     val leave = LeaveDatabase.leaveFor(today)
     val todayFlights = flights.filter { it.dutyType == "FLIGHT" && parseLocalDateTime(it.departureDateTime).toLocalDate() == today }.sortedBy { it.departureDateTime }
     val groundDuty = flights
-        .filter { it.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY") }
+        .filter { it.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY", "TRAINING", "EXAM") }
         .filter { parseLocalDateTime(it.departureDateTime).toLocalDate() == today }
         .minByOrNull { it.departureDateTime }
     val reserveDuty = flights.filter { it.dutyType == "RESERVE" }
@@ -736,7 +736,7 @@ fun DutyCard(flight: FlightEntity, onClick: (() -> Unit)?) {
         flight.dutyType == "DEADHEAD" -> "Passenger • ${flight.flightNumber} ${flight.departureIata}-${flight.arrivalIata}"
         flight.dutyType == "CREW_REST" -> "Crew rest • ${AirportDatabase.cityName(flight.departureIata, flight.departureCity)}"
         flight.dutyType == "TECHNICAL_STOP" -> "Technical stop • ${flight.departureIata}"
-        flight.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY") -> flight.flightNumber
+        flight.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY", "TRAINING", "EXAM") -> flight.flightNumber
         else -> flight.dutyType
     }
     Card(modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable { onClick() } else Modifier), shape = RoundedCornerShape(18.dp), elevation = CardDefaults.cardElevation(2.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -749,7 +749,7 @@ fun DutyCard(flight: FlightEntity, onClick: (() -> Unit)?) {
             Text("${displayDate(flight.departureDateTime)} • ${displayTime(flight.departureDateTime)}-${displayTime(flight.arrivalDateTime)}")
             Text(flight.dutyNote.ifBlank { if (isOff) "Day off" else if (isStay) "Layover stay" else "Hotel standby duty" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (!isOff) Text(
-                "Location: ${if (flight.dutyType == "DEADHEAD") "${flight.departureIata} → ${flight.arrivalIata}" else if (isStay || flight.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY", "CREW_REST", "TECHNICAL_STOP")) flight.departureAirport else airportShortName(flight.departureIata, flight.departureAirport)}",
+                "Location: ${if (flight.dutyType == "DEADHEAD") "${flight.departureIata} → ${flight.arrivalIata}" else if (isStay || flight.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY", "TRAINING", "EXAM", "CREW_REST", "TECHNICAL_STOP")) flight.departureAirport else airportShortName(flight.departureIata, flight.departureAirport)}",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -833,6 +833,7 @@ private fun OperationalRosterChangeDialog(
     var replaceExisting by remember { mutableStateOf(false) }
     var instructorRole by remember { mutableStateOf(InstructorRole.NONE) }
     var isAircraftDelivery by remember { mutableStateOf(false) }
+    var isDayOff by remember { mutableStateOf(false) }
     var deliveryRegistrationSuffix by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
 
@@ -859,9 +860,26 @@ private fun OperationalRosterChangeDialog(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
+                        checked = isDayOff,
+                        onCheckedChange = {
+                            isDayOff = it
+                            if (it) {
+                                isAircraftDelivery = false
+                                pattern = "OFF"
+                            } else {
+                                pattern = null
+                            }
+                        }
+                    )
+                    Text(if (ru) "Добавить выходной" else "Add day off")
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
                         checked = isAircraftDelivery,
                         onCheckedChange = {
                             isAircraftDelivery = it
+                            if (it) isDayOff = false
                             pattern = if (it) "DELIVERY" else null
                             if (it) {
                                 aircraft = "A330-900neo"
@@ -872,7 +890,17 @@ private fun OperationalRosterChangeDialog(
                     Text(if (ru) "Перегонка / приёмка нового самолёта" else "Aircraft delivery / ferry flight")
                 }
 
-                if (isAircraftDelivery) {
+                if (isDayOff) {
+                    Text(
+                        if (ru) "На выбранную дату будет добавлен OFF. При замене существующий рейс, резерв или другое назначение на этот день будет удалено."
+                        else "An OFF day will be added. With replacement enabled, the existing flight, reserve or other assignment on that date is removed.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = replaceExisting, onCheckedChange = { replaceExisting = it })
+                        Text(if (ru) "Заменить существующее назначение" else "Replace existing assignment")
+                    }
+                } else if (isAircraftDelivery) {
                     Text(
                         if (ru) "Укажите только основные данные — позиционирование и маршрут EDHI → промежуточный аэропорт → BKK будут рассчитаны автоматически."
                         else "Enter only the core data. Passenger positioning and EDHI → intermediate airport → BKK will be planned automatically.",
@@ -1018,9 +1046,9 @@ private fun OperationalRosterChangeDialog(
             Button(
                 onClick = {
                     try {
-                        val selectedPattern = if (isAircraftDelivery) "DELIVERY" else pattern
+                        val selectedPattern = if (isAircraftDelivery) "DELIVERY" else if (isDayOff) "OFF" else pattern
                             ?: throw IllegalArgumentException("Select turnaround or layover")
-                        val airport = if (isAircraftDelivery) null else selectedAirport
+                        val airport = if (isAircraftDelivery || isDayOff) null else selectedAirport
                             ?: AirportDatabase.search(destinationQuery).firstOrNull()
                             ?: throw IllegalArgumentException("Select destination")
                         val selectedRegistration = if (isAircraftDelivery) {
@@ -1043,7 +1071,9 @@ private fun OperationalRosterChangeDialog(
                             isAircraftDelivery
                         )
                     } catch (_: Exception) {
-                        error = if (isAircraftDelivery) {
+                        error = if (isDayOff) {
+                            if (ru) "Не удалось добавить выходной: проверьте дату и разрешение на замену" else "Unable to add day off: check the date and replacement option"
+                        } else if (isAircraftDelivery) {
                             if (ru) "Проверьте дату, номер рейса, тип ВС и регистрацию HS-" else "Check date, flight number, aircraft type and HS- registration"
                         } else if (ru) "Проверьте дату, время, destination и тип duty" else "Check date, time, destination and duty pattern"
                     }

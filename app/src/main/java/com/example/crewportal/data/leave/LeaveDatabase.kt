@@ -46,6 +46,18 @@ object LeaveDatabase {
         )
     )
 
+    /** Approved extension requested by the pilot, intentionally separate from company leave. */
+    val plannedPersonalLeave = listOf(
+        LeavePeriod(
+            id = "personal-oct-2026-a380-program",
+            type = "PERSONAL_LEAVE",
+            title = "Personal Leave",
+            start = LocalDate.of(2026, 10, 9),
+            end = LocalDate.of(2026, 10, 14),
+            note = "Pilot-requested leave extension before A380 training"
+        )
+    )
+
     // User-requested leave is created through Leave Management.
     // Demo personal/sick records are intentionally empty in 2.0.5 so the current test roster is not overwritten.
     val approvedPersonalLeave = mutableStateListOf<LeavePeriod>()
@@ -62,7 +74,9 @@ object LeaveDatabase {
 
     val closedSickLeaves = emptyList<LeavePeriod>()
 
-    fun allApproved(): List<LeavePeriod> = assignedLeave + approvedPersonalLeave + closedSickLeaves
+    fun seedPeriods(): List<LeavePeriod> = assignedLeave + plannedPersonalLeave
+
+    fun allApproved(): List<LeavePeriod> = seedPeriods() + approvedPersonalLeave + closedSickLeaves
 
     fun leaveFor(date: LocalDate): LeavePeriod? = allApproved().firstOrNull { it.contains(date) }
 
@@ -91,7 +105,7 @@ object LeaveDatabase {
 
     fun balance(): LeaveBalance {
         val annualUsed = assignedLeave.sumOf { it.days }.coerceAtMost(40)
-        val personalUsed = approvedPersonalLeave.sumOf { it.days }.coerceAtMost(40)
+        val personalUsed = (plannedPersonalLeave + approvedPersonalLeave).sumOf { it.days }.coerceAtMost(40)
         val sickUsed = closedSickLeaves.sumOf { it.days }
         return LeaveBalance(
             annualUsed = annualUsed,

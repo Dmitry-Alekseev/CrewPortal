@@ -1,6 +1,6 @@
 # Crew Portal Developer Guide / FAQ
 
-Документ описывает проект Crew Portal 3.0.1. Цель — дать новому разработчику карту кода, состояния и business rules, а также показать безопасные точки изменения.
+Документ описывает проект Crew Portal 3.0.2. Цель — дать новому разработчику карту кода, состояния и business rules, а также показать безопасные точки изменения.
 
 ## 1. Быстрый старт
 
@@ -337,7 +337,15 @@ Route definitions пока не сведены в единую full route table,
 
 ### Fleet
 
-`AircraftPool.kt` содержит `FleetAircraft` и static active fleet. `assignFor(aircraftLabel, routeClass, flightId)` нормализует type, не пересекает aircraft families и deterministically выбирает registration. `byRegistration` используется MEL/details.
+`AircraftPool.kt` содержит `FleetAircraft`, включая исторический парк A380 для сценария 2026. `assignFor(aircraftLabel, routeClass, flightId)` нормализует type, не пересекает aircraft families и deterministically выбирает registration. `byRegistration` используется MEL/details.
+
+Правила A380 разделены между несколькими source of truth:
+
+- `A380QualificationPolicy.kt` — дата появления rating, роль First Officer до конца 2026 и возврат к Captain с 01.01.2027;
+- `A380TransitionProgram.kt` — одноразовый October/November 2026 training/positioning сценарий;
+- `RouteCatalog.a380Eligible` — совместимость аэропорта плюс предел 8000 NM;
+- `PreferencesRepository` — отдельный `a380_minutes`; A380 FO увеличивает total/type time, но не PIC;
+- `FlightDetailsScreen`/`CrewPool` — First Officer crew placement и скрытие e-logbook до 2027.
 
 ### Aircraft Delivery — Crew Portal 3.0
 
@@ -352,7 +360,7 @@ Route definitions пока не сведены в единую full route table,
 ## 13. Profile, leave и logbook
 
 - `ProfileScreen.kt` отображает DataStore total/type minutes и static qualifications/profile details.
-- `LeaveDatabase.kt` объединяет assigned, approved personal и closed sick periods; `adjustedMonthlyTargetMinutes` уменьшает 80h target пропорционально leave days.
+- `LeaveDatabase.kt` объединяет company-assigned, date-bounded planned personal, persisted approved personal и closed sick periods; `adjustedMonthlyTargetMinutes` уменьшает 80h target пропорционально уникальным leave periods. October 2026 company leave заканчивается 8-го, personal extension занимает 9-14-е.
 - `LeaveManagementScreen.kt` сохраняет approved request через `LeaveRepository`; `LeaveRosterSyncWorker` примерно через пять минут физически удаляет конфликтующие future roster rows.
 - `LogbookScreen.kt` читает completed flights из Room.
 
@@ -420,7 +428,7 @@ Release workflow: `.github/workflows/release-apk.yml`; input version опред�
 
 ### ...изменить generator rules
 
-Работайте в `RosterGenerator.generateForMonth`; TAS меняйте только в `TashkentRotationFactory`. Сохраните occupied span, minimum rest, planned block и deterministic/idempotent IDs. Добавьте unit tests и не вызывайте regeneration существующего current month во время app update.
+Работайте в `RosterGenerator.generateForMonth`; структуру TAS меняйте только в `TashkentRotationFactory`, а частоту выбора — в общем candidate pool генератора. TAS не имеет отдельной приоритетной вставки. Сохраните occupied span, minimum rest, planned block и deterministic/idempotent IDs. Добавьте unit tests и не вызывайте regeneration существующего current month во время app update.
 
 ### ...изменить payroll
 

@@ -45,6 +45,7 @@ import com.example.crewportal.data.airport.AirportCoordinate
 import com.example.crewportal.data.airport.AirportInfo
 import com.example.crewportal.data.crew.CrewPool
 import com.example.crewportal.data.crew.InstructorRole
+import com.example.crewportal.data.qualification.A380QualificationPolicy
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.fleet.AircraftPool
 import com.example.crewportal.data.mel.MelDatabase
@@ -107,8 +108,9 @@ fun FlightDetailsScreen(
             val userAsInstructor = InstructorRole.isInstructor(item.lineCheckRole) || item.dutyNote.contains("Line pilot instructor", ignoreCase = true)
             val userAsObserver = InstructorRole.isObserver(item.lineCheckRole) || item.lineCheckRole == "INSTRUCTOR"
             val userAsCaptainInstructor = InstructorRole.isCaptainInstructor(item.lineCheckRole)
+            val userAsA380FirstOfficer = A380QualificationPolicy.userIsFirstOfficer(item)
             val deliveryPassenger = item.isAircraftDelivery && !item.flightTimeCreditEligible
-            val crew = CrewPool.forFlight(item.id, augmentedCrew, userAsObserver || deliveryPassenger)
+            val crew = CrewPool.forFlight(item.id, augmentedCrew, userAsObserver || deliveryPassenger, userAsA380FirstOfficer)
             val fuel = estimatedFuel(item.durationMinutes, item.aircraftLabel)
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -125,7 +127,7 @@ fun FlightDetailsScreen(
                             "Location",
                             when (item.dutyType) {
                                 "DEADHEAD" -> "${item.departureIata} / ${item.departureIcao} → ${item.arrivalIata} / ${item.arrivalIcao}"
-                                "RESERVE", "STAY", "SIMULATOR", "MEDICAL", "SAFETY", "CREW_REST", "TECHNICAL_STOP" -> item.departureAirport
+                                "RESERVE", "STAY", "SIMULATOR", "MEDICAL", "SAFETY", "TRAINING", "EXAM", "CREW_REST", "TECHNICAL_STOP" -> item.departureAirport
                                 else -> "Not applicable"
                             },
                             if (item.dutyType == "DEADHEAD") "${item.airline} ${item.flightNumber} • passenger" else item.departureCity
@@ -161,7 +163,7 @@ fun FlightDetailsScreen(
 
                 // Instructor/checking sectors are supervision records, not the user's personal
                 // operating logbook entries. Active captain instructors are hidden as requested too.
-                if (!userAsInstructor) ElectronicLogbookCard(item, logbookRepository)
+                if (!userAsInstructor && !userAsA380FirstOfficer) ElectronicLogbookCard(item, logbookRepository)
 
                 AircraftTechnicalStatusCard(item, onMelClick)
 
@@ -220,7 +222,7 @@ fun FlightDetailsScreen(
                         DetailRow("Your Delivery Role", if (deliveryPassenger) "Passenger / in-flight rest" else "Operating pilot", item.dutyNote)
                     }
                     DetailRow("Captain", crew.captain, if (userAsCaptainInstructor) "Operating commander • Captain instructor" else "Operating commander")
-                    DetailRow("First Officer", crew.firstOfficer, "Operating pilot")
+                    DetailRow("First Officer", crew.firstOfficer, if (userAsA380FirstOfficer) "Your assigned role • A380 consolidation through 31 Dec 2026" else "Operating pilot")
                     if (crew.reliefCaptain != null) DetailRow("Relief Captain", crew.reliefCaptain, "Augmented crew")
                     if (crew.reliefFirstOfficer != null) DetailRow("Relief First Officer", crew.reliefFirstOfficer, "Augmented crew")
                     if (userAsObserver) {

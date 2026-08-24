@@ -17,7 +17,8 @@ object AircraftTypeCatalog {
         AircraftTypeSpec("A330-300", "Airbus A330-343", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60"),
         AircraftTypeSpec("A330-800neo", "Airbus A330-841", "MEDIUM / LONG", "C32 / Y220", "Rolls-Royce Trent 7000"),
         AircraftTypeSpec("A330-900neo", "Airbus A330-941", "MEDIUM / LONG", "C32 / Y260", "Rolls-Royce Trent 7000"),
-        AircraftTypeSpec("A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84")
+        AircraftTypeSpec("A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84"),
+        AircraftTypeSpec("A380-800", "Airbus A380-841", "LONG", "F12 / C60 / Y435", "Rolls-Royce Trent 970")
     )
 
     /** Restricted list shown by the simplified Aircraft Delivery form in Crew Portal 3.0. */
@@ -27,6 +28,7 @@ object AircraftTypeCatalog {
         val normalized = when {
             label.contains("A330-8", true) -> "A330-800neo"
             label.equals("A330neo", true) || label.contains("A330-9", true) -> "A330-900neo"
+            label.startsWith("A380", true) -> "A380-800"
             label.startsWith("A350", true) -> "A350-900"
             label.startsWith("A330", true) -> "A330-300"
             label.startsWith("A321", true) -> "A321neo"

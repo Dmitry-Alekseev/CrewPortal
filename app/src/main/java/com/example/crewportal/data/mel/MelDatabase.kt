@@ -32,7 +32,7 @@ object MelDatabase {
         val description: String,
         val operationalLimitation: String,
         val plannedAction: String,
-        val families: Set<String> = setOf("A320", "A330", "A350")
+        val families: Set<String> = setOf("A320", "A330", "A350", "A380")
     )
 
     fun forAircraft(registration: String, month: YearMonth = YearMonth.now()): List<MelDefect> =
@@ -44,6 +44,7 @@ object MelDatabase {
         if (registration.isBlank() || registration == "TBA" || registration == "—") return emptyList()
         val aircraft = AircraftPool.byRegistration(registration)
         val family = when {
+            aircraft?.label?.contains("A380") == true -> "A380"
             aircraft?.label?.contains("A350") == true -> "A350"
             aircraft?.label?.contains("A330") == true -> "A330"
             else -> "A320"

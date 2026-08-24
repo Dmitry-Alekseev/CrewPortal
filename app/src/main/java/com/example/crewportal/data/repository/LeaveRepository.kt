@@ -13,7 +13,7 @@ class LeaveRepository(
     private val dao: LeavePeriodDao
 ) {
     suspend fun initialize(scheduleExistingApprovalSync: Boolean = false) {
-        dao.insertSeed(LeaveDatabase.assignedLeave.map { it.toEntity() })
+        dao.insertSeed(LeaveDatabase.seedPeriods().map { it.toEntity() })
         refreshCache()
         if (scheduleExistingApprovalSync && LeaveDatabase.approvedPersonalLeave.isNotEmpty()) {
             LeaveRosterSyncScheduler.schedule(context, replaceExisting = false)
@@ -29,7 +29,7 @@ class LeaveRepository(
     }
 
     private suspend fun refreshCache() {
-        val assignedIds = LeaveDatabase.assignedLeave.mapTo(mutableSetOf()) { it.id }
+        val assignedIds = LeaveDatabase.seedPeriods().mapTo(mutableSetOf()) { it.id }
         val personal = dao.getAllOnce()
             .filterNot { it.id in assignedIds }
             .filter { it.status.equals("APPROVED", ignoreCase = true) }

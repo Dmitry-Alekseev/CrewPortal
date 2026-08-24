@@ -24,7 +24,18 @@ object CrewHotelDirectory {
         "ZRH" to "Zurich Marriott Hotel",
         "MUC" to "Hilton Munich City",
         "SYD" to "Hilton Sydney",
-        "MEL" to "Grand Hyatt Melbourne"
+        "MEL" to "Grand Hyatt Melbourne",
+        "TLS" to "NH Toulouse Airport",
+        "LAX" to "Hyatt Regency Los Angeles International Airport",
+        "SFO" to "Grand Hyatt at SFO",
+        "SEA" to "Hyatt Regency Seattle",
+        "JFK" to "TWA Hotel at JFK Airport",
+        "IAD" to "Hyatt Regency Dulles",
+        "ORD" to "Hilton Chicago O'Hare Airport",
+        "DFW" to "Grand Hyatt DFW",
+        "BOS" to "Hyatt Regency Boston Harbor",
+        "MIA" to "EB Hotel Miami Airport",
+        "ATL" to "Renaissance Concourse Atlanta Airport Hotel"
     )
 
     fun hotelFor(iata: String): String {

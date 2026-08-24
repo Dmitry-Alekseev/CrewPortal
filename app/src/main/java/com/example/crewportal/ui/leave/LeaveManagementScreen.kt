@@ -188,7 +188,7 @@ fun LeaveManagementScreen(leaveRepository: LeaveRepository) {
                         contentColor = MaterialTheme.colorScheme.onSurface
                     )
                 ) { Text("Submit request") }
-                LeaveDatabase.approvedPersonalLeave.forEach { LeaveRow(it) }
+                (LeaveDatabase.plannedPersonalLeave + LeaveDatabase.approvedPersonalLeave).forEach { LeaveRow(it) }
             }
         }
         item {

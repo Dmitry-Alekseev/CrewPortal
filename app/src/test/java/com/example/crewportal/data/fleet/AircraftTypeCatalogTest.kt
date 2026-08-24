@@ -17,4 +17,11 @@ class AircraftTypeCatalogTest {
         assertEquals("Airbus A330-841", AircraftTypeCatalog.byLabel("A330-800neo").fullName)
         assertEquals("Airbus A330-941", AircraftTypeCatalog.byLabel("A330-900neo").fullName)
     }
+
+    @Test
+    fun a380HasDedicatedType() {
+        val type = AircraftTypeCatalog.byLabel("A380")
+        assertEquals("A380-800", type.label)
+        assertEquals("Airbus A380-841", type.fullName)
+    }
 }

@@ -42,7 +42,7 @@ object AirportTimeZoneDirectory {
         listOf("DXB", "DWC").forEach { put(it, "Asia/Dubai") }; put("DOH", "Asia/Qatar"); put("GYD", "Asia/Baku"); put("KWI", "Asia/Kuwait"); put("MCT", "Asia/Muscat")
         listOf("JED", "MED").forEach { put(it, "Asia/Riyadh") }
         put("IST", "Europe/Istanbul"); listOf("FRA", "MUC", "HAM", "XFW").forEach { put(it, "Europe/Berlin") }
-        put("ZRH", "Europe/Zurich"); put("LHR", "Europe/London"); put("CDG", "Europe/Paris"); put("BRU", "Europe/Brussels")
+        put("ZRH", "Europe/Zurich"); put("LHR", "Europe/London"); listOf("CDG", "TLS").forEach { put(it, "Europe/Paris") }; put("BRU", "Europe/Brussels")
         put("CPH", "Europe/Copenhagen"); put("ARN", "Europe/Stockholm"); put("OSL", "Europe/Oslo")
         listOf("FCO", "MXP").forEach { put(it, "Europe/Rome") }; put("AMS", "Europe/Amsterdam")
         put("TAS", "Asia/Tashkent"); listOf("LED", "SVO").forEach { put(it, "Europe/Moscow") }
@@ -50,6 +50,9 @@ object AirportTimeZoneDirectory {
         listOf("VVO", "KHV").forEach { put(it, "Asia/Vladivostok") }
         put("SYD", "Australia/Sydney"); put("MEL", "Australia/Melbourne"); put("PER", "Australia/Perth")
         put("BNE", "Australia/Brisbane"); put("AKL", "Pacific/Auckland")
+        listOf("LAX", "SFO", "SEA").forEach { put(it, "America/Los_Angeles") }
+        listOf("JFK", "IAD", "BOS", "MIA", "ATL").forEach { put(it, "America/New_York") }
+        listOf("ORD", "DFW").forEach { put(it, "America/Chicago") }
     }
 
     fun zoneIdFor(iata: String, fallbackOffsetMinutes: Int): String = zones[iata.uppercase(Locale.ENGLISH)]
@@ -130,6 +133,7 @@ object AirportDatabase {
         AirportInfo("ZRH", "LSZH", "Zurich", "Zurich", "Switzerland", 120, 1416, "10/28, 14/32, 16/34", "Europe station.", "Alpine weather monitoring where applicable."),
         AirportInfo("LHR", "EGLL", "Heathrow", "London", "United Kingdom", 60, 83, "09L/27R, 09R/27L", "Europe long-haul station.", "Slot-controlled airport; ground delay monitoring required."),
         AirportInfo("CDG", "LFPG", "Charles de Gaulle", "Paris", "France", 120, 392, "08L/26R, 08R/26L, 09L/27R, 09R/27L", "Europe long-haul station.", "Large multi-terminal operation."),
+        AirportInfo("TLS", "LFBO", "Toulouse Blagnac", "Toulouse", "France", 120, 499, "14L/32R, 14R/32L", "Airbus training and production station.", "A380 type-rating programme and crew positioning station."),
         AirportInfo("BRU", "EBBR", "Brussels", "Brussels", "Belgium", 120, 184, "01/19, 07L/25R, 07R/25L", "Europe station.", "Long-haul station."),
         AirportInfo("CPH", "EKCH", "Copenhagen", "Copenhagen", "Denmark", 120, 17, "04L/22R, 04R/22L, 12/30", "Europe station.", "Northern Europe long-haul station."),
         AirportInfo("ARN", "ESSA", "Stockholm Arlanda", "Stockholm", "Sweden", 120, 137, "01L/19R, 01R/19L, 08/26", "Europe station.", "Northern Europe long-haul station."),
@@ -153,7 +157,18 @@ object AirportDatabase {
         AirportInfo("MEL", "YMML", "Melbourne Intl", "Melbourne", "Australia", 600, 434, "16/34, 09/27", "Australia long-haul station.", "Long-haul station; crew transport by local handler."),
         AirportInfo("PER", "YPPH", "Perth Intl", "Perth", "Australia", 480, 67, "03/21, 06/24", "Australia station.", "Medium/long-haul station."),
         AirportInfo("BNE", "YBBN", "Brisbane", "Brisbane", "Australia", 600, 13, "01L/19R, 01R/19L", "Australia station.", "Long-haul station."),
-        AirportInfo("AKL", "NZAA", "Auckland Intl", "Auckland", "New Zealand", 720, 23, "05R/23L, 05L/23R", "New Zealand station.", "Future network use / long-haul station.")
+        AirportInfo("AKL", "NZAA", "Auckland Intl", "Auckland", "New Zealand", 720, 23, "05R/23L, 05L/23R", "New Zealand station.", "Future network use / long-haul station."),
+
+        AirportInfo("LAX", "KLAX", "Los Angeles Intl", "Los Angeles", "United States", -480, 128, "06L/24R, 06R/24L, 07L/25R, 07R/25L", "US West Coast long-haul station.", "FAA A380 modification-of-standards airport; Code F handling available."),
+        AirportInfo("SFO", "KSFO", "San Francisco Intl", "San Francisco", "United States", -480, 13, "01L/19R, 01R/19L, 10L/28R, 10R/28L", "US West Coast long-haul station.", "FAA A380-compatible destination; fog and flow-control briefing required."),
+        AirportInfo("SEA", "KSEA", "Seattle-Tacoma Intl", "Seattle", "United States", -480, 433, "16L/34R, 16C/34C, 16R/34L", "US West Coast long-haul station.", "Long-haul widebody station; A380 assignment disabled by compatibility policy."),
+        AirportInfo("JFK", "KJFK", "John F. Kennedy Intl", "New York", "United States", -300, 13, "04L/22R, 04R/22L, 13L/31R, 13R/31L", "US East Coast long-haul station.", "FAA A380 modification-of-standards airport; slot and taxi plan required."),
+        AirportInfo("IAD", "KIAD", "Washington Dulles Intl", "Washington", "United States", -300, 313, "01L/19R, 01C/19C, 01R/19L, 12/30", "US East Coast long-haul station.", "FAA A380 modification-of-standards airport."),
+        AirportInfo("ORD", "KORD", "Chicago O'Hare Intl", "Chicago", "United States", -360, 672, "04L/22R, 04R/22L, 09L/27R, 09C/27C, 09R/27L, 10L/28R, 10C/28C, 10R/28L", "US Midwest long-haul station.", "FAA A380 modification-of-standards airport; complex taxi operation."),
+        AirportInfo("DFW", "KDFW", "Dallas Fort Worth Intl", "Dallas", "United States", -360, 607, "13L/31R, 13R/31L, 17L/35R, 17C/35C, 17R/35L, 18L/36R, 18R/36L", "US long-haul hub.", "FAA A380 modification-of-standards airport."),
+        AirportInfo("BOS", "KBOS", "Boston Logan Intl", "Boston", "United States", -300, 20, "04L/22R, 04R/22L, 09/27, 14/32, 15L/33R, 15R/33L", "US East Coast long-haul station.", "FAA A380 modification-of-standards airport."),
+        AirportInfo("MIA", "KMIA", "Miami Intl", "Miami", "United States", -300, 9, "08L/26R, 08R/26L, 09/27, 12/30", "US Southeast long-haul station.", "FAA A380-compatible airport; BKK distance exceeds app A380 planning limit."),
+        AirportInfo("ATL", "KATL", "Hartsfield-Jackson Atlanta Intl", "Atlanta", "United States", -300, 1026, "08L/26R, 08R/26L, 09L/27R, 09R/27L, 10/28", "US Southeast long-haul hub.", "FAA A380 modification-of-standards airport.")
     )
 
     private val airportsByIata = airportList.associateBy { it.iata }

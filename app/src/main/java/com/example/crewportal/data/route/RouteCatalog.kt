@@ -16,12 +16,17 @@ data class RouteDefinition(
     val aircraft: String,
     val operationType: String,
     val hotel: String,
-    val autoGenerationEnabled: Boolean
+    val autoGenerationEnabled: Boolean,
+    val a380AirportCompatible: Boolean
 ) {
     val code: String get() = "BKK-$destinationIata"
     val displayName: String get() = "Bangkok — $destinationCity"
     val outboundMinutes: Int get() = midpoint(outboundMinMinutes, outboundMaxMinutes)
     val inboundMinutes: Int get() = midpoint(inboundMinMinutes, inboundMaxMinutes)
+    val distanceNm: Int? get() = AirportGeoDirectory.distanceNm("BKK", destinationIata)
+
+    /** Both Code-F airport handling and the 8,000 nm planning limit must be satisfied. */
+    val a380Eligible: Boolean get() = a380AirportCompatible && (distanceNm ?: Int.MAX_VALUE) <= 8_000
 
     fun outboundMinutesFor(seed: String): Int = selectFiveMinuteStep(outboundMinMinutes, outboundMaxMinutes, seed.hashCode())
     fun inboundMinutesFor(seed: String): Int = selectFiveMinuteStep(inboundMinMinutes, inboundMaxMinutes, seed.hashCode())
@@ -35,9 +40,16 @@ data class RouteDefinition(
 
 /** Shared route metadata for screens and manual roster changes. */
 object RouteCatalog {
+    /** Conservative set backed by documented A380 operations/FAA destination approvals. */
+    private val a380CompatibleIatas = setOf(
+        "SIN", "HKG", "NRT", "HND", "KIX", "ICN", "DXB", "FRA", "MUC", "ZRH", "LHR", "CDG",
+        "SYD", "MEL", "PER", "AKL", "LAX", "SFO", "JFK", "IAD", "ORD", "DFW", "BOS", "MIA", "ATL"
+    )
+
     private val autoGenerationIatas = setOf(
         "HKT", "SIN", "KUL", "CNX", "KBV", "SGN", "HAN", "REP", "DEL", "DAC", "MNL", "DPS",
-        "HKG", "IST", "FRA", "SVO", "LHR", "NRT", "ICN", "LED", "TAS"
+        "HKG", "IST", "FRA", "SVO", "LHR", "NRT", "ICN", "LED", "TAS",
+        "LAX", "SFO", "SEA", "JFK", "IAD", "ORD", "DFW", "BOS", "MIA", "ATL"
     )
 
     val routes = listOf(
@@ -60,7 +72,17 @@ object RouteCatalog {
         route("UUD", 355, 345, "A330", "Long-haul"), route("VVO", 390, 380, "A330", "Long-haul"),
         route("IKT", 370, 360, "A330", "Long-haul"), route("KHV", 410, 400, "A330", "Long-haul"),
         route("DPS", 260, 265, "A330", "Regional"), route("MNL", 200, 205, "A330", "Regional"),
-        route("REP", 70, 75, "A320 Family", "Regional"), route("DAC", 150, 155, "A320 Family", "Regional")
+        route("REP", 70, 75, "A320 Family", "Regional"), route("DAC", 150, 155, "A320 Family", "Regional"),
+        route("LAX", 1_020, 930, "A330 / A350 / A380", "Ultra long-haul"),
+        route("SFO", 995, 925, "A330 / A350 / A380", "Ultra long-haul"),
+        route("SEA", 910, 850, "A330 / A350", "Ultra long-haul"),
+        route("JFK", 1_050, 970, "A330 / A350 / A380", "Ultra long-haul"),
+        route("IAD", 1_050, 980, "A330 / A350 / A380", "Ultra long-haul"),
+        route("ORD", 1_025, 955, "A330 / A350 / A380", "Ultra long-haul"),
+        route("DFW", 1_060, 985, "A330 / A350 / A380", "Ultra long-haul"),
+        route("BOS", 1_045, 970, "A330 / A350 / A380", "Ultra long-haul"),
+        route("MIA", 1_100, 1_020, "A330 / A350", "Ultra long-haul"),
+        route("ATL", 1_075, 995, "A330 / A350 / A380", "Ultra long-haul")
     )
 
     fun byIata(iata: String): RouteDefinition {
@@ -106,7 +128,8 @@ object RouteCatalog {
             aircraft = aircraft,
             operationType = operation,
             hotel = CrewHotelDirectory.hotelFor(iata),
-            autoGenerationEnabled = iata in autoGenerationIatas
+            autoGenerationEnabled = iata in autoGenerationIatas,
+            a380AirportCompatible = iata in a380CompatibleIatas
         )
     }
 }

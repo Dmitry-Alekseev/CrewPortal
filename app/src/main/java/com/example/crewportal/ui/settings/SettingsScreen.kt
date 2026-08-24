@@ -213,12 +213,12 @@ fun SettingsScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Change Log — 3.0.1", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("• Approved leave rewrites conflicting roster duties after about five minutes.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Next-month preview now shows only the return-to-previous-month action.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Instructor observer and operating captain instructor are separate roles; instructor e-logbook is hidden.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Tashkent flights use ordinary flight labels.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("• Active Thai Airways Airbus registrations were reconciled, including nine A321neo aircraft.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Change Log — 3.0.2", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("• Added Thai's historical A380 fleet and post-check type rating.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• October includes separated leave, Toulouse positioning, training and examinations.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Return positioning and recovery protect 1–3 November.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Added US routes and airport/range-controlled A380 assignment.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("• Operational roster changes can add OFF; Tashkent is no longer prioritised.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 

@@ -46,6 +46,7 @@ object AirportGeoDirectory {
         "HAM" to AirportCoordinate(53.63, 9.99), "XFW" to AirportCoordinate(53.54, 9.84),
         "MUC" to AirportCoordinate(48.35, 11.79), "ZRH" to AirportCoordinate(47.46, 8.55),
         "LHR" to AirportCoordinate(51.47, -0.45), "CDG" to AirportCoordinate(49.01, 2.55),
+        "TLS" to AirportCoordinate(43.63, 1.37),
         "BRU" to AirportCoordinate(50.90, 4.48), "CPH" to AirportCoordinate(55.62, 12.66),
         "ARN" to AirportCoordinate(59.65, 17.92), "OSL" to AirportCoordinate(60.20, 11.10),
         "FCO" to AirportCoordinate(41.80, 12.24), "MXP" to AirportCoordinate(45.63, 8.72),
@@ -56,7 +57,12 @@ object AirportGeoDirectory {
         "IKT" to AirportCoordinate(52.27, 104.39), "KHV" to AirportCoordinate(48.53, 135.19),
         "SYD" to AirportCoordinate(-33.94, 151.18), "MEL" to AirportCoordinate(-37.67, 144.84),
         "PER" to AirportCoordinate(-31.94, 115.97), "BNE" to AirportCoordinate(-27.38, 153.12),
-        "AKL" to AirportCoordinate(-37.01, 174.79)
+        "AKL" to AirportCoordinate(-37.01, 174.79),
+        "LAX" to AirportCoordinate(33.94, -118.41), "SFO" to AirportCoordinate(37.62, -122.38),
+        "SEA" to AirportCoordinate(47.45, -122.31), "JFK" to AirportCoordinate(40.64, -73.78),
+        "IAD" to AirportCoordinate(38.95, -77.46), "ORD" to AirportCoordinate(41.97, -87.91),
+        "DFW" to AirportCoordinate(32.90, -97.04), "BOS" to AirportCoordinate(42.37, -71.01),
+        "MIA" to AirportCoordinate(25.80, -80.29), "ATL" to AirportCoordinate(33.64, -84.43)
     )
 
     fun byIata(iata: String): AirportCoordinate? = coordinates[iata.trim().uppercase()]

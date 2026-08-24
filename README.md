@@ -1,10 +1,20 @@
 # Crew Portal
 
-Version: 3.0.1
+Version: 3.0.2
 
 Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus pilot workflow.
 
-## Version 3.0.1 highlights
+## Version 3.0.2 highlights
+
+- Complete historical Thai Airways A380 fleet (`HS-TUA` through `HS-TUF`) and date-gated A380 type rating.
+- One-time October 2026 Toulouse programme: separate company/personal leave, passenger positioning, weekday training and 29-31 October examinations.
+- Passenger return on 1 November plus protected recovery through 3 November.
+- A380 First Officer consolidation through 31 December 2026 with type-time but no PIC credit or e-logbook; Captain rules resume on 1 January 2027.
+- Ten US company destinations with airport, map, hotel, timezone and route metadata.
+- A380 generator assignment requires both an approved airport and an 8,000 NM range check.
+- Tashkent is an ordinary randomized route candidate; manual Operational Roster Change can add OFF.
+
+## Version 3.0/3.0.1 highlights
 
 - Modern Material 3 corporate design system, refreshed navigation and a new aviation launcher icon.
 - Simplified Aircraft Delivery form: delivery date, flight number, aircraft type and manual `HS-` suffix only.
@@ -39,4 +49,4 @@ Crew Portal is a Kotlin / Jetpack Compose Android app for a Thai Airways Airbus 
 - `CREW_PORTAL_DEVELOPER_GUIDE.md` documents architecture, state, business rules and safe extension points.
 - GitHub Android CI uses the checked-in Gradle 8.7 wrapper and runs unit tests, lint and `assembleDebug`.
 
-APK artifact name: `CrewPortal-3.0.1.apk`
+APK artifact name: `CrewPortal-3.0.2.apk`

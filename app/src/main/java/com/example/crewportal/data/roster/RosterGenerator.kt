@@ -6,6 +6,7 @@ import com.example.crewportal.data.crew.InstructorRole
 import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.qualification.PilotQualificationSchedule
 import com.example.crewportal.data.qualification.ScheduledQualificationDay
+import com.example.crewportal.data.qualification.A380QualificationPolicy
 import com.example.crewportal.data.route.RouteCatalog
 import com.example.crewportal.util.arrivalLocalDateTime
 import java.time.LocalDateTime
@@ -90,6 +91,23 @@ object RosterGenerator {
         AircraftChoice("A350", "Airbus A350-941", 25)
     )
 
+    private fun layoverAircraftChoice(route: LayoverRoute, date: java.time.LocalDate, random: Random): AircraftChoice {
+        val routePolicy = RouteCatalog.byIata(route.iata)
+        val choices = if (routePolicy.a380Eligible && A380QualificationPolicy.canBeAutoAssigned(date)) {
+            listOf(
+                AircraftChoice("A330", "Airbus A330-343", 15),
+                AircraftChoice("A350", "Airbus A350-941", 55),
+                AircraftChoice("A380", "Airbus A380-841", 30)
+            )
+        } else {
+            listOf(
+                AircraftChoice("A330", "Airbus A330-343", 25),
+                AircraftChoice("A350", "Airbus A350-941", 75)
+            )
+        }
+        return weightedChoice(random, choices)
+    }
+
     private fun routeAircraftChoice(route: TurnaroundRoute, random: Random): AircraftChoice = when (route.iata) {
         // Phuket and domestic/regional Thai "villages" stay narrow-body only.
         "HKT", "CNX", "KBV" -> weightedChoice(random, narrowbodyChoices())
@@ -149,7 +167,17 @@ object RosterGenerator {
         LayoverRoute("LED", "ULLI", "Saint Petersburg", "Pulkovo", "TG986", "TG987", "21:30:00", 650, 2, "15:10:00", 625, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("LED"), "Saint Petersburg layover"),
         LayoverRoute("NRT", "RJAA", "Tokyo", "Narita Intl", "TG642", "TG643", "23:50:00", 360, 2, "11:45:00", 410, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("NRT"), "Tokyo layover"),
         LayoverRoute("ICN", "RKSI", "Seoul", "Incheon Intl", "TG658", "TG659", "23:10:00", 325, 2, "10:50:00", 360, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("ICN"), "Seoul layover"),
-        LayoverRoute("DPS", "WADD", "Denpasar", "Ngurah Rai Intl", "TG431", "TG432", "20:30:00", 260, 1, "18:15:00", 265, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("DPS"), "Denpasar overnight layover")
+        LayoverRoute("DPS", "WADD", "Denpasar", "Ngurah Rai Intl", "TG431", "TG432", "20:30:00", 260, 1, "18:15:00", 265, "A330", "Airbus A330-343", CrewHotelDirectory.hotelFor("DPS"), "Denpasar overnight layover"),
+        LayoverRoute("LAX", "KLAX", "Los Angeles", "Los Angeles Intl", "TG800", "TG801", "20:30:00", 1020, 3, "13:00:00", 930, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("LAX"), "Los Angeles ultra long-haul layover"),
+        LayoverRoute("SFO", "KSFO", "San Francisco", "San Francisco Intl", "TG802", "TG803", "21:00:00", 995, 3, "13:30:00", 925, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("SFO"), "San Francisco ultra long-haul layover"),
+        LayoverRoute("SEA", "KSEA", "Seattle", "Seattle-Tacoma Intl", "TG804", "TG805", "22:00:00", 910, 3, "14:00:00", 850, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("SEA"), "Seattle ultra long-haul layover"),
+        LayoverRoute("JFK", "KJFK", "New York", "John F. Kennedy Intl", "TG806", "TG807", "20:00:00", 1050, 3, "12:00:00", 970, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("JFK"), "New York ultra long-haul layover"),
+        LayoverRoute("IAD", "KIAD", "Washington", "Washington Dulles Intl", "TG808", "TG809", "20:20:00", 1050, 3, "12:20:00", 980, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("IAD"), "Washington ultra long-haul layover"),
+        LayoverRoute("ORD", "KORD", "Chicago", "Chicago O'Hare Intl", "TG810", "TG811", "20:40:00", 1025, 3, "12:40:00", 955, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("ORD"), "Chicago ultra long-haul layover"),
+        LayoverRoute("DFW", "KDFW", "Dallas", "Dallas Fort Worth Intl", "TG812", "TG813", "21:10:00", 1060, 3, "13:10:00", 985, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("DFW"), "Dallas ultra long-haul layover"),
+        LayoverRoute("BOS", "KBOS", "Boston", "Boston Logan Intl", "TG814", "TG815", "20:10:00", 1045, 3, "12:10:00", 970, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("BOS"), "Boston ultra long-haul layover"),
+        LayoverRoute("MIA", "KMIA", "Miami", "Miami Intl", "TG816", "TG817", "19:50:00", 1100, 3, "11:50:00", 1020, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("MIA"), "Miami ultra long-haul layover"),
+        LayoverRoute("ATL", "KATL", "Atlanta", "Hartsfield-Jackson Atlanta Intl", "TG818", "TG819", "20:15:00", 1075, 3, "12:15:00", 995, "A350", "Airbus A350-941", CrewHotelDirectory.hotelFor("ATL"), "Atlanta ultra long-haul layover")
     )
 
     fun generateForMonth(month: YearMonth, seed: Long = stableSeed(month)): List<FlightEntity> {
@@ -426,6 +454,9 @@ object RosterGenerator {
 
         fun addLayover(day: Int, route: LayoverRoute) {
             val routePolicy = RouteCatalog.byIata(route.iata)
+            val aircraft = layoverAircraftChoice(route, month.atDay(day), random)
+            val a380FirstOfficer = aircraft.label.startsWith("A380") && month.atDay(day).isBefore(A380QualificationPolicy.captainEffectiveDate)
+            val roleNote = if (a380FirstOfficer) " • Assigned First Officer • A380 consolidation" else ""
             val durationSeed = "$seed-${date(day)}-${route.outboundFlight}-${random.nextInt()}"
             val outboundMinutes = routePolicy.outboundMinutesFor("$durationSeed-OUT")
             val inboundMinutes = routePolicy.inboundMinutesFor("$durationSeed-IN")
@@ -439,8 +470,8 @@ object RosterGenerator {
                 id = "$d-${route.outboundFlight}-BKK-${route.iata}",
                 airline = "THAI",
                 flightNumber = route.outboundFlight,
-                aircraftLabel = route.aircraftLabel,
-                aircraftFullName = route.aircraftFullName,
+                aircraftLabel = aircraft.label,
+                aircraftFullName = aircraft.fullName,
                 registration = "TBA",
                 status = "SCHEDULED",
                 departureIata = "BKK",
@@ -455,7 +486,7 @@ object RosterGenerator {
                 arrivalDateTime = outboundArrival.format(formatter),
                 durationMinutes = outboundMinutes,
                 dutyType = "FLIGHT",
-                dutyNote = route.note
+                dutyNote = route.note + roleNote
             )
             for (stayOffset in 1..route.returnOffsetDays) {
                 val stayDay = day + stayOffset
@@ -487,8 +518,8 @@ object RosterGenerator {
                 id = "${date(returnDay)}-${route.inboundFlight}-${route.iata}-BKK",
                 airline = "THAI",
                 flightNumber = route.inboundFlight,
-                aircraftLabel = route.aircraftLabel,
-                aircraftFullName = route.aircraftFullName,
+                aircraftLabel = aircraft.label,
+                aircraftFullName = aircraft.fullName,
                 registration = "TBA",
                 status = "SCHEDULED",
                 departureIata = route.iata,
@@ -503,7 +534,7 @@ object RosterGenerator {
                 arrivalDateTime = returnArrival.format(formatter),
                 durationMinutes = inboundMinutes,
                 dutyType = "FLIGHT",
-                dutyNote = "${route.city} return"
+                dutyNote = "${route.city} return" + roleNote
             )
             plannedBlock += outboundMinutes + inboundMinutes
             recentRouteIatas += route.iata
@@ -547,7 +578,15 @@ object RosterGenerator {
                 cursor = cursor.plusDays(1)
             }
         }
-        addMandatoryQualificationEvents()
+
+        // The date-bounded A380 programme is inserted before ordinary generation so the return
+        // from Toulouse and its recovery days cannot be overwritten by a November flight.
+        flights += A380TransitionProgram.rowsForMonth(month)
+        A380TransitionProgram.reservedDates(month).forEach { reserved -> occupied[reserved.dayOfMonth] = true }
+
+        // October's full-time type-rating programme supersedes ordinary recurrent events. Other
+        // months retain the normal six-month qualification schedule.
+        if (month != YearMonth.of(2026, 10)) addMandatoryQualificationEvents()
 
         qualificationEvents.filter { it.dutyType == "LINE_CHECK" }.forEach { event ->
             val preferred = event.date.dayOfMonth
@@ -578,16 +617,6 @@ object RosterGenerator {
             }
             val remaining = targetBlock - plannedBlock
             val dayOfWeek = month.atDay(day).dayOfWeek
-            if ("TAS" !in recentRouteIatas && remaining > 600 && dayOfWeek == java.time.DayOfWeek.THURSDAY && canPlaceDuty(day, 4) && hasMinimumRest(dt(day, "09:20:00"), tashkentThursdayDutyEnd(day)) && random.nextInt(100) < 30) {
-                addTashkentThursdayPattern(day)
-                day += 5 + random.nextInt(2)
-                continue
-            }
-            if ("TAS" !in recentRouteIatas && remaining > 360 && dayOfWeek == java.time.DayOfWeek.SUNDAY && canPlaceDuty(day, 1) && hasMinimumRest(dt(day, "09:20:00"), tashkentSundayDutyEnd(day)) && random.nextInt(100) < 18) {
-                addTashkentSundayPattern(day)
-                day += 2 + random.nextInt(3)
-                continue
-            }
             val allowLayover = remaining > 650 && day <= month.lengthOfMonth() - 2 && random.nextInt(100) < 42
             if (allowLayover) {
                 val candidates = layoverRoutes.shuffled(random).filter { route ->
@@ -602,7 +631,14 @@ object RosterGenerator {
                 }
                 val preferredCandidates = candidates.filter { it.iata !in recentRouteIatas.takeLast(3) }
                 val selectedLayover = preferredCandidates.firstOrNull() ?: candidates.firstOrNull()
-                if (selectedLayover != null) {
+                val tashkentEligible = "TAS" !in recentRouteIatas && dayOfWeek == java.time.DayOfWeek.THURSDAY &&
+                    canPlaceDuty(day, 4) && hasMinimumRest(dt(day, "09:20:00"), tashkentThursdayDutyEnd(day))
+                val selectTashkent = tashkentEligible && random.nextInt(candidates.size + 1) == 0
+                if (selectTashkent) {
+                    addTashkentThursdayPattern(day)
+                    day += 5 + random.nextInt(2)
+                    continue
+                } else if (selectedLayover != null) {
                     addLayover(day, selectedLayover)
                     day += selectedLayover.spanDays + 1 + random.nextInt(3)
                     continue
@@ -612,6 +648,13 @@ object RosterGenerator {
                 val start = dt(day, departureTime)
                 val end = start.plusMinutes((route.outboundMinutes + route.turnaroundMinutes + route.inboundMinutes).toLong())
                 canPlaceDuty(day, 1) && route.blockMinutes <= remaining + 180 && hasMinimumRest(start, end)
+            }
+            val tashkentEligible = "TAS" !in recentRouteIatas && remaining > 360 && dayOfWeek == java.time.DayOfWeek.SUNDAY &&
+                canPlaceDuty(day, 1) && hasMinimumRest(dt(day, "09:20:00"), tashkentSundayDutyEnd(day))
+            if (tashkentEligible && random.nextInt(shortCandidates.size + 1) == 0) {
+                addTashkentSundayPattern(day)
+                day += 2 + random.nextInt(3)
+                continue
             }
             val preferredShort = shortCandidates.filter { (route, _) -> route.iata !in recentRouteIatas.takeLast(3) }
             val selectedShort = preferredShort.firstOrNull() ?: shortCandidates.firstOrNull()

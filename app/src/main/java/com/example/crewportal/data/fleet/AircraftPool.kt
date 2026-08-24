@@ -58,6 +58,16 @@ object AircraftPool {
         FleetAircraft("HS-TEW", "A330-300", "Airbus A330-343E", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "12y"),
         FleetAircraft("HS-TEX", "A330-300", "Airbus A330-343E", "MEDIUM", "C31 / Y263", "Rolls-Royce Trent 772B-60", "12y"),
 
+        // Airbus A380-800 — Thai's complete historical fleet. These aircraft remain available
+        // for the app's 2026 reactivation/training scenario even though the real airframes were
+        // withdrawn from scheduled service after 2020.
+        FleetAircraft("HS-TUA", "A380-800", "Airbus A380-841", "LONG", "F12 / C60 / Y435", "Rolls-Royce Trent 970", "14y"),
+        FleetAircraft("HS-TUB", "A380-800", "Airbus A380-841", "LONG", "F12 / C60 / Y435", "Rolls-Royce Trent 970", "14y"),
+        FleetAircraft("HS-TUC", "A380-800", "Airbus A380-841", "LONG", "F12 / C60 / Y435", "Rolls-Royce Trent 970", "14y"),
+        FleetAircraft("HS-TUD", "A380-800", "Airbus A380-841", "LONG", "F12 / C60 / Y435", "Rolls-Royce Trent 970", "13y"),
+        FleetAircraft("HS-TUE", "A380-800", "Airbus A380-841", "LONG", "F12 / C60 / Y435", "Rolls-Royce Trent 970", "13y"),
+        FleetAircraft("HS-TUF", "A380-800", "Airbus A380-841", "LONG", "F12 / C60 / Y435", "Rolls-Royce Trent 970", "13y"),
+
         // Airbus A350-900.
         FleetAircraft("HS-THB", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "9y"),
         FleetAircraft("HS-THC", "A350-900", "Airbus A350-941", "LONG", "C32 / Y289", "Rolls-Royce Trent XWB-84", "9y"),
@@ -101,6 +111,7 @@ object AircraftPool {
     }
 
     private fun normalizeLabel(label: String): String = when {
+        label.startsWith("A380", ignoreCase = true) -> "A380-800"
         label.startsWith("A350", ignoreCase = true) -> "A350-900"
         label.startsWith("A330", ignoreCase = true) -> "A330-300"
         label.startsWith("A321", ignoreCase = true) -> "A321neo"

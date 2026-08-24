@@ -13,8 +13,8 @@ data class FlightCrew(
 
 object CrewPool {
     /**
-     * User is always shown as the Captain in own roster.
-     * Other flight crew are selected deterministically from Thai crew pools by flightId.
+     * The user is normally shown as Captain. A380 consolidation sectors before 2027 explicitly
+     * place the user in the First Officer seat, while observer duties use a third-seat role.
      */
     private val thaiCaptains = listOf(
         "Nattapong Srisai",
@@ -88,10 +88,15 @@ object CrewPool {
         "Benjawan T."
     )
 
-    fun forFlight(flightId: String, longHaul: Boolean, userAsObserver: Boolean = false): FlightCrew {
+    fun forFlight(
+        flightId: String,
+        longHaul: Boolean,
+        userAsObserver: Boolean = false,
+        userAsFirstOfficer: Boolean = false
+    ): FlightCrew {
         val seed = abs(flightId.hashCode())
-        val captain = if (userAsObserver) thaiCaptains[seed % thaiCaptains.size] else "Dmitrii Alekseev"
-        val fo = thaiFirstOfficers[(seed / 3) % thaiFirstOfficers.size]
+        val captain = if (userAsObserver || userAsFirstOfficer) thaiCaptains[seed % thaiCaptains.size] else "Dmitrii Alekseev"
+        val fo = if (userAsFirstOfficer) "Dmitrii Alekseev" else thaiFirstOfficers[(seed / 3) % thaiFirstOfficers.size]
         val cm = cabinManagers[(seed / 7) % cabinManagers.size]
 
         return if (longHaul) {

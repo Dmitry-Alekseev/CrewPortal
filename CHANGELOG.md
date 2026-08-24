@@ -1,5 +1,17 @@
 # Crew Portal Changelog
 
+## 3.0.2
+
+- Added the complete historical Thai Airways A380 fleet and a dedicated A380 type/catalog entry.
+- Added the fixed October 2026 Toulouse type-rating programme with company leave through 8 October, personal leave on 9-14 October, passenger positioning on 15 October, weekday training/weekends off and final examinations on 29-31 October.
+- Added passenger return `TLS-IST-BKK` on 1-2 November plus recovery through 3 November, preventing an immediate generated operating flight.
+- The A380 rating becomes visible after the final check. A380 sectors use the First Officer role through 31 December 2026, accrue total/type time without PIC time and hide the electronic logbook; Captain policy resumes on 1 January 2027.
+- Added LAX, SFO, SEA, JFK, IAD, ORD, DFW, BOS, MIA and ATL to Airport Info, Company Routes, maps, hotels and generation.
+- Added a shared A380 airport-compatibility and 8,000 NM range policy.
+- Moved Tashkent into ordinary randomized route selection while preserving its two operational patterns.
+- Added manual OFF to Operational Roster Change.
+- Updated Android/release metadata to 3.0.2 / versionCode 3002 without changing the Room schema or signing certificate.
+
 ## 3.0.1
 
 - Approved personal leave now schedules a durable five-minute WorkManager reconciliation that removes conflicting future roster rows and immediately updates monthly target/payroll sources.

@@ -28,4 +28,14 @@ class AircraftPoolCurrentFleetTest {
         assertFalse("HS-TXI" in registrations)
         assertFalse("HS-TBC" in registrations)
     }
+
+    @Test
+    fun `historical Thai A380 fleet is complete`() {
+        val registrations = AircraftPool.aircraft
+            .filter { it.label == "A380-800" }
+            .map { it.registration }
+            .toSet()
+
+        assertEquals(setOf("HS-TUA", "HS-TUB", "HS-TUC", "HS-TUD", "HS-TUE", "HS-TUF"), registrations)
+    }
 }

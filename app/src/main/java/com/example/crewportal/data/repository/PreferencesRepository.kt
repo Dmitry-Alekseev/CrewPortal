@@ -22,6 +22,7 @@ class PreferencesRepository(private val context: Context) {
         val A320_MINUTES = intPreferencesKey("a320_minutes")
         val A330_MINUTES = intPreferencesKey("a330_minutes")
         val A350_MINUTES = intPreferencesKey("a350_minutes")
+        val A380_MINUTES = intPreferencesKey("a380_minutes")
         val INSTALLED_APP_VERSION = stringPreferencesKey("installed_app_version")
         val DARK_THEME = booleanPreferencesKey("dark_theme")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
@@ -41,6 +42,7 @@ class PreferencesRepository(private val context: Context) {
     val a320Minutes: Flow<Int> = context.dataStore.data.map { it[Keys.A320_MINUTES] ?: 180000 }
     val a330Minutes: Flow<Int> = context.dataStore.data.map { it[Keys.A330_MINUTES] ?: 36000 }
     val a350Minutes: Flow<Int> = context.dataStore.data.map { it[Keys.A350_MINUTES] ?: 24000 }
+    val a380Minutes: Flow<Int> = context.dataStore.data.map { it[Keys.A380_MINUTES] ?: 0 }
     val installedAppVersion: Flow<String> = context.dataStore.data.map { it[Keys.INSTALLED_APP_VERSION] ?: "" }
     val darkTheme: Flow<Boolean> = context.dataStore.data.map { it[Keys.DARK_THEME] ?: false }
     val appLanguage: Flow<String> = context.dataStore.data.map { it[Keys.APP_LANGUAGE] ?: "en" }
@@ -107,13 +109,14 @@ class PreferencesRepository(private val context: Context) {
         }
     }
 
-    suspend fun addFlightTime(minutes: Int, aircraftLabel: String = "") {
+    suspend fun addFlightTime(minutes: Int, aircraftLabel: String = "", addPicTime: Boolean = true) {
         context.dataStore.edit { preferences ->
             val currentTotal = preferences[Keys.TOTAL_MINUTES] ?: 240000
             val currentPic = preferences[Keys.PIC_MINUTES] ?: 90000
             preferences[Keys.TOTAL_MINUTES] = currentTotal + minutes
-            preferences[Keys.PIC_MINUTES] = currentPic + minutes
+            if (addPicTime) preferences[Keys.PIC_MINUTES] = currentPic + minutes
             when {
+                aircraftLabel.contains("A380", ignoreCase = true) -> preferences[Keys.A380_MINUTES] = (preferences[Keys.A380_MINUTES] ?: 0) + minutes
                 aircraftLabel.contains("A330", ignoreCase = true) -> preferences[Keys.A330_MINUTES] = (preferences[Keys.A330_MINUTES] ?: 36000) + minutes
                 aircraftLabel.contains("A350", ignoreCase = true) -> preferences[Keys.A350_MINUTES] = (preferences[Keys.A350_MINUTES] ?: 24000) + minutes
                 else -> preferences[Keys.A320_MINUTES] = (preferences[Keys.A320_MINUTES] ?: 180000) + minutes

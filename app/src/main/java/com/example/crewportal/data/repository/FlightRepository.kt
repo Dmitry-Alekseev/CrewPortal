@@ -10,6 +10,7 @@ import com.example.crewportal.data.fleet.AircraftTypeCatalog
 import com.example.crewportal.data.local.FlightDao
 import com.example.crewportal.data.local.FlightEntity
 import com.example.crewportal.data.leave.LeaveDatabase
+import com.example.crewportal.data.qualification.A380QualificationPolicy
 import com.example.crewportal.data.roster.RosterGenerator
 import com.example.crewportal.data.roster.RosterChangeEngine
 import com.example.crewportal.data.route.RouteCatalog
@@ -275,7 +276,11 @@ class FlightRepository(
             if (flight.dutyType == "FLIGHT" && !flight.isFlightTimeAdded && hasArrived(flight.arrivalDateTime, flight.arrivalIata)) {
                 flightDao.markCompletedAndAdded(flight.id)
                 if (flight.flightTimeCreditEligible) {
-                    preferencesRepository.addFlightTime(flight.durationMinutes, flight.aircraftLabel)
+                    preferencesRepository.addFlightTime(
+                        flight.durationMinutes,
+                        flight.aircraftLabel,
+                        addPicTime = !A380QualificationPolicy.userIsFirstOfficer(flight)
+                    )
                 }
                 if (showNotifications) {
                     NotificationHelper.show(
@@ -407,7 +412,7 @@ class FlightRepository(
         val protectedQualification = existing.any { item ->
             parseLocalDateTime(item.departureDateTime).toLocalDate() in affectedDates &&
                 item.eventGroupId.isNotBlank() &&
-                (item.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY") || item.lineCheckRole.isNotBlank())
+                (item.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY", "TRAINING", "EXAM") || item.lineCheckRole.isNotBlank())
         }
         if (protectedQualification) return false
 
@@ -543,6 +548,7 @@ class FlightRepository(
         isAircraftDelivery: Boolean = false
     ): Boolean {
         val normalizedPattern = pattern.uppercase()
+        if (normalizedPattern == "OFF") return addManualDayOff(date, replaceExisting)
         val affectedDates = mutableSetOf(date)
         if (normalizedPattern == "LAYOVER") {
             val ret = returnDate ?: date.plusDays(1)
@@ -556,7 +562,7 @@ class FlightRepository(
         val protectedQualification = existing.any { item ->
             val itemDate = parseLocalDateTime(item.departureDateTime).toLocalDate()
             itemDate in affectedDates && item.eventGroupId.isNotBlank() &&
-                (item.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY") || item.lineCheckRole.isNotBlank())
+                (item.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY", "TRAINING", "EXAM") || item.lineCheckRole.isNotBlank())
         }
         if (protectedQualification) return false
         val removable = existing.filter { item ->
@@ -595,6 +601,56 @@ class FlightRepository(
             if (isAircraftDelivery) "Aircraft delivery ${registration.orEmpty()} BKK-${destinationIata.uppercase()} was added. The aircraft joins Fleet after arrival."
             else "${outboundFlight.ifBlank { "TG999" }} BKK-${destinationIata.uppercase()} was added/changed and is now visible in Roster and Calendar.",
             ("manual-${date}-${outboundFlight}-${destinationIata}").hashCode()
+        )
+        return true
+    }
+
+    /** Adds a user-requested OFF row without forcing the flight-only fields in the UI. */
+    private suspend fun addManualDayOff(date: LocalDate, replaceExisting: Boolean): Boolean {
+        val existing = flightDao.getAllOnce()
+        val onDate = existing.filter { parseLocalDateTime(it.departureDateTime).toLocalDate() == date }
+        val protectedQualification = onDate.any { item ->
+            item.eventGroupId.isNotBlank() &&
+                (item.dutyType in setOf("SIMULATOR", "MEDICAL", "SAFETY", "TRAINING", "EXAM") || item.lineCheckRole.isNotBlank())
+        }
+        if (protectedQualification) return false
+        if (!replaceExisting && onDate.any { it.dutyType !in setOf("OFF", "RESERVE", "STAY") }) return false
+
+        val removableIds = onDate
+            .filter { replaceExisting || it.dutyType in setOf("OFF", "RESERVE", "STAY") }
+            .mapTo(mutableSetOf()) { it.id }
+        val off = FlightEntity(
+            id = "$date-OFF-MANUAL",
+            airline = "THAI",
+            flightNumber = "OFF",
+            aircraftLabel = "OFF",
+            aircraftFullName = "Day Off",
+            registration = "—",
+            status = "OFF",
+            departureIata = "BKK",
+            departureIcao = "VTBS",
+            departureCity = "Bangkok",
+            departureAirport = "Suvarnabhumi Intl",
+            arrivalIata = "BKK",
+            arrivalIcao = "VTBS",
+            arrivalCity = "Bangkok",
+            arrivalAirport = "Suvarnabhumi Intl",
+            departureDateTime = date.atStartOfDay().toString(),
+            arrivalDateTime = date.atTime(23, 59).toString(),
+            durationMinutes = 0,
+            dutyType = "OFF",
+            dutyNote = "Manual operational roster change • Day off",
+            rosterSource = "OPERATIONAL_CHANGE",
+            flightTimeCreditEligible = false
+        )
+        val merged = (existing.filterNot { it.id in removableIds } + off).sortedBy { it.departureDateTime }
+        flightDao.replaceAll(normalizeInstants(merged))
+        RosterNotificationScheduler.scheduleRoster(context, merged)
+        NotificationHelper.show(
+            context,
+            "Operational roster change",
+            "Day off on $date was added to Roster and Calendar.",
+            ("manual-off-$date").hashCode()
         )
         return true
     }
