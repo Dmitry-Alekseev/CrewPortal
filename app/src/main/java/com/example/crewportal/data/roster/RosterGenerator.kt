@@ -343,9 +343,9 @@ object RosterGenerator {
                             (YearMonth.from(eventDate) != month || !occupied[eventDate.dayOfMonth])
                     }
                 } ?: return@forEach
-                (1..span).forEach { index ->
+                (1..span).forEach qualificationDay@ { index ->
                     val actualDate = actualStart.plusDays((index - 1).toLong())
-                    if (YearMonth.from(actualDate) != month) return@forEach
+                    if (YearMonth.from(actualDate) != month) return@qualificationDay
                     val event = group.firstOrNull { it.dayIndex == index } ?: template.copy(
                         title = template.title.substringBefore(" — Day") + " — Day $index/$span",
                         note = template.note.substringBefore(" • Day") + " • Day $index/$span",
