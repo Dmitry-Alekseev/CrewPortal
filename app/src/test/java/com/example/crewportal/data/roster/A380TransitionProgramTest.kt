@@ -4,10 +4,10 @@ import com.example.crewportal.data.leave.LeaveDatabase
 import com.example.crewportal.data.qualification.A380QualificationPolicy
 import java.time.LocalDate
 import java.time.YearMonth
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class A380TransitionProgramTest {
     @Test
