@@ -34,6 +34,7 @@ import com.example.crewportal.data.qualification.PilotQualificationSchedule
 import com.example.crewportal.data.qualification.A380QualificationPolicy
 import com.example.crewportal.ui.theme.SuccessGreen
 import com.example.crewportal.util.formatTotalMinutes
+import com.example.crewportal.util.nowAtAirport
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -94,7 +95,7 @@ fun ProfileScreen(preferencesRepository: PreferencesRepository) {
             QualificationRow("Airbus A320 Family", "Issued: 16 May 2022", "Time on type: ${formatTotalMinutes(a320Minutes)}", "VALID")
             QualificationRow("Airbus A330", "Issued: 11 February 2025", "Time on type: ${formatTotalMinutes(a330Minutes)}", "VALID")
             QualificationRow("Airbus A350", "Issued: 28 September 2025", "Time on type: ${formatTotalMinutes(a350Minutes)}", "VALID")
-            if (A380QualificationPolicy.hasTypeRating()) {
+            if (A380QualificationPolicy.hasTypeRating(nowAtAirport("BKK").toLocalDate())) {
                 QualificationRow("Airbus A380", "Issued after final check: 31 October 2026", "Time on type: ${formatTotalMinutes(a380Minutes)}", "VALID")
             }
         }

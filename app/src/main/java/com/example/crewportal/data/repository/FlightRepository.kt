@@ -549,6 +549,7 @@ class FlightRepository(
     ): Boolean {
         val normalizedPattern = pattern.uppercase()
         if (normalizedPattern == "OFF") return addManualDayOff(date, replaceExisting)
+        if (aircraftLabel.contains("A380", ignoreCase = true) && !RouteCatalog.byIata(destinationIata).a380Eligible) return false
         val affectedDates = mutableSetOf(date)
         if (normalizedPattern == "LAYOVER") {
             val ret = returnDate ?: date.plusDays(1)
